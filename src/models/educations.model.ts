@@ -19,15 +19,15 @@ export interface educationsInterface extends mongoose.Document{
 
 const educationsSchema = new Schema<educationsInterface>({
     school: {type: Object, required:true},
-    degree: {type: String, required:true},
-    field_of_study: {type: String, required:true},
-    start_date: {type: Date, required:true},
+    degree: {type: String},
+    field_of_study: {type: String},
+    start_date: {type: Date},
     end_date: {type:Date},
-    grade: {type: String, required:true},
-    activites_and_socials: {type: String, required:true},
+    grade: {type: String},
+    activites_and_socials: {type: String},
     Skills: [{type:Schema.Types.ObjectId,ref:"skills"}],
     media: {type:Schema.Types.ObjectId,ref:"media"},
-    description: {type: String, required:true}
+    description: {type: String}
 });
 
 const educations = mongoose.model<educationsInterface>('educations',educationsSchema);

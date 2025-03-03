@@ -20,15 +20,15 @@ export interface experiencesInterface extends mongoose.Document{
 
 const experiencesSchema = new Schema<experiencesInterface>({
     title: {type: String, required:true},
-    employee_type: {type: String, required:true},
-    company: {type:Schema.Types.ObjectId},
+    employee_type: {type: String},
+    company: {type:Schema.Types.ObjectId,required: true},
     is_current: {type: Boolean, required:true},
     start_date: {type: Date, required:true},
     end_date: {type:Date},
-    location: {type: String, required:true},
-    description: {type: String, required:true},
-    location_type: {type: String, required:true},
-    where_did_you_find_us: {type: String, required:true},
+    location: {type: String},
+    description: {type: String},
+    location_type: {type: String},
+    where_did_you_find_us: {type: String},
     skills: [{type:Schema.Types.ObjectId,ref:"skills"}],
     media: {type:Schema.Types.ObjectId,ref:"media"}
 });

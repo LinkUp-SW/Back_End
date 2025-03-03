@@ -5,8 +5,8 @@ export interface mediaInterface extends mongoose.Document{
   video: string[];
 }
 const mediaSchema = new mongoose.Schema<mediaInterface>({
-    image: { type: [String], required: true },
-  video: { type: [String], required: true }
+    image: { type: [String] },
+  video: { type: [String] }
 });
 
 const media  = mongoose.model<mediaInterface>('media',mediaSchema);
