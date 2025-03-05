@@ -1,26 +1,16 @@
-import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import users from "../../models/users.model";
-import { MongoMemoryServer } from "mongodb-memory-server";
+import mongoose from "mongoose";
 
-let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
-    // Start an in-memory MongoDB instance
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-
-    // Connect mongoose to the in-memory database
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(process.env.MONGO_URI || "");
 });
 
 afterAll(async () => {
-    // Close the connection after all tests
     await mongoose.connection.dropDatabase();
     await mongoose.connection.close();
-    await mongoServer.stop();
 });
-
 
 describe("User Model", () => {
 
