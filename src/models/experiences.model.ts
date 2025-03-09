@@ -1,12 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 import { skillsInterface } from "./skills.model";
 import { mediaInterface } from "./media.model";
+import { companiesInterface } from "./companies.model";
 
 
 export interface experiencesInterface extends mongoose.Document{
     title: string;
     employee_type:string;
-    company:Object;
+    company:companiesInterface | string;
     is_current: boolean;
     start_date: Date;
     end_date: Date;
@@ -21,7 +22,17 @@ export interface experiencesInterface extends mongoose.Document{
 const experiencesSchema = new Schema<experiencesInterface>({
     title: {type: String, required:true},
     employee_type: {type: String},
-    company: {type:Schema.Types.ObjectId,required: true},
+    company:  {
+        type: Schema.Types.Mixed,
+        required: true,
+        validate: {
+          validator: function (value) {
+            return typeof value === "string" || mongoose.isValidObjectId(value);
+          },
+          message: "Company must be either an ObjectId or a string",
+        },
+        ref: "companies",
+      },
     is_current: {type: Boolean, required:true},
     start_date: {type: Date, required:true},
     end_date: {type:Date},

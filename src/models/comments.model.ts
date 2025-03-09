@@ -2,11 +2,12 @@ import mongoose, { Schema } from "mongoose";
 import { usersInterface } from "./users.model";
 import { mediaInterface } from "./media.model";
 import { reactsInterface } from "./reactions.model";
+import { postsInterface } from "./posts.model";
 
 
 export interface commentsInterface extends mongoose.Document{
-    post_id: string;
-    user_id: string;
+    post_id: postsInterface;
+    user_id: usersInterface;
     content: string;
     date: Date;
     media: mediaInterface;
@@ -15,8 +16,8 @@ export interface commentsInterface extends mongoose.Document{
 } 
 
 const commentsSchema = new Schema({
-    post_id: { type: String, required: true },
-    user_id: { type: String, required: true },
+    post_id: { type: Schema.Types.ObjectId, ref: "posts", required:true },
+    user_id: { type: Schema.Types.ObjectId, ref: "users", required:true },
     content: { type: String, required: true },
     date: { type: Date, default: Date.now },
     media: { type: Schema.Types.ObjectId, ref: "media" },

@@ -1,9 +1,11 @@
 import mongoose, { Schema } from "mongoose";
+import { jobsInterface } from "./jobs.model";
+import { usersInterface } from "./users.model";
 
 
 export interface jobApplicationsInterface extends mongoose.Document{
-    job_id: string;
-    user_id: string;
+    job_id: jobsInterface;
+    user_id: usersInterface;
     first_name: string;
     last_name: string;
     email_address: string;
@@ -15,8 +17,8 @@ export interface jobApplicationsInterface extends mongoose.Document{
 }
 
 const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
-    job_id: { type: String, required: true },
-    user_id: { type: String, required: true },
+    job_id: { type: Schema.Types.ObjectId, ref: "jobs", required:true },
+    user_id: { type: Schema.Types.ObjectId, ref: "users", required:true },
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     email_address: { 
