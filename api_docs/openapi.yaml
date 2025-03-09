@@ -1,0 +1,30 @@
+openapi: 3.0.0
+info:
+  title: Linkup API Docs
+  version: 1.0.0
+  description: API for Linkup project.
+  contact:
+    name: Linkup Team
+servers:
+  - url: http://localhost:3000
+    description: Development server
+paths:
+  /auth/google:
+    get:
+      tags:
+        - Google Auth
+      summary: Initiates Google authentication
+      description: Redirects the user to Google to initiate OAuth2 authentication.
+      responses:
+        '302':
+          description: Redirects to Google for authentication.
+
+  /api/v1/auth/logout:
+    get:
+      tags:
+        - Google Auth
+      summary: Logs the user out
+      description: Revokes Google tokens if applicable and destroys the session.
+      responses:
+        '302':
+          description: Redirects to the login page after logging out.
