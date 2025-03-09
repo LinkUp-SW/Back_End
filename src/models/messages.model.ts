@@ -1,5 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { mediaInterface } from "./media.model";
+import { reactsEnum } from "./reactions.model";
+
 
 
 export interface messagesInterface extends mongoose.Document{
@@ -9,7 +11,7 @@ export interface messagesInterface extends mongoose.Document{
     }[];
     timestamp: Date;
     is_seen: boolean;
-    reactions: Enumerator[];
+    reactions: reactsEnum[];
 }
 
 const messagesSchema = new Schema<messagesInterface>({
@@ -19,7 +21,7 @@ const messagesSchema = new Schema<messagesInterface>({
     }],
     timestamp: { type: Date, default: Date.now },
     is_seen: { type: Boolean, required: true},
-    reactions: [{ type: Enumerator }]
+    reactions: [{ type: String, enum: Object.values(reactsEnum)}]
 });
 
 const messages = mongoose.model<messagesInterface>('messages', messagesSchema);
