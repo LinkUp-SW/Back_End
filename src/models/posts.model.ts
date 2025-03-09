@@ -5,12 +5,18 @@ import { commentsInterface } from "./comments.model";
 import { reactsInterface } from "./reactions.model";
 
 
+export enum commentsEnum{
+    anyone = "Anyone",
+    connections_only = "Connections only",
+    noone = "No one"
+}
+
 export interface postsInterface extends mongoose.Document{
-    user_id: string;
+    user_id: usersInterface;
     content: string;
     date: Date;
     media: mediaInterface;
-    comments_disabled: Enumerator;
+    comments_disabled: commentsEnum;
     visibility: Boolean;
     reacts:reactsInterface[];
     tagged_users: usersInterface[];
@@ -18,11 +24,11 @@ export interface postsInterface extends mongoose.Document{
 }
 
 const postsSchema = new Schema<postsInterface>({
-    user_id: { type: String, required: true },
+    user_id: { type: Schema.Types.ObjectId, ref: "users", required:true },
     content: { type: String, required: true },
     date: { type: Date, default: Date.now},
     media: { type: Schema.Types.ObjectId, ref: "media" },
-    comments_disabled: { type: Enumerator},
+    comments_disabled: { type: String, enum: Object.values(commentsEnum), required: true },
     visibility: { type: Boolean, default: true },
     reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" },],
     tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
