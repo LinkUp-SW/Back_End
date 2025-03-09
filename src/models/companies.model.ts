@@ -4,6 +4,27 @@ import { clientsInterface } from "./clients.model";
 import { conversationsInterface } from "./conversations.model";
 
 
+export enum companySizeEnum {
+    small_0_1 = "0 - 1 employees",
+    small_2_10 = "2-10 employees",
+    small_11_50 = "11-50 employees",
+    medium_51_200 = "51-200 employees",
+    medium_201_500 = "201-500 employees",
+    large_501_1000 = "501-1,000 employees",
+    large_1001_5000 = "1,001-5,000 employees",
+    large_5001_10000 = "5,001-10,000 employees",
+    enterprise_10000_plus = "10,000+ employees",
+  }
+export enum companyTypeEnum{
+    public_company = "Public company",
+    self_employed = "Self-employed",
+    government_agency = "Government agency",
+    nonprofit = "Nonprofit",
+    sole_proprietorship = "Sole proprietorship",
+    privately_held = "Privately held",
+    partnership = "Partnership"
+}
+  
 export interface companiesInterface extends mongoose.Document{
     company_name: string;
     unique_url: string;
@@ -12,8 +33,8 @@ export interface companiesInterface extends mongoose.Document{
     description: string;
     industry: string;
     location: string;
-    size: Enumerator;
-    type: Enumerator;
+    size: companySizeEnum;
+    type: companyTypeEnum;
     posts: postsInterface[];
     followers: clientsInterface[];
     blocked: clientsInterface[];
@@ -28,8 +49,8 @@ const companiesSchema = new Schema<companiesInterface>({
     description: { type: String},
     industry: { type: String, required: true },
     location: { type: String},
-    size: { type: Enumerator, required: true },
-    type: { type: Enumerator, required: true },
+    size: { type: String, enum: Object.values(companySizeEnum), required: true },
+    type: { type: String, enum: Object.values(companyTypeEnum), required: true },
     posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
     followers: [{ type: Schema.Types.ObjectId, ref: "clients" }],
     blocked: [{ type: Schema.Types.ObjectId, ref: "clients" }],
