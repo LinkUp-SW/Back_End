@@ -108,7 +108,13 @@
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["src/**/*.ts", "config/**/*.ts", "index.ts", "jest.config.ts"],
+  "include": [
+    "src/**/*.ts",
+    "config/**/*.ts",
+    "index.ts",
+    "src/types/**/*.ts",  // From feat/SPRNT1-google-oAuth
+    "jest.config.ts"       // From main
+  ],
   "exclude": ["node_modules"]
 
 }
