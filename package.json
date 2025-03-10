@@ -33,11 +33,13 @@
     "lru-cache": "^11.0.2",
     "mongodb": "^6.13.1",
     "mongoose": "^8.10.2",
+    "nodemailer": "6.10.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "rimraf": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "twilio": "5.4.5",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
@@ -49,6 +51,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^22.13.10",
+    "@types/nodemailer": "6.4.17",
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/supertest": "6.0.2",
     "@types/swagger-jsdoc": "^6.0.4",

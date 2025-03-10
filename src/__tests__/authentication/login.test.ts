@@ -16,27 +16,41 @@ app.use('/api/v1/user', loginRoutes);
 // add timeout to avoid jest open handle error
 jest.setTimeout(10000);
 
+// User test data
+const testData = {
+    name: 'Valid Name',  
+    email: 'user@example.com',
+    password: 'valid_password',
+};
+
 describe('Auth Routes', () => {
   // Seed test user with a hashed password before tests run
   beforeAll(async () => {
     await connectToDatabase();
+    let check_user = await users.findOne({ email: testData.email });
+    if (!check_user) {
     const testUser = await users.create({
       name: 'Valid Name',  
       email: 'user@example.com',
       password: 'valid_password',
     });
     await testUser.save();
+    }
+    else{
+        console.log("User already exists");
+    }
+
   });
 
   // Clean up test data after tests complete
   afterAll(async () => {
-    await users.deleteOne({ email: 'user@example.com' });
+    // await users.deleteOne({ email: 'user@example.com' });
     await disconnectFromDatabase();
   });
 
   it('should log in a user', async () => {
     const res = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/user/login')
       .send({
         email: 'user@example.com',
         password: 'valid_password',
@@ -49,7 +63,7 @@ describe('Auth Routes', () => {
 
   it('should reject invalid credentials', async () => {
     const res = await request(app)
-      .post('/api/v1/auth/login')
+      .post('/api/v1/user/login')
       .send({
         email: 'invalid@example.com',
         password: 'wrong_password',
@@ -64,13 +78,13 @@ describe('Auth Routes', () => {
 
     // Log in first
     await agent
-      .post('/api/v1/auth/login')
+      .post('/api/v1/user/login')
       .send({ email: 'user@example.com', password: 'valid_password' })
       .expect(200);
 
     // Log out
     const res = await agent
-      .get('/api/v1/auth/logout')
+      .get('/api/v1/user/logout')
       .expect(200);
 
     expect(res.body.message).toBe('Logout successful');
