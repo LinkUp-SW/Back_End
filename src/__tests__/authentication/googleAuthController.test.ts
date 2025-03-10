@@ -1,10 +1,9 @@
 // googleAuthController.test.ts
 import { Request, Response } from 'express';
-import { handleGoogleCallback, handleLogout } from '../src/controllers/googleAuthController';
-import { findOrCreateUser } from '../src/services/userService';
-import { oauth2Client } from '../src/services/googleAuthService';
+import { handleGoogleCallback, handleLogout } from '../../controllers/googleAuthController';
+import { oauth2Client } from '../../services/googleAuthService';
 
-jest.mock('../src/services/userService');
+
 jest.mock('../src/services/googleAuthService');
 
 const mockRequest = (sessionData: any = {}, userData: any = null) => ({
@@ -49,11 +48,6 @@ describe('Google Auth Controller', () => {
 
       const req = mockRequest({}, mockUser);
       const res = mockResponse();
-      (findOrCreateUser as jest.Mock).mockResolvedValue({
-        id: 'user-123',
-        email: 'test@example.com',
-        name: 'Test User'
-      });
 
       await handleGoogleCallback(req, res);
 
@@ -61,12 +55,6 @@ describe('Google Auth Controller', () => {
         access_token: 'access-token',
         refresh_token: 'refresh-token',
         expiry_date: expect.any(Number)
-      });
-      expect(findOrCreateUser).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        name: 'Test User',
-        googleId: '123',
-        picture: 'avatar.jpg'
       });
       expect(res.status).toHaveBeenCalledWith(200);
     });

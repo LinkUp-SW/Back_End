@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { oauth2Client, getGoogleUserInfo } from '../services/googleAuthService';
-import { findOrCreateUser } from '../services/userService';
-
 
 const handleGoogleCallback = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -24,14 +22,7 @@ const handleGoogleCallback = async (req: Request, res: Response): Promise<void> 
     
     // Get user information from Google
     const googleUser = passportUser.profile;
-    
-    // Find or create user in your database
-    const user = await findOrCreateUser({
-        email: googleUser.emails[0].value,
-        name: googleUser.displayName,
-        googleId: googleUser.id,
-        picture: googleUser.photos[0].value
-    });
+    const user = await getGoogleUserInfo(passportUser.tokens.accessToken); // TODO: Save user to database
     
     // Creating session
     if (req.session) {
