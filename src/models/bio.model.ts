@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { experiencesInterface } from "./experiences.model";
-import { educationsInterface } from "./educations.model";
+import { experiencesInterface } from "./experiences.model.ts";
+import { educationsInterface } from "./educations.model.ts";
 
 
 

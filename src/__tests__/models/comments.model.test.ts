@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import comments from "../../models/comments.model";
+import comments from "../../models/comments.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

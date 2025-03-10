@@ -7,6 +7,7 @@ export interface usersInterface extends mongoose.Document{
     password: string;
     phone_number: number;
     country_code: string;
+    comparePassword: (password: string) => Promise<boolean>;
 }
 
 const usersSchema = new Schema<usersInterface>({
@@ -39,6 +40,10 @@ usersSchema.pre('save', async function(next) {
         next(err);
     }
 });
+
+usersSchema.methods.comparePassword = async function(password: string): Promise<boolean> {
+    return await bcrypt.compare(password, this.password);
+}
 
 const users = mongoose.model<usersInterface>('users', usersSchema);
 

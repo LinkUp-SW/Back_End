@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
-import { mediaInterface } from "./media.model";
-import { usersInterface } from "./users.model";
-import { commentsInterface } from "./comments.model";
-import { reactsInterface } from "./reactions.model";
+import { mediaInterface } from "./media.model.ts";
+import { usersInterface } from "./users.model.ts";
+import { commentsInterface } from "./comments.model.ts";
+import { reactsInterface } from "./reactions.model.ts";
 
 
 export enum commentsEnum{

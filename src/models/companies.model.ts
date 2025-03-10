@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { postsInterface } from "./posts.model";
-import { clientsInterface } from "./clients.model";
-import { conversationsInterface } from "./conversations.model";
+import { postsInterface } from "./posts.model.ts";
+import { clientsInterface } from "./clients.model.ts";
+import { conversationsInterface } from "./conversations.model.ts";
 
 
 export enum companySizeEnum {

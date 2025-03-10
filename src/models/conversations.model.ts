@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { messagesInterface } from "./messages.model";
-import { usersInterface } from "./users.model";
+import { messagesInterface } from "./messages.model.ts";
+import { usersInterface } from "./users.model.ts";
 
 
 export interface conversationsInterface extends mongoose.Document{

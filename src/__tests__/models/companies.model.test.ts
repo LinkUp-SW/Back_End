@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import companies, { companySizeEnum, companyTypeEnum } from '../../models/companies.model';
+import companies, { companySizeEnum, companyTypeEnum } from '../../models/companies.model.ts';
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

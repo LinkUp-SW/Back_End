@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { usersInterface } from "./users.model";
-import { postsInterface } from "./posts.model";
+import { usersInterface } from "./users.model.ts";
+import { postsInterface } from "./posts.model.ts";
 
 
 export interface repostsInterface extends mongoose.Document{

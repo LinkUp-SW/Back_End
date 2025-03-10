@@ -1,13 +1,18 @@
 import express, { Request, Response } from 'express';
-import { connectToDatabase } from './config/database';
+import { connectToDatabase } from './config/database.ts';
 import YAML from 'yamljs';
 import path from 'path';
 import cors from 'cors';
 import session from 'express-session';
-import authRoutes from './src/routes/googleAuthRoutes';
-import passport, {googleAuth} from './src/middleware/passportStrategy';
+import cookieParser from 'cookie-parser';
+import authRoutes from './src/routes/googleAuthRoutes.ts';
+import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -21,13 +26,20 @@ app.use(cors());
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Cookie Parser Middleware
+app.use(cookieParser());
 
 // Configure session middleware.
 app.use(
   session({
     secret: process.env.SESSION_SECRET!,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 1 , // 1 hour
+      httpOnly: true,
+      secure: false,
+    },
   })
 );
 
@@ -41,8 +53,6 @@ googleAuth(app);
 // Google Auth Routes
 app.use('/auth', authRoutes);
 
-
-
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href= "/auth/google">Authenticate with google</a>');
 });
@@ -53,6 +63,9 @@ app.get('/logout', (req: Request, res: Response) => {
     res.redirect('/');
   });
 });
+
+//Login/Logout Routes
+// app.use('/api/v1/auth', authRoutes);
 
 connectToDatabase()
   .then(() => {
