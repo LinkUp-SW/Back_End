@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import conversations from "../../models/conversations.model";
+import conversations from "../../models/conversations.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

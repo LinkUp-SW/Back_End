@@ -1,15 +1,15 @@
 import mongoose, { Schema } from "mongoose";
-import { bioInterface } from "./bio.model";
-import { educationsInterface } from "./educations.model";
-import { experiencesInterface } from "./experiences.model";
-import { skillsInterface } from "./skills.model";
-import { privacySettingsInterface } from "./privacy_settings.model";
-import { licenseAndCertificationsInterface } from "./license_and_certifications.model";
-import { conversationsInterface } from "./conversations.model";
-import { activityInterface } from "./activity.model";
-import { jobsInterface } from "./jobs.model";
-import { reactsInterface } from "./reactions.model";
-import { usersInterface } from "./users.model";
+import { bioInterface } from "./bio.model.ts";
+import { educationsInterface } from "./educations.model.ts";
+import { experiencesInterface } from "./experiences.model.ts";
+import { skillsInterface } from "./skills.model.ts";
+import { privacySettingsInterface } from "./privacy_settings.model.ts";
+import { licenseAndCertificationsInterface } from "./license_and_certifications.model.ts";
+import { conversationsInterface } from "./conversations.model.ts";
+import { activityInterface } from "./activity.model.ts";
+import { jobsInterface } from "./jobs.model.ts";
+import { reactsInterface } from "./reactions.model.ts";
+import { usersInterface } from "./users.model.ts";
 
 
 export enum sexEnum{

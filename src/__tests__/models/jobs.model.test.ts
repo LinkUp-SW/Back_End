@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import jobs, { experienceLevelEnum, howDidYouHearAboutUsEnum, jobTypeEnum, receiveApplicantsByEnum, workplaceTypeEnum } from '../../models/jobs.model';
+import jobs, { experienceLevelEnum, howDidYouHearAboutUsEnum, jobTypeEnum, receiveApplicantsByEnum, workplaceTypeEnum } from '../../models/jobs.model.ts';
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

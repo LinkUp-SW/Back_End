@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { jobsInterface } from "./jobs.model";
-import { usersInterface } from "./users.model";
+import { jobsInterface } from "./jobs.model.ts";
+import { usersInterface } from "./users.model.ts";
 
 
 export interface jobApplicationsInterface extends mongoose.Document{

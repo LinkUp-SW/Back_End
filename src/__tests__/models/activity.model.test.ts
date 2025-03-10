@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import activity from "../../models/activity.model";
+import activity from "../../models/activity.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

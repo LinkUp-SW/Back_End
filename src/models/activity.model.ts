@@ -1,8 +1,8 @@
 import mongoose, { Schema } from "mongoose";
-import { postsInterface } from "./posts.model";
-import { repostsInterface } from "./reposts.model";
-import { commentsInterface } from "./comments.model";
-import { mediaInterface } from "./media.model";
+import { postsInterface } from "./posts.model.ts";
+import { repostsInterface } from "./reposts.model.ts";
+import { commentsInterface } from "./comments.model.ts";
+import { mediaInterface } from "./media.model.ts";
 
 
 export interface activityInterface extends mongoose.Document{

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import reacts, { reactsEnum } from "../../models/reactions.model";
+import reacts, { reactsEnum } from "../../models/reactions.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

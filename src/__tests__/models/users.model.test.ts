@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import users from "../../models/users.model";
+import users from "../../models/users.model.ts";
 import mongoose from "mongoose";
 
 

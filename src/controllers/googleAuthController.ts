@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { oauth2Client, getGoogleUserInfo } from '../services/googleAuthService';
+import { oauth2Client, getGoogleUserInfo } from '../services/googleAuthService.ts';
 
 
 const handleGoogleCallback = async (req: Request, res: Response): Promise<void> => {

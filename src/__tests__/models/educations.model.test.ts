@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import educations from "../../models/educations.model";
+import educations from "../../models/educations.model.ts";
 
 
 beforeAll(async () => {

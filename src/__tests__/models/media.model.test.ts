@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import media from "../../models/media.model";
+import media from "../../models/media.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

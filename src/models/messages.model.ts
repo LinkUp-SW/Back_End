@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { mediaInterface } from "./media.model";
-import { reactsEnum } from "./reactions.model";
+import { mediaInterface } from "./media.model.ts";
+import { reactsEnum } from "./reactions.model.ts";
 
 
 
