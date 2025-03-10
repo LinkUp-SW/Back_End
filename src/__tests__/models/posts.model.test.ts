@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import posts, { commentsEnum } from "../../models/posts.model";
+import posts, { commentsEnum } from "../../models/posts.model.ts";
 
 
 beforeAll(async () => {

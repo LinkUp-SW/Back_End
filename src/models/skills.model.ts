@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import { clientsInterface } from "./clients.model";
-import { educationsInterface } from "./educations.model";
-import { licenseAndCertificationsInterface } from "./license_and_certifications.model";
-import { experiencesInterface } from "./experiences.model";
+import { clientsInterface } from "./clients.model.ts";
+import { educationsInterface } from "./educations.model.ts";
+import { licenseAndCertificationsInterface } from "./license_and_certifications.model.ts";
+import { experiencesInterface } from "./experiences.model.ts";
 export interface skillsInterface extends mongoose.Document{
     name: string;
     endorsments:clientsInterface[];

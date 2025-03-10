@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import clients from "../../models/clients.model";
+import clients from "../../models/clients.model.ts";
 
 beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_URI || "");

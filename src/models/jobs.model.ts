@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { jobApplicationsInterface } from "./job_applications.model";
-import { screeningQuestionsInterface } from "./screening_questions.model";
-import { companiesInterface } from "./companies.model";
+import { jobApplicationsInterface } from "./job_applications.model.ts";
+import { screeningQuestionsInterface } from "./screening_questions.model.ts";
+import { companiesInterface } from "./companies.model.ts";
 
 export enum jobTypeEnum{
     full_time="Full-time",

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import jobApplications from "../../models/job_applications.model";
+import jobApplications from "../../models/job_applications.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

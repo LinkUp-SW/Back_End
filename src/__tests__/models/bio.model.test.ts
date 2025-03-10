@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bio from "../../models/bio.model";
+import bio from "../../models/bio.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

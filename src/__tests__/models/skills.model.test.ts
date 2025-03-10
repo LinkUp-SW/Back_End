@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import skills from "../../models/skills.model";
+import skills from "../../models/skills.model.ts";
 beforeAll(async () => {
   await mongoose.connect(process.env.MONGO_URI || "");
 });

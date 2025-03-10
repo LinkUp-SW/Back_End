@@ -1,10 +1,19 @@
 // googleAuthController.test.ts
 import { Request, Response } from 'express';
-import { handleGoogleCallback, handleLogout } from '../../controllers/googleAuthController';
-import { oauth2Client } from '../../services/googleAuthService';
+import { handleGoogleCallback, handleLogout } from '../../controllers/googleAuthController.ts';
+import { oauth2Client,getGoogleUserInfo } from '../../services/googleAuthService.ts';
 
 
-jest.mock('../src/services/googleAuthService');
+jest.mock('../../services/googleAuthService');
+
+const mockGoogleUserData = {
+  id: 'user-id',
+  email: 'user@example.com',
+  name: 'User Name'
+};
+
+(getGoogleUserInfo as jest.Mock).mockResolvedValue(mockGoogleUserData);
+
 
 const mockRequest = (sessionData: any = {}, userData: any = null) => ({
   user: userData,

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { usersInterface } from "./users.model";
+import { usersInterface } from "./users.model.ts";
 
 export enum reactsEnum{
     laugh = "laugh",

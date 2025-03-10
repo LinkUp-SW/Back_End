@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import Experiences from "../../models/experiences.model";
-import Skills from "../../models/skills.model";
-import Media, { mediaInterface } from "../../models/media.model";
-import Companies, { companiesInterface, companySizeEnum, companyTypeEnum } from "../../models/companies.model";
-import experiences from "../../models/experiences.model";
+import Experiences from "../../models/experiences.model.ts";
+import Skills from "../../models/skills.model.ts";
+import Media, { mediaInterface } from "../../models/media.model.ts";
+import Companies, { companiesInterface, companySizeEnum, companyTypeEnum } from "../../models/companies.model.ts";
+import experiences from "../../models/experiences.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

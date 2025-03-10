@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import reposts from "../../models/reposts.model";
+import reposts from "../../models/reposts.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");
