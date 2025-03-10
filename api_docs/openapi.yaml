@@ -28,3 +28,61 @@ paths:
       responses:
         '302':
           description: Redirects to the login page after logging out.
+  /api/v1/user/login:
+    post:
+      tags:
+        - Auth
+      summary: Logs in a user
+      description: >
+        Authenticates a user using email and password. 
+        On successful authentication, sets a JWT cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "valid_password"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+        '400':
+          description: Email and password are required
+        '401':
+          description: Invalid credentials
+
+  /api/v1/user/logout:
+    get:
+      tags:
+        - Auth
+      summary: Logs out a user
+      description: >
+        Clears the JWT cookie to log out the user.
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logout successful"

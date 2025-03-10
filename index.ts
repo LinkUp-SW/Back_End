@@ -16,27 +16,38 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 dotenv.config();
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
+connectToDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log('Server is running on port:', PORT);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to start server:', err);
+  });
+  
+function next(err: any): void {
+  throw new Error('Function not implemented.',err);
+}
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
-
-// Swagger Docs
-const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
 // Cookie Parser Middleware
 app.use(cookieParser());
 
-// Configure session middleware.
+// Session Configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET!,
+    secret: SESSION_SECRET!,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -50,18 +61,26 @@ app.use(
 // Passport Initialization
 app.use(passport.initialize());
 app.use(passport.session());
-
 // Google Auth Middleware
 googleAuth(app);
 
+
+// Swagger API Docs
+const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+
 // Google Auth Routes
-app.use('/auth', authRoutes);
+app.use('/auth', authRoutes); 
+//Login/Logout Routes
+app.use('/api/v1/user', loginRoutes);
+
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href= "/auth/google">Authenticate with google</a>');
 });
 
-app.get('/logout', (req: Request, res: Response) => {
+app.get('/google-logout', (req: Request, res: Response) => {
   req.logout((err) => {
     if (err) { return next(err); }
     res.redirect('/');

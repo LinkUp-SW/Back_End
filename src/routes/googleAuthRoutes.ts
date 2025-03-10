@@ -15,6 +15,6 @@ router.get(
   authController.handleGoogleCallback
 );
 
-router.get('/logout', authController.handleLogout);
+router.get('/google-logout', authController.handleLogout);
 
 export default router;
