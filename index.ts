@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/googleAuthRoutes.ts';
 import loginRoutes from './src/routes/login.routes.ts';
 import otpRoutes from './src/routes/otp.routes.js';
+import signupRoutes from './src/routes/signup.routes.ts';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -70,8 +71,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes & OTP Routes
-app.use('/api/v1/user', loginRoutes, otpRoutes);
+//Login/Logout Routes & OTP Routes & signupRoutes
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes);
 
 
 

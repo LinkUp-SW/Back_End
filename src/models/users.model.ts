@@ -11,7 +11,7 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new Schema<usersInterface>({
-    name: { type: String, required: true},
+    name: {type: String}, // removed name from bein required due to signing up with google or email
     email: { 
         type: String, 
         required: true, 
