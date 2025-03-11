@@ -41,7 +41,6 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
 };
 
 // Update Profile Picture
-
 export const updateProfilePicture = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate user_id parameter
@@ -86,6 +85,48 @@ export const updateProfilePicture = async (req: Request, res: Response): Promise
     }
 };
 
+// Delete Profile Picture
+export const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate user_id parameter
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Find the client in the database
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Retrieve the current profile picture URL from the client's document
+        const profilePictureUrl = client.profile_photo;
+        if (!profilePictureUrl) {
+            res.status(400).json({ message: "No profile picture to delete" });
+            return;
+        }
+
+        // Extract publicId from the URL using your utility function
+        const publicId = extractPublicId(profilePictureUrl);
+        if (!publicId) {
+            res.status(400).json({ message: "Invalid profile picture URL" });
+            return;
+        }
+
+        // Delete the image from Cloudinary
+        const result = await cloudinary.uploader.destroy(publicId, { invalidate: true });
+        if (result.result !== "ok") {
+            res.status(500).json({ message: "Cloudinary failed to delete the image" });
+            return;
+        }
+
+        // Clear the profile_photo field in the client's document
+        client.profile_photo = "";
+        await client.save();
+
+        res.status(200).json({ message: "Profile picture deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting profile picture:", error);
+        res.status(500).json({ message: "Error deleting profile picture", error });
+    }
+};
 
 
 
