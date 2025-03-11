@@ -71,7 +71,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes & OTP Routes
+//Login/Logout Routes & OTP Routes & signupRoutes
 app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes);
 
 
