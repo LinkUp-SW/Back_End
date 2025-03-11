@@ -1,7 +1,6 @@
-// multer.config.ts
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "./cloudinary.ts"; // Adjust path as needed
+import cloudinary from "./cloudinary.ts"; 
 
 // Configure Multer Storage with Cloudinary
 const storage = new CloudinaryStorage({
