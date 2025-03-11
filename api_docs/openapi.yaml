@@ -193,3 +193,76 @@ paths:
                   message:
                     type: string
                     example: "Invalid OTP"
+  /api/v1/user/signup:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      description: >
+        Registers a new user by creating an account with the provided email, password, and optional name.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: "newuser@example.com"
+                password:
+                  type: string
+                  example: "securepassword"
+                name:
+                  type: string
+                  example: "John Doe"
+      responses:
+        '201':
+          description: Signup successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Signup successful"
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: "newuser@example.com"
+        '400':
+          description: Email or Username and password are required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email or Username and password are required"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User already exists"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
