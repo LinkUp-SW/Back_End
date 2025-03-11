@@ -22,7 +22,6 @@ const testData = {
     email: 'user@example.com',
     password: 'valid_password',
 };
-
 describe('Auth Routes', () => {
   // Seed test user with a hashed password before tests run
   beforeAll(async () => {
@@ -39,12 +38,11 @@ describe('Auth Routes', () => {
     else{
         console.log("User already exists");
     }
-
   });
 
   // Clean up test data after tests complete
   afterAll(async () => {
-    // await users.deleteOne({ email: 'user@example.com' });
+    await users.deleteOne({ email: 'user@example.com' });
     await disconnectFromDatabase();
   });
 
