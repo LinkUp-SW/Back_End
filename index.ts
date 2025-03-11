@@ -7,6 +7,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/googleAuthRoutes.ts';
 import loginRoutes from './src/routes/login.routes.ts';
+import otpRoutes from './src/routes/otp.routes.js';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -69,8 +70,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes
-app.use('/api/v1/user', loginRoutes);
+//Login/Logout Routes & OTP Routes
+app.use('/api/v1/user', loginRoutes, otpRoutes);
+
 
 
 app.get('/', (req: Request, res: Response) => {
@@ -86,14 +88,5 @@ app.get('/google-logout', (req: Request, res: Response) => {
 
 //Register Routes
 
-
-
-app.post('/login', (req: Request, res: Response) => {
-  res.send('Login successful');
-});
-
-app.post('/logout', (req: Request, res: Response) => {
-  res.send('Logout successful');
-});
 
 
