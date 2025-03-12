@@ -34,7 +34,6 @@ const uploadCoverPhoto = async (req: Request, res: Response): Promise<void> => {
             coverPhoto: coverPhotoUrl,
         });
     } catch (error) {
-        console.error("Error uploading cover photo:", error);
         res.status(500).json({ message: "Error uploading cover photo", error });
     }
 };
@@ -67,7 +66,7 @@ const updateCoverPhoto = async (req: Request, res: Response): Promise<void> => {
         // Retrieve the new cover photo URL from the file upload 
         const newCoverPhotoUrl = req.file?.path;
         if (!newCoverPhotoUrl) {
-            res.status(400).json({ message: "Error processing the file upload" });
+            res.status(400).json({ message: "Error processing file upload" });
             return;
         }
 
@@ -80,7 +79,6 @@ const updateCoverPhoto = async (req: Request, res: Response): Promise<void> => {
             coverPhoto: newCoverPhotoUrl,
         });
     } catch (error) {
-        console.error("Error updating cover photo:", error);
         res.status(500).json({ message: "Error updating cover photo", error });
     }
 };
@@ -122,7 +120,6 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
 
         res.status(200).json({ message: "Cover photo deleted successfully" });
     } catch (error) {
-        console.error("Error deleting cover photo:", error);
         res.status(500).json({ message: "Error deleting cover photo", error });
     }
 };
@@ -147,7 +144,6 @@ const getCoverPhoto = async (req: Request, res: Response): Promise<void> => {
         // Return the cover photo URL.
         res.status(200).json({ coverPhoto: client.cover_photo });
     } catch (error) {
-        console.error("Error retrieving cover photo:", error);
         res.status(500).json({ message: "Error retrieving cover photo", error });
     }
 };

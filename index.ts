@@ -7,6 +7,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/googleAuthRoutes.ts';
 import profilePictureRoutes from './src/routes/profilePictureRoutes.ts';
+import coverPhotoRoutes from './src/routes/coverPhotoRoutes.ts';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -68,6 +69,9 @@ app.get('/logout', (req: Request, res: Response) => {
 
 // Profile Picture Routes
 app.use('/api/v1/users', profilePictureRoutes);
+
+// Cover Photo Routes
+app.use('/api/v1/users', coverPhotoRoutes);
 
 //Login/Logout Routes
 // app.use('/api/v1/auth', authRoutes);
