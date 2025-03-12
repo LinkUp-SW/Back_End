@@ -40,7 +40,7 @@ const uploadProfilePicture = async (req: Request, res: Response): Promise<void> 
 };
 
 // Update Profile Picture
-export const updateProfilePicture = async (req: Request, res: Response): Promise<void> => {
+const updateProfilePicture = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate user_id parameter
         const user_id = validateUserId(req, res);
