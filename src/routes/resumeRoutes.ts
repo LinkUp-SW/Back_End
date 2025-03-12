@@ -10,5 +10,8 @@ router.post("/resume/:user_id", upload.single("resume"), resumeController.upload
 // Route to update a resume
 router.put("/resume/:user_id", upload.single("resume"), resumeController.updateResume);
 
+// Route to delete a resume
+router.delete("/resume/:user_id", resumeController.deleteResume);
+
 
 export default router;

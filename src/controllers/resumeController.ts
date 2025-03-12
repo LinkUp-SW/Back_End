@@ -96,3 +96,51 @@ export const updateResume = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ message: "Error updating resume", error });
     }
 };
+
+// Delete Resume
+export const deleteResume = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate the user_id parameter using the helper.
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Retrieve the client document from the database.
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Get the stored resume URL from the client's document.
+        const resumeUrl = client.resume;
+        if (!resumeUrl) {
+            res.status(400).json({ message: "No resume to delete" });
+            return;
+        }
+
+        // Extract publicId from the stored resume URL.
+        let publicId = extractPublicId(resumeUrl);
+        if (!publicId) {
+            res.status(400).json({ message: "Invalid resume URL" });
+            return;
+        }
+
+        // Append the '.pdf' extension if not already present.
+        if (!publicId.endsWith('.pdf')) {
+            publicId += '.pdf';
+        }
+
+        // Delete the resume from Cloudinary using "raw" resource type.
+        const result = await cloudinary.uploader.destroy(publicId, { resource_type: "raw", invalidate: true });
+        if (result.result !== "ok") {
+            res.status(500).json({ message: "Cloudinary failed to delete the resume" });
+            return;
+        }
+
+        // Clear the resume field in the client's document.
+        client.resume = "";
+        await client.save();
+
+        res.status(200).json({ message: "Resume deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting resume:", error);
+        res.status(500).json({ message: "Error deleting resume", error });
+    }
+};
