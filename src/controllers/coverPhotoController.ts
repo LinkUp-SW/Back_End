@@ -85,4 +85,46 @@ const updateCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-export { uploadCoverPhoto, updateCoverPhoto };
+const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate the user_id parameter.
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Find the client document in the database.
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Retrieve the current cover photo URL from the client's document.
+        const coverPhotoUrl = client.cover_photo;
+        if (!coverPhotoUrl) {
+            res.status(400).json({ message: "No cover photo to delete" });
+            return;
+        }
+
+        // Extract publicId from the URL.
+        const publicId = extractPublicId(coverPhotoUrl);
+        if (!publicId) {
+            res.status(400).json({ message: "Invalid cover photo URL" });
+            return;
+        }
+
+        // Delete the image from Cloudinary.
+        const result = await cloudinary.uploader.destroy(publicId, { invalidate: true });
+        if (result.result !== "ok") {
+            res.status(500).json({ message: "Cloudinary failed to delete the image" });
+            return;
+        }
+
+        // Clear the cover_photo field in the client's document.
+        client.cover_photo = "";
+        await client.save();
+
+        res.status(200).json({ message: "Cover photo deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting cover photo:", error);
+        res.status(500).json({ message: "Error deleting cover photo", error });
+    }
+};
+
+export { uploadCoverPhoto, updateCoverPhoto, deleteCoverPhoto };
