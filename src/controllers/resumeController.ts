@@ -34,7 +34,6 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
             resume: resumeUrl
         });
     } catch (error) {
-        console.error("Error uploading resume:", error);
         res.status(500).json({ message: "Error uploading resume", error });
     }
 };
@@ -92,7 +91,6 @@ export const updateResume = async (req: Request, res: Response): Promise<void> =
             resume: newResumeUrl,
         });
     } catch (error) {
-        console.error("Error updating resume:", error);
         res.status(500).json({ message: "Error updating resume", error });
     }
 };
@@ -140,7 +138,6 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
 
         res.status(200).json({ message: "Resume deleted successfully" });
     } catch (error) {
-        console.error("Error deleting resume:", error);
         res.status(500).json({ message: "Error deleting resume", error });
     }
 };
