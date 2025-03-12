@@ -14,6 +14,8 @@ import signupRoutes from './src/routes/signup.routes.ts';
 import forgetRoutes from './src/routes/forgetPassword.routes.ts';
 import resetRoutes from './src/routes/resetPassword.routes.ts';
 import updateRoutes from './src/routes/updatePassword.routes.ts';
+import profilePictureRoutes from './src/routes/profilePictureRoutes.ts';
+import coverPhotoRoutes from './src/routes/coverPhotoRoutes.ts';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -78,7 +80,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Google Auth Routes
 app.use('/auth', authRoutes); 
 //Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updateRoutes
-app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updateRoutes);
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updateRoutes, profilePictureRoutes, coverPhotoRoutes);
 
 
 
@@ -96,4 +98,26 @@ app.get('/google-logout', (req: Request, res: Response) => {
 //Register Routes
 
 
+// Profile Picture Routes
+app.use('/api/v1/users', profilePictureRoutes);
+
+// Cover Photo Routes
+app.use('/api/v1/users', coverPhotoRoutes);
+
+//Login/Logout Routes
+// app.use('/api/v1/auth', authRoutes);
+
+connectToDatabase()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log('Server is running on port:', PORT);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to start server:', err);
+  });
+  
+function next(err: any): void {
+  throw new Error('Function not implemented.');
+}
 
