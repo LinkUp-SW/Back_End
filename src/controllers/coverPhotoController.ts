@@ -4,7 +4,7 @@ import { validateUserId, findClientById, checkFileUploaded } from "../utils/vali
 import { extractPublicId } from "../services/cloudinaryService.ts";
 
 // Upload Cover Photo
-export const uploadCoverPhoto = async (req: Request, res: Response): Promise<void> => {
+const uploadCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate the user_id parameter using the common helper.
         const user_id = validateUserId(req, res);
@@ -38,3 +38,51 @@ export const uploadCoverPhoto = async (req: Request, res: Response): Promise<voi
         res.status(500).json({ message: "Error uploading cover photo", error });
     }
 };
+
+// Update Cover Photo
+const updateCoverPhoto = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate user_id from URL parameters
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Ensure that a new file was uploaded
+        if (!checkFileUploaded(req, res)) return;
+
+        // Find the client document in the database
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Get the current cover photo URL from the client document
+        const oldCoverPhotoUrl = client.cover_photo;
+
+        // If there is an old cover photo, extract its publicId and delete it from Cloudinary
+        if (oldCoverPhotoUrl) {
+            const publicId = extractPublicId(oldCoverPhotoUrl);
+            if (publicId) {
+                await cloudinary.uploader.destroy(publicId, { invalidate: true });
+            }
+        }
+
+        // Retrieve the new cover photo URL from the file upload 
+        const newCoverPhotoUrl = req.file?.path;
+        if (!newCoverPhotoUrl) {
+            res.status(400).json({ message: "Error processing the file upload" });
+            return;
+        }
+
+        // Update the client's cover_photo field with the new URL and save the document
+        client.cover_photo = newCoverPhotoUrl;
+        await client.save();
+
+        res.status(200).json({
+            message: "Cover photo updated successfully",
+            coverPhoto: newCoverPhotoUrl,
+        });
+    } catch (error) {
+        console.error("Error updating cover photo:", error);
+        res.status(500).json({ message: "Error updating cover photo", error });
+    }
+};
+
+export { uploadCoverPhoto, updateCoverPhoto };
