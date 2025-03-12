@@ -38,3 +38,61 @@ export const uploadResume = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ message: "Error uploading resume", error });
     }
 };
+
+
+// Update resume
+export const updateResume = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate user_id parameter using the common helper.
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Ensure that a new file was uploaded.
+        if (!checkFileUploaded(req, res)) return;
+
+        // Find the client document in the database.
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Retrieve the old resume URL from the client's document.
+        const oldResumeUrl = client.resume;
+        if (!oldResumeUrl) {
+            res.status(400).json({ message: "No resume found to update" });
+            return;
+        }
+
+        // Extract the publicId from the old Cloudinary URL.
+        let publicId = extractPublicId(oldResumeUrl);
+        if (!publicId) {
+            res.status(400).json({ message: "Invalid resume URL" });
+            return;
+        }
+
+        // Append '.pdf' if it is not already part of the publicId.
+        if (!publicId.endsWith('.pdf')) {
+            publicId += '.pdf';
+        }
+
+        // Delete the old resume from Cloudinary.
+        await cloudinary.uploader.destroy(publicId, { invalidate: true, resource_type: "raw" });
+
+        // Retrieve the new resume URL from the file upload.
+        const newResumeUrl = req.file?.path;
+        if (!newResumeUrl) {
+            res.status(400).json({ message: "Error processing file upload" });
+            return;
+        }
+
+        // Update the client's resume field with the new URL and save the document.
+        client.resume = newResumeUrl;
+        await client.save();
+
+        res.status(200).json({
+            message: "Resume updated successfully",
+            resume: newResumeUrl,
+        });
+    } catch (error) {
+        console.error("Error updating resume:", error);
+        res.status(500).json({ message: "Error updating resume", error });
+    }
+};
