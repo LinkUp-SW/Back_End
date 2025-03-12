@@ -127,4 +127,29 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-export { uploadCoverPhoto, updateCoverPhoto, deleteCoverPhoto };
+// Get Cover Photo
+const getCoverPhoto = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate user_id parameter using the common helper.
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Find the client in the database using the helper function.
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Check if the client has a cover photo.
+        if (!client.cover_photo) {
+            res.status(404).json({ message: "Cover photo not found" });
+            return;
+        }
+
+        // Return the cover photo URL.
+        res.status(200).json({ coverPhoto: client.cover_photo });
+    } catch (error) {
+        console.error("Error retrieving cover photo:", error);
+        res.status(500).json({ message: "Error retrieving cover photo", error });
+    }
+};
+
+export { uploadCoverPhoto, updateCoverPhoto, deleteCoverPhoto, getCoverPhoto };

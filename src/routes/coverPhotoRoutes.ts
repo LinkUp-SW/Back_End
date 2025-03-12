@@ -13,4 +13,7 @@ router.put("/cover-photo/:user_id", upload.single("coverPhoto"), coverPhotoContr
 // Route to delete a cover photo
 router.delete("/cover-photo/:user_id", coverPhotoController.deleteCoverPhoto);
 
+// Get the cover photo
+router.get("/cover-photo/:user_id", coverPhotoController.getCoverPhoto);
+
 export default router;
