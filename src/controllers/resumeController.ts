@@ -144,3 +144,28 @@ export const deleteResume = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ message: "Error deleting resume", error });
     }
 };
+
+// Get Resume
+export const getResume = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate the user_id parameter using the helper.
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Retrieve the client document from the database.
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Check if the client has a resume.
+        if (!client.resume) {
+            res.status(404).json({ message: "Resume not found" });
+            return;
+        }
+
+        // Return the resume URL.
+        res.status(200).json({ resume: client.resume });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Error retrieving resume", error });
+    }
+};

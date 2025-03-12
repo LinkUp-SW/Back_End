@@ -13,5 +13,8 @@ router.put("/resume/:user_id", upload.single("resume"), resumeController.updateR
 // Route to delete a resume
 router.delete("/resume/:user_id", resumeController.deleteResume);
 
+// Get the resume
+router.get("/resume/:user_id", resumeController.getResume);
+
 
 export default router;
