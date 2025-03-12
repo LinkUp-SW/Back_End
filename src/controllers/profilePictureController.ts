@@ -6,7 +6,7 @@ import { extractPublicId } from "../services/cloudinaryService.ts";
 
 
 // Upload Profile Picture
-export const uploadProfilePicture = async (req: Request, res: Response): Promise<void> => {
+const uploadProfilePicture = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate user_id parameter
         const user_id = validateUserId(req, res);
@@ -35,13 +35,12 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
             profilePicture: profilePictureUrl
         });
     } catch (error) {
-        console.error("Error uploading profile picture:", error);
         res.status(500).json({ message: "Error uploading profile picture", error });
     }
 };
 
 // Update Profile Picture
-export const updateProfilePicture = async (req: Request, res: Response): Promise<void> => {
+const updateProfilePicture = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate user_id parameter
         const user_id = validateUserId(req, res);
@@ -86,7 +85,7 @@ export const updateProfilePicture = async (req: Request, res: Response): Promise
 };
 
 // Delete Profile Picture
-export const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
+const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
     try {
         // Validate user_id parameter
         const user_id = validateUserId(req, res);
@@ -128,6 +127,31 @@ export const deleteProfilePicture = async (req: Request, res: Response): Promise
     }
 };
 
+//Get Profile Picture
 
+const getProfilePicture = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // Validate user_id parameter using the common validator
+        const user_id = validateUserId(req, res);
+        if (!user_id) return;
+
+        // Retrieve the client from the database using the common helper
+        const client = await findClientById(user_id, res);
+        if (!client) return;
+
+        // Check if a profile picture exists
+        if (!client.profile_photo) {
+            res.status(404).json({ message: "Profile picture not found" });
+            return;
+        }
+
+        // Return the profile picture URL
+        res.status(200).json({ profilePicture: client.profile_photo });
+    } catch (error) {
+        res.status(500).json({ message: "Error retrieving profile picture", error });
+    }
+};
+
+export { uploadProfilePicture, updateProfilePicture, deleteProfilePicture, getProfilePicture };
 
 

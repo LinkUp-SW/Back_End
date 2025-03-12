@@ -6,6 +6,7 @@ import cors from 'cors';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import authRoutes from './src/routes/googleAuthRoutes.ts';
+import profilePictureRoutes from './src/routes/profilePictureRoutes.ts';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -64,6 +65,9 @@ app.get('/logout', (req: Request, res: Response) => {
     res.redirect('/');
   });
 });
+
+// Profile Picture Routes
+app.use('/api/v1/users', profilePictureRoutes);
 
 //Login/Logout Routes
 // app.use('/api/v1/auth', authRoutes);

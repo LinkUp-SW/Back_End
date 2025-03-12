@@ -1,16 +1,20 @@
 import { Router } from "express";
 import upload from "../../config/multer.ts";
-import { uploadProfilePicture, updateProfilePicture,deleteProfilePicture } from "../controllers/profilePictureController.ts";
+import { uploadProfilePicture, updateProfilePicture,deleteProfilePicture, getProfilePicture } from "../controllers/profilePictureController.ts";
 
 const router = Router();
 
 // Route to upload a profile picture
-router.post("/api/v1/users/profile-picture/:user_id", upload.single("profilePicture"), uploadProfilePicture);
+router.post("/profile-picture/:user_id", upload.single("profilePicture"), uploadProfilePicture);
 
 // Route to update a profile picture
-router.put("/api/v1/users/profile-picture/:user_id", upload.single("profilePicture"), updateProfilePicture);
+router.put("/profile-picture/:user_id", upload.single("profilePicture"), updateProfilePicture);
 
 // Route to delete a profile picture
-router.delete("/api/v1/users/profile-picture/:user_id", deleteProfilePicture);
+router.delete("/profile-picture/:user_id", deleteProfilePicture);
+
+// Get the profile picture
+router.get("/profile-picture/:user_id", getProfilePicture);
+
 
 export default router;
