@@ -10,37 +10,31 @@ afterAll(async () => {
     await mongoose.connection.close();
 });
 
-describe("Media Model", () => {
-    it("should create a media document successfully", async () => {
-        const newMedia = new media({
-            image: ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
-            video: ["https://example.com/video.mp4"]
-        });
-
-        const savedMedia = await newMedia.save();
-        expect(savedMedia._id).toBeDefined();
-        expect(savedMedia.image).toHaveLength(2);
-        expect(savedMedia.video).toHaveLength(1);
+describe("Media Model Test", () => {
+    it("should create a media document with valid URLs", async () => {
+      const validMedia = new media({
+        image: ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
+        video: ["https://example.com/video1.mp4", "https://example.com/video2.mp4"]
+      });
+      const savedMedia = await validMedia.save();
+      expect(savedMedia._id).toBeDefined();
+      expect(savedMedia.image).toHaveLength(2);
+      expect(savedMedia.video).toHaveLength(2);
     });
-
-    it("should allow empty image and video arrays", async () => {
-        const emptyMedia = new media({
-            image: [],
-            video: []
-        });
-
-        const savedMedia = await emptyMedia.save();
-        expect(savedMedia._id).toBeDefined();
-        expect(savedMedia.image).toEqual([]);
-        expect(savedMedia.video).toEqual([]);
+  
+    it("should fail to create a media document with invalid URLs", async () => {
+      const invalidMedia = new media({
+        image: ["invalid-url", "https://example.com/image2.jpg"],
+        video: ["https://example.com/video1.mp4", "invalid-url"]
+      });
+      let err: any;
+      try {
+        await invalidMedia.save();
+      } catch (error) {
+        err = error;
+      }
+      expect(err).toBeDefined();
+      expect(err.errors["image"].message).toBe("All image values must be valid URLs");
+      expect(err.errors["video"].message).toBe("All video values must be valid URLs");
     });
-
-    it("should fail if non-string values are added to image or video arrays", async () => {
-        const invalidMedia = new media({
-            image: [123, "https://example.com/image.jpg"],
-            video: [true, "https://example.com/video.mp4"]
-        });
-
-        await expect(invalidMedia.save()).rejects.toThrow();
-    });
-});
+  });
