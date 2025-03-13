@@ -1,25 +1,26 @@
 import mongoose from "mongoose";
+import validator from "validator";
 
 export interface mediaInterface extends mongoose.Document {
-    image: unknown[];
-    video: unknown[];
+    image: string[];
+    video: string[];
 }
 
 const mediaSchema = new mongoose.Schema<mediaInterface>({
   image: { 
-      type: [mongoose.Schema.Types.Mixed], 
+      type: [String], 
       required: true,
       validate: {
-          validator: (arr: unknown[]) => Array.isArray(arr) && arr.every(item => typeof item === "string"),
-          message: "All image values must be strings"
+          validator: (arr: string[]) => Array.isArray(arr) && arr.every(item => typeof item === "string" && validator.isURL(item)),
+          message: "All image values must be valid URLs"
       }
   },
   video: { 
-      type: [mongoose.Schema.Types.Mixed], 
+      type: [String], 
       required: true,
       validate: {
-          validator: (arr: unknown[]) => Array.isArray(arr) && arr.every(item => typeof item === "string"),
-          message: "All video values must be strings"
+          validator: (arr: string[]) => Array.isArray(arr) && arr.every(item => typeof item === "string" && validator.isURL(item)),
+          message: "All video values must be valid URLs"
       }
   }
 });
