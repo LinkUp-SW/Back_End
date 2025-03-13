@@ -1,12 +1,12 @@
 import mongoose, { Schema } from "mongoose"
 import { skillsInterface } from "./skills.model.ts";
 import { mediaInterface } from "./media.model.ts";
-import { companiesInterface } from "./companies.model.ts";
+import { organizationsInterface } from "./organizations.model.ts";
 
 
 export interface licenseAndCertificationsInterface extends mongoose.Document{
     name: string;
-    issuing_organization: companiesInterface;
+    issuing_organization: organizationsInterface;
     issue_date: Date;
     expiration_date: Date;
     credintial_id: number;
@@ -17,7 +17,7 @@ export interface licenseAndCertificationsInterface extends mongoose.Document{
 
 const licenseAndCertificationsSchema = new Schema<licenseAndCertificationsInterface>({
     name: { type: String, required: true },
-    issuing_organization: { type: Schema.Types.ObjectId, ref: 'companies', required: true },
+    issuing_organization: { type: Schema.Types.ObjectId, ref: 'organizations', required: true },
     issue_date: { type: Date },
     expiration_date: { type: Date },
     credintial_id: { type: Number },

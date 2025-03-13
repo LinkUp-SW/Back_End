@@ -14,12 +14,12 @@ describe('Jobs Model Test', () => {
 
     it('should create and save a job successfully', async () => {
         const validJob = new jobs({
-            company_id: new mongoose.Types.ObjectId(),
+            organization_id: new mongoose.Types.ObjectId(),
             job_title: 'Software Engineer',
             location: 'Remote',
             job_type: jobTypeEnum.full_time,
             workplace_type: workplaceTypeEnum.hybrid,
-            company_industry: ['Tech'],
+            organization_industry: ['Tech'],
             experience_level: experienceLevelEnum.beginner,
             job_description: 'Develop and maintain software applications.',
             targetted_skills: ['JavaScript', 'Node.js'],
@@ -47,19 +47,19 @@ describe('Jobs Model Test', () => {
         }
         expect(err).toBeInstanceOf(mongoose.Error.ValidationError);
         if (err instanceof mongoose.Error.ValidationError) {
-            expect(err.errors.company_id).toBeDefined();
+            expect(err.errors.organization_id).toBeDefined();
             expect(err.errors.location).toBeDefined();
         }
     });
 
     it('should fail to create a job with invalid enum values', async () => {
         const invalidJob = new jobs({
-            company_id: new mongoose.Types.ObjectId(),
+            organization_id: new mongoose.Types.ObjectId(),
             job_title: 'Software Engineer',
             location: 'Remote',
             job_type: 'invalid_type',
             workplace_type: 'invalid_type',
-            company_industry: ['Tech'],
+            organization_industry: ['Tech'],
             experience_level: 'invalid_level',
             job_description: 'Develop and maintain software applications.',
             targetted_skills: ['JavaScript', 'Node.js'],
