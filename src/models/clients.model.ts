@@ -9,7 +9,7 @@ import { conversationsInterface } from "./conversations.model.ts";
 import { activityInterface } from "./activity.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { reactsInterface } from "./reactions.model.ts";
-import { usersInterface } from "./users.model.ts";
+import bcrypt from "bcrypt";
 
 
 export enum sexEnum{
@@ -23,7 +23,12 @@ export enum statusEnum {
     finding_volunteer_opportunities = "Finding volunteer opportunities"
   }
 export interface clientsInterface extends mongoose.Document{
-  client_id: usersInterface;
+  name: string;
+  email: string;
+  password: string;
+  phone_number: number;
+  country_code: string;
+  comparePassword: (password: string) => Promise<boolean>;
   bio: bioInterface;
   education: educationsInterface[];
   work_experience: experiencesInterface[];
@@ -63,7 +68,21 @@ export interface clientsInterface extends mongoose.Document{
 }
 
 const clientsSchema = new mongoose.Schema<clientsInterface>({
-  client_id:{ type: Schema.Types.ObjectId, ref: "users", required: true }, 
+  name: {type: String}, // removed name from bein required due to signing up with google or email
+  email: { 
+      type: String, 
+      required: true, 
+      unique: true, 
+      validate: {
+          validator: function(v: string) {
+              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+          },
+          message: props => `${props.value} is not a valid email!`
+      }
+  },
+  password: { type: String, required: true},
+  phone_number: { type: Number},
+  country_code: { type: String }, 
   bio: { type: Schema.Types.ObjectId, ref: "bio" },
   education: [{ type: Schema.Types.ObjectId, ref: "educations" }],
   work_experience: [{ type: Schema.Types.ObjectId, ref: "experiences" }],
@@ -103,6 +122,23 @@ const clientsSchema = new mongoose.Schema<clientsInterface>({
   is_verified: { type: Boolean, required: true },
   is_16_or_above: { type: Boolean, required: true }
 });
+
+clientsSchema.pre('save', async function(next) {
+    const user = this as clientsInterface;
+    if (!user.isModified('password')) return next();
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(user.password, salt);
+        next();
+    } catch (err:any) {
+        next(err);
+    }
+});
+
+clientsSchema.methods.comparePassword = async function(password: string): Promise<boolean> {
+    return await bcrypt.compare(password, this.password);
+}
 
 const clients = mongoose.model<clientsInterface>('clients',clientsSchema);
 export default clients
