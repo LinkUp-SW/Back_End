@@ -10,6 +10,7 @@ import loginRoutes from './src/routes/login.routes.ts';
 import otpRoutes from './src/routes/otp.routes.js';
 import signupRoutes from './src/routes/signup.routes.ts';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
+import privacySettings from './src/routes/privacy.settings.routes.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -75,6 +76,8 @@ app.use('/auth', authRoutes);
 app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes);
 
 
+// Privacy Settings Routes
+app.use('/api/v1/user', privacySettings);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href= "/auth/google">Authenticate with google</a>');
