@@ -1,11 +1,11 @@
 import mongoose, { Schema } from "mongoose";
 import { skillsInterface } from "./skills.model.ts";
 import { mediaInterface } from "./media.model.ts";
-import { companiesInterface } from "./companies.model.ts";
+import { organizationsInterface } from "./organizations.model.ts";
 
 
 export interface educationsInterface extends mongoose.Document{
-    school: companiesInterface;
+    school: organizationsInterface;
     degree: string;
     field_of_study: string;
     start_date: Date;
@@ -19,7 +19,7 @@ export interface educationsInterface extends mongoose.Document{
 
 
 const educationsSchema = new Schema<educationsInterface>({
-    school: {type:Schema.Types.ObjectId,ref:"company", required:true},
+    school: {type:Schema.Types.ObjectId,ref:"organization", required:true},
     degree: {type: String},
     field_of_study: {type: String},
     start_date: {type: Date},

@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { jobApplicationsInterface } from "./job_applications.model.ts";
 import { screeningQuestionsInterface } from "./screening_questions.model.ts";
-import { companiesInterface } from "./companies.model.ts";
+import { organizationsInterface } from "./organizations.model.ts";
 
 export enum jobTypeEnum{
     full_time="Full-time",
@@ -38,12 +38,12 @@ export enum howDidYouHearAboutUsEnum{
 }
 
 export interface jobsInterface extends mongoose.Document{
-    company_id: companiesInterface;
+    organization_id: organizationsInterface;
     job_title: string;
     location: string;
     job_type: jobTypeEnum;
     workplace_type: workplaceTypeEnum;
-    company_industry:[];
+    organization_industry:[];
     experience_level:experienceLevelEnum;
     job_description: string;
     targetted_skills: string[];
@@ -56,12 +56,12 @@ export interface jobsInterface extends mongoose.Document{
 }
 
 const jobsSchema = new Schema<jobsInterface>({
-    company_id: { type: Schema.Types.ObjectId, ref: "companies", required:true },
+    organization_id: { type: Schema.Types.ObjectId, ref: "organizations", required:true },
     job_title: { type: String, required: true },
     location: { type: String, required: true },
     job_type: { type: String, enum: Object.values(jobTypeEnum), required: true },
     workplace_type: { type: String, enum: Object.values(workplaceTypeEnum), required: true },
-    company_industry: [{ type: String, required: true }],
+    organization_industry: [{ type: String, required: true }],
     experience_level: { type: String, enum: Object.values(experienceLevelEnum), required: true },
     job_description: { type: String, required: true },
     targetted_skills: [{ type: String, required: true }],

@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
-import { clientsInterface } from "./clients.model.ts";
+import { usersInterface } from "./users.model.ts";
 import { educationsInterface } from "./educations.model.ts";
 import { licenseAndCertificationsInterface } from "./license_and_certifications.model.ts";
 import { experiencesInterface } from "./experiences.model.ts";
 export interface skillsInterface extends mongoose.Document{
     name: string;
-    endorsments:clientsInterface[];
+    endorsments:usersInterface[];
     used_where: [
         educations:educationsInterface[], 
         certificates:licenseAndCertificationsInterface[],
@@ -15,7 +15,7 @@ export interface skillsInterface extends mongoose.Document{
 
 const skillsSchema = new mongoose.Schema<skillsInterface>({
     name: { type:String, required:true},
-    endorsments: [{type: mongoose.Schema.Types.ObjectId, ref:"clients"}],
+    endorsments: [{type: mongoose.Schema.Types.ObjectId, ref:"users"}],
     used_where: {
       educations: [{ type: mongoose.Schema.Types.ObjectId, ref: "educations" }],
       certificates: [{ type: mongoose.Schema.Types.ObjectId, ref: "licenseAndCertifications" }],
