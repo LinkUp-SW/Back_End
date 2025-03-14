@@ -266,3 +266,239 @@ paths:
                   message:
                     type: string
                     example: "Server error"
+  /api/v1/user/forget-password:
+  post:
+    tags:
+      - Auth
+    summary: Request password reset
+    description: >
+      Sends a password reset link to the user's email.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+            properties:
+              email:
+                type: string
+                example: "user@example.com"
+    responses:
+      '200':
+        description: Password reset link sent
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Password reset link sent to your email"
+      '400':
+        description: Invalid email format
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Invalid email format"
+      '404':
+        description: Email not registered
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Email not registered"
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Server error"
+
+  /api/v1/user/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Reset password
+      description: >
+        Resets the user's password using the provided token and new password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+                - token
+              properties:
+                password:
+                  type: string
+                  example: "new_secure_password"
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset successful"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token and new password are required"
+                  message:
+                    type: string
+                    example: "Password must be at least 8 characters long"
+                  message:
+                    type: string
+                    example: "Please enter a new password"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/user/update-password:
+    post:
+      tags:
+        - Auth
+      summary: Update password
+      description: >
+        Updates the user's password using the provided old password, new password, and token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - old_password
+                - new_password
+              properties:
+                old_password:
+                  type: string
+                  example: "old_password"
+                new_password:
+                  type: string
+                  example: "new_secure_password"
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password updated successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token and password are required"
+                  message:
+                    type: string
+                    example: "New password must be at least 8 characters long"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  message:
+                    type: string
+                    example: "Please enter a new password"
+        '403':
+          description: Old password is incorrect
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Old password is incorrect"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
