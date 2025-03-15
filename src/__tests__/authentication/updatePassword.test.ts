@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { connectToDatabase, disconnectFromDatabase } from '../../../config/database.ts';
 import updatePasswordRoutes from '../../../src/routes/updatePassword.routes.ts';
 import users, { sexEnum, statusEnum } from '../../../src/models/users.model.ts';
-import createToken from '../../../src/utils/createToken.utils.ts';
+import createToken from '../../utils/token.utils.ts';
 
 const app = express();
 app.use(express.json());

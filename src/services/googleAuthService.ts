@@ -6,7 +6,7 @@ import { googleConfig } from '../../config/googleAuth.ts';
 const oauth2Client = new OAuth2Client(
   googleConfig.clientID,
   googleConfig.clientSecret,
-  googleConfig.callbackURL
+  googleConfig.callbackURL,
 );
 
 /**
