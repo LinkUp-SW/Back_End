@@ -1,0 +1,32 @@
+import { Request, Response, NextFunction } from 'express';
+import users from '../models/users.model.ts';
+import { sendResetPasswordEmail } from '../services/forgetPassword.service.ts';
+import createToken from '../utils/token.utils.ts';
+
+const forgetPassword = async (req: Request, res: Response): Promise<Response | void> =>{
+    try {
+
+        const {email} = req.body;
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  //validate the email format
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Invalid email format' });
+        }
+        const user = await users.findOne({email});
+        if (!user){
+            return res.status(404).json({ message: 'Email not registered' });
+        }
+        const token=createToken({time: '15m',
+            userID: user._id as string
+        })
+        const resetLink = `reset password link:localhost:5174/reset-password/${token}`
+        await sendResetPasswordEmail(email,resetLink);
+        return res.status(200).json({ message: 'Password reset link sent to your email' });
+
+    } catch (error) {
+        console.error('Forget password error:', error);
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+export {forgetPassword};

@@ -21,7 +21,7 @@ const login = async (req: Request, res: Response,next: NextFunction): Promise<Re
       { userId: user._id },
       JWT_CONFIG.SECRET as jwt.Secret,
       { expiresIn: JWT_CONFIG.EXPIRES_IN } as SignOptions
-    );
+    );  // use new token creation function
 
     res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
       httpOnly: JWT_CONFIG.HTTP_ONLY,
