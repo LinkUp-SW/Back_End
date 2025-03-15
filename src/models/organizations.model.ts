@@ -37,7 +37,7 @@ export enum adminLevelEnum{
 }
 export interface organizationsInterface extends mongoose.Document{
     organization_name: string;
-    category_type:categoryTypeEnum;
+    category_type: categoryTypeEnum;
     unique_url: string;
     website: string;
     logo: string;
@@ -51,7 +51,7 @@ export interface organizationsInterface extends mongoose.Document{
     blocked: usersInterface[];
     conversations: conversationsInterface[];
     admins:{
-        admin:usersInterface,
+        admin: usersInterface,
         level: adminLevelEnum
     }[]
 }

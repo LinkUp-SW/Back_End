@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { usersInterface } from "./users.model.ts";
 import { commentsInterface } from "./comments.model.ts";
-import { reactsInterface } from "./reactions.model.ts";
+import { reactsInterface } from "../models_to_delete/reactions.model.ts";
 
 
 export enum commentsEnum{
@@ -15,24 +15,24 @@ export interface postsInterface extends mongoose.Document{
     user_id: usersInterface;
     content: string;
     date: Date;
-    media: mediaInterface;
+    media: string[];
     comments_disabled: commentsEnum;
     visibility: Boolean;
-    reacts:reactsInterface[];
+    reacts: usersInterface[];
     tagged_users: usersInterface[];
-    comments:commentsInterface[];
+    comments: commentsInterface[];
 }
 
 const postsSchema = new Schema<postsInterface>({
-    user_id: { type: Schema.Types.ObjectId, ref: "users", required:true },
+    user_id: { type: Schema.Types.ObjectId, ref: "users", required: true },
     content: { type: String, required: true },
-    date: { type: Date, default: Date.now},
-    media: { type: Schema.Types.ObjectId, ref: "media" },
+    date: { type: Date, default: Date.now },
+    media: [{ type: String }],
     comments_disabled: { type: String, enum: Object.values(commentsEnum), required: true },
     visibility: { type: Boolean, default: true },
-    reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" },],
+    reacts: [{ type: Schema.Types.ObjectId, ref: "users" }],
     tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
-    comments: [{ type: Schema.Types.ObjectId, ref: "comments" }]
+    comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
 });
 
 const posts = mongoose.model<postsInterface>('posts', postsSchema);
