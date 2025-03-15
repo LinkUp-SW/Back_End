@@ -14,4 +14,13 @@ const createToken = ({ time, userID }: createTokenInterface): string => {
     );
 };
 
-export default createToken;
+const validateToken = (token: string): string | object => {
+    try {
+        return jwt.verify(token, JWT_CONFIG.SECRET as jwt.Secret);
+    }
+    catch (error) {
+        return (error as Error).message;
+    }
+};
+
+export default {createToken, validateToken};

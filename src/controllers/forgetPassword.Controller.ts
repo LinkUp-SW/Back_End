@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import users from '../models/users.model.ts';
 import { sendResetPasswordEmail } from '../services/forgetPassword.service.ts';
-import createToken from '../utils/createToken.utils.ts';
+import createToken from '../utils/token.utils.ts';
 
 const forgetPassword = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
