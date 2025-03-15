@@ -1,6 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-import { skillsInterface } from "./skills.model.ts";
-import { mediaInterface } from "./media.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 
 
@@ -11,13 +9,16 @@ export interface experiencesInterface extends mongoose.Document{
     organization:organizationsInterface | string;
     is_current: boolean;
     start_date: Date;
-    end_date: Date;
+    end_date: Date; 
     location: string;
     description: string;
     location_type: string;
-    where_did_you_find_us: string;
-    skills: skillsInterface[];
-    media: mediaInterface;
+    skills: string[];   
+    media: [{
+      media: string,
+      title: string,
+      description: string
+    }]; 
 }
 
 const experiencesSchema = new Schema<experiencesInterface>({
@@ -40,11 +41,13 @@ const experiencesSchema = new Schema<experiencesInterface>({
     location: {type: String},
     description: {type: String},
     location_type: {type: String},
-    where_did_you_find_us: {type: String},
-    skills: [{type:Schema.Types.ObjectId,ref:"skills"}],
-    media: {type:Schema.Types.ObjectId,ref:"media"}
+    skills: [{type: String}],
+    media: [{
+      media: String,
+      title: String,
+      description: String
+    }]    
 });
 
 const experiences = mongoose.model<experiencesInterface>('experiences',experiencesSchema);
 export default experiences
-

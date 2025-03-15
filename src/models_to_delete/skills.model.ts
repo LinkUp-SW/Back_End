@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { usersInterface } from "./users.model.ts";
+import { usersInterface } from "../models/users.model.ts";
 import { educationsInterface } from "./educations.model.ts";
 import { licenseAndCertificationsInterface } from "./license_and_certifications.model.ts";
 import { experiencesInterface } from "./experiences.model.ts";

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { mediaInterface } from "./media.model.ts";
+import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { reactsEnum } from "./reactions.model.ts";
 
 
