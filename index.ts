@@ -9,6 +9,9 @@ import authRoutes from './src/routes/googleAuthRoutes.ts';
 import loginRoutes from './src/routes/login.routes.ts';
 import otpRoutes from './src/routes/otp.routes.js';
 import signupRoutes from './src/routes/signup.routes.ts';
+import forgetRoutes from './src/routes/forgetPassword.routes.ts';
+import resetRoutes from './src/routes/resetPassword.routes.ts';
+import updateRoutes from './src/routes/updatePassword.routes.ts';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import privacySettings from './src/routes/privacy.settings.routes.ts';
 import swaggerUi from 'swagger-ui-express';
@@ -72,8 +75,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes & OTP Routes & signupRoutes
-app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes);
+//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updateRoutes
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updateRoutes);
 
 
 // Privacy Settings Routes
