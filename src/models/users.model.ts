@@ -5,6 +5,7 @@ import { activityInterface } from "./activity.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { reactsInterface } from "./reactions.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
+import { jobTypeEnum } from "./jobs.model.ts";
 import bcrypt from "bcrypt";
 
 
@@ -60,6 +61,7 @@ export interface usersInterface extends mongoose.Document{
             city: string;
         };
     };
+
     education: {
         school: organizationsInterface;
         degree: string;
@@ -78,7 +80,7 @@ export interface usersInterface extends mongoose.Document{
     }[];
     work_experience: {
         title: string;
-        employee_type: string;
+        employee_type: jobTypeEnum; 
         organization: organizationsInterface | string;
         is_current: boolean;
         start_date: Date;
@@ -278,7 +280,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         messaging_read_receipts: { type: Boolean },
     },
     activity: [{ type: Schema.Types.ObjectId, ref: "activity" }],
-    status: { type: String, enum: Object.values(statusEnum), required: true },
+    status: { type: String, enum: Object.values(statusEnum)},
     blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [
@@ -294,14 +296,14 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     ],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
-    sex: { type: String, enum: Object.values(sexEnum), required: true },
+    sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
-    is_student: { type: Boolean, required: true },
-    is_verified: { type: Boolean, required: true },
-    is_16_or_above: { type: Boolean, required: true },
+    is_student: { type: Boolean},
+    is_verified: { type: Boolean},
+    is_16_or_above: { type: Boolean},
 });
 
 usersSchema.pre('save', async function(next) {

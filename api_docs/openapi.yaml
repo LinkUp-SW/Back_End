@@ -9,32 +9,14 @@ servers:
   - url: http://localhost:3000
     description: Development server
 paths:
-  /auth/google:
-    get:
-      tags:
-        - Google Auth
-      summary: Initiates Google authentication
-      description: Redirects the user to Google to initiate OAuth2 authentication.
-      responses:
-        '302':
-          description: Redirects to Google for authentication.
-  /api/v1/auth/logout:
-    get:
-      tags:
-        - Google Auth
-      summary: Logs the user out
-      description: Revokes Google tokens if applicable and destroys the session.
-      responses:
-        '302':
-          description: Redirects to the login page after logging out.
-  /api/v1/user/login:
+  /auth/login:
     post:
       tags:
         - Auth
-      summary: Logs in a user
+      summary: Logs in a user (Local)
       description: >
-        Authenticates a user using email and password. 
-        On successful authentication, sets a JWT cookie.
+        Authenticates a user using email and password. On successful authentication, a JWT token is generated,
+        set as an HTTP-only cookie, and user details are returned.
       requestBody:
         required: true
         content:
@@ -62,15 +44,27 @@ paths:
                   message:
                     type: string
                     example: "Login successful"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "unique_user_id"
+                      email:
+                        type: string
+                        example: "user@example.com"
         '400':
           description: Email and password are required
         '401':
           description: Invalid credentials
-  /api/v1/user/logout:
+        '500':
+          description: Server error
+
+  /auth/logout:
     get:
       tags:
         - Auth
-      summary: Logs out a user
+      summary: Logs out a user (Local)
       description: >
         Clears the JWT cookie to log out the user.
       responses:
@@ -84,13 +78,82 @@ paths:
                   message:
                     type: string
                     example: "Logout successful"
+
+  /auth/google:
+    get:
+      tags:
+        - Google Auth
+      summary: Initiates Google authentication
+      description: >
+        Redirects the user to Google to initiate OAuth2 authentication.
+      responses:
+        '302':
+          description: Redirects to Google for authentication.
+
+  /auth/google/callback:
+    get:
+      tags:
+        - Google Auth
+      summary: Google OAuth callback
+      description: >
+        Handles the callback from Google OAuth. On successful authentication, a JWT token is issued,
+        set as an HTTP-only cookie, and user details are returned.
+      responses:
+        '200':
+          description: Google authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google authentication successful"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "unique_user_id"
+                      email:
+                        type: string
+                        example: "user@example.com"
+                  tokens:
+                    type: object
+                    description: Google tokens stored in session (if applicable)
+        '401':
+          description: Google authentication failed
+        '500':
+          description: Server error
+
+  /auth/google/logout:
+    get:
+      tags:
+        - Google Auth
+      summary: Logs out a Google authenticated user
+      description: >
+        Revokes the Google access token (if applicable), destroys the session, and clears the JWT cookie.
+      responses:
+        '200':
+          description: Google logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google logout successful"
+        '500':
+          description: Server error
+
   /api/v1/user/send-otp:
     post:
       tags:
         - OTP
       summary: Generate and send OTP
       description: >
-        Generates a one-time password (OTP) and sends it to the user's email (and optionally via SMS).
+        Generates a one-time password (OTP) and sends it to the user's email.
         The OTP is stored in the session and expires in 10 minutes.
       requestBody:
         required: true
@@ -104,9 +167,6 @@ paths:
                 email:
                   type: string
                   example: "test@example.com"
-                phone:
-                  type: string
-                  example: "1234567890"
       responses:
         '200':
           description: OTP has been sent to your email.
@@ -120,31 +180,16 @@ paths:
                     example: "OTP has been sent to your email"
         '400':
           description: Email is required.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email is required"
         '500':
-          description: Server error.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
+          description: Server error
+
   /api/v1/user/verify-otp:
     post:
       tags:
         - OTP
       summary: Verify OTP
       description: >
-        Verifies the one-time password (OTP) provided by the user. Requires email and OTP.
+        Verifies the one-time password (OTP) provided by the user.
         If the OTP is valid and not expired, the session values are cleared and a success message is returned.
       requestBody:
         required: true
@@ -153,15 +198,14 @@ paths:
             schema:
               type: object
               required:
-                - email
                 - otp
               properties:
-                email:
-                  type: string
-                  example: "test@example.com"
                 otp:
                   type: string
                   example: "123456"
+                token:
+                  type: string
+                  example: "jwt_token"
       responses:
         '200':
           description: OTP verified successfully.
@@ -174,32 +218,19 @@ paths:
                     type: string
                     example: "OTP verified successfully"
         '400':
-          description: Email and OTP are required.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email and OTP are required"
+          description: OTP is required.
         '401':
           description: Invalid OTP or OTP expired.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid OTP"
-  /api/v1/user/signup:
+        '500':
+          description: Server error
+
+  /api/v1/user/verify-email:
     post:
       tags:
         - Auth
-      summary: Register a new user
+      summary: Verify Email Availability
       description: >
-        Registers a new user by creating an account with the provided email, password, and optional name.
+        Checks if the provided email is available (i.e., not already in use).
       requestBody:
         required: true
         content:
@@ -208,20 +239,103 @@ paths:
               type: object
               required:
                 - email
-                - password
               properties:
                 email:
                   type: string
-                  example: "newuser@example.com"
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Email is available.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email is available"
+        '400':
+          description: Email already exists.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email already exists"
+        '500':
+          description: Server error
+
+  /api/v1/user/signup/starter:
+    post:
+      tags:
+        - Auth
+      summary: Register a New User (Starter)
+      description: >
+        Registers a new user by creating an account with the provided starter information.
+        Required fields include firstName, lastName, email, password, and OTP for verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - otp
+              properties:
+                firstName:
+                  type: string
+                  example: "John"
+                lastName:
+                  type: string
+                  example: "Doe"
+                email:
+                  type: string
+                  example: "john.doe@example.com"
                 password:
                   type: string
                   example: "securepassword"
-                name:
+                otp:
                   type: string
-                  example: "John Doe"
+                  example: "123456"
+                country:
+                  type: string
+                  example: "USA"
+                city:
+                  type: string
+                  example: "New York"
+                isStudent:
+                  type: boolean
+                  example: false
+                jobTitle:
+                  type: string
+                  example: "Software Engineer"
+                school:
+                  type: string
+                  example: "MIT"
+                schoolStartYear:
+                  type: number
+                  example: 2015
+                schoolEndYear:
+                  type: number
+                  example: 2019
+                is16OrAbove:
+                  type: boolean
+                  example: true
+                employmentType:
+                  type: string
+                  example: "Full-time"
+                recentCompany:
+                  type: string
+                  example: "Google"
       responses:
         '201':
-          description: Signup successful
+          description: Signup successful.
           content:
             application/json:
               schema:
@@ -235,97 +349,42 @@ paths:
                     properties:
                       email:
                         type: string
-                        example: "newuser@example.com"
+                        example: "john.doe@example.com"
         '400':
-          description: Email or Username and password are required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email or Username and password are required"
+          description: Required fields missing or invalid OTP.
         '409':
-          description: User already exists
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User already exists"
+          description: User already exists.
         '500':
           description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
+
   /api/v1/user/forget-password:
-  post:
-    tags:
-      - Auth
-    summary: Request password reset
-    description: >
-      Sends a password reset link to the user's email.
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - email
-            properties:
-              email:
-                type: string
-                example: "user@example.com"
-    responses:
-      '200':
-        description: Password reset link sent
+    post:
+      tags:
+        - Auth
+      summary: Request password reset
+      description: >
+        Sends a password reset link to the user's email.
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - email
               properties:
-                message:
+                email:
                   type: string
-                  example: "Password reset link sent to your email"
-      '400':
-        description: Invalid email format
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "Invalid email format"
-      '404':
-        description: Email not registered
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "Email not registered"
-      '500':
-        description: Server error
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                message:
-                  type: string
-                  example: "Server error"
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Password reset link sent.
+        '400':
+          description: Invalid email format.
+        '404':
+          description: Email not registered.
+        '500':
+          description: Server error
 
   /api/v1/user/reset-password:
     post:
@@ -352,61 +411,15 @@ paths:
                   example: "jwt_token"
       responses:
         '200':
-          description: Password reset successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Password reset successful"
+          description: Password reset successful.
         '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Token and new password are required"
-                  message:
-                    type: string
-                    example: "Password must be at least 8 characters long"
-                  message:
-                    type: string
-                    example: "Please enter a new password"
+          description: Invalid request.
         '401':
-          description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
+          description: Invalid or expired token.
         '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User not found"
+          description: User not found.
         '500':
           description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
 
   /api/v1/user/update-password:
     post:
@@ -437,68 +450,14 @@ paths:
                   example: "jwt_token"
       responses:
         '200':
-          description: Password updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Password updated successfully"
+          description: Password updated successfully.
         '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Token and password are required"
-                  message:
-                    type: string
-                    example: "New password must be at least 8 characters long"
+          description: Invalid request.
         '401':
-          description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-                  message:
-                    type: string
-                    example: "Please enter a new password"
+          description: Invalid or expired token.
         '403':
-          description: Old password is incorrect
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Old password is incorrect"
+          description: Old password is incorrect.
         '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User not found"
+          description: User not found.
         '500':
           description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"

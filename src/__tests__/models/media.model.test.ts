@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import media from "../../models/media.model.ts";
+import media from "../../models_to_delete/media.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

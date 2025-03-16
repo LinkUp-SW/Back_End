@@ -14,6 +14,10 @@ const createToken = ({ time, userID }: createTokenInterface): string => {
     );
 };
 
+
+// Validate token:
+// Returns the decoded token if valid, otherwise returns an error message
+// The decoded token is an object with the userId property (e.g. { userId: '123' })
 const validateToken = (token: string): string | object => {
     try {
         return jwt.verify(token, JWT_CONFIG.SECRET as jwt.Secret);

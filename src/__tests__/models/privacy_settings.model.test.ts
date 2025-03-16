@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import privacy_settings, { invitationsEnum, accountStatusEnum } from "../../models/privacy_settings.model.ts";
+import privacy_settings, { invitationsEnum, accountStatusEnum } from "../../models_to_delete/privacy_settings.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

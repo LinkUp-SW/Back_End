@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { skillsInterface } from "./skills.model.ts";
 import { mediaInterface } from "./media.model.ts";
-import { organizationsInterface } from "./organizations.model.ts";
+import { organizationsInterface } from "../models/organizations.model.ts";
 
 
 export interface educationsInterface extends mongoose.Document{
