@@ -4,14 +4,15 @@ import { jobTypeEnum } from '../models/jobs.model.ts';
 export class UserRepository {
 
   async create(firstName: string, lastName: string, email: string, password: string,
-    country: string | null,
-    city: string | null,
+    country: string,
+    city: string,
     isStudent: boolean | null,
     jobTitle: string | null,
     school: string | null,
     schoolStartYear: number | null,
     schoolEndYear: number | null,
     is16OrAbove: boolean | null,
+    birthDate: Date | null,
     employmentType: string | null,
     recentCompany: string | null
     ){
@@ -25,6 +26,7 @@ export class UserRepository {
                 country_region: country,
                 city: city
             },
+            birthday: birthDate
         },
         isStudent: isStudent,
         education:{

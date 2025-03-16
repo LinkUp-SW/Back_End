@@ -286,7 +286,8 @@ paths:
                 - lastName
                 - email
                 - password
-                - otp
+                - country
+                - city
               properties:
                 firstName:
                   type: string
@@ -300,9 +301,6 @@ paths:
                 password:
                   type: string
                   example: "securepassword"
-                otp:
-                  type: string
-                  example: "123456"
                 country:
                   type: string
                   example: "USA"
@@ -327,6 +325,9 @@ paths:
                 is16OrAbove:
                   type: boolean
                   example: true
+                birthDate:
+                  type: Date
+                  example: 1990-01-01
                 employmentType:
                   type: string
                   example: "Full-time"

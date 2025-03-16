@@ -24,6 +24,7 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       schoolStartYear,
       schoolEndYear,
       is16OrAbove,
+      birthDate,
       employmentType,
       recentCompany } = req.body;
     const userRepository = new UserRepository();
@@ -37,6 +38,7 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       schoolStartYear,
       schoolEndYear,
       is16OrAbove,
+      birthDate,
       employmentType,
       recentCompany);
 

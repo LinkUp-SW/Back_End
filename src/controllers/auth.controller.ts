@@ -20,7 +20,7 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
   // creating a cookie with the JWT token and sending it as a string in the response
 
 
-  return res.status(200).json({ message: 'Login successful', user: { id: user._id, email: user.email }, cookie: {tokrn: token, maxAge: 3600000} }); // 1 hour expiration
+  return res.status(200).json({ message: 'Login successful', user: { id: user._id, email: user.email }, cookie: {token: token, maxAge: 3600000} }); // 1 hour expiration
 });
 
 /**
