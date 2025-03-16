@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import users from '../models/users.model.ts';
 import { sendResetPasswordEmail } from '../services/forgetPassword.service.ts';
-import createToken from '../utils/token.utils.ts';
+import tokenUtils  from '../utils/token.utils.ts';
 
 const forgetPassword = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
@@ -16,7 +16,7 @@ const forgetPassword = async (req: Request, res: Response): Promise<Response | v
         if (!user){
             return res.status(404).json({ message: 'Email not registered' });
         }
-        const token=createToken({time: '15m',
+        const token=tokenUtils.createToken({time: '15m',
             userID: user._id as string
         })
         const resetLink = `reset password link:localhost:5174/reset-password/${token}`
