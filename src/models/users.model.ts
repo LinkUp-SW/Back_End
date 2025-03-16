@@ -34,6 +34,7 @@ export enum accountStatusEnum{
 
 
 export interface usersInterface extends mongoose.Document{
+    user_id: string;
     name: string;
     email: string;
     password: string;
@@ -156,6 +157,7 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
+    user_id: {type: String , required: true},
     name: { type: String }, // Name is optional due to Google/email signup
     email: {
         type: String,
@@ -278,7 +280,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         messaging_read_receipts: { type: Boolean },
     },
     activity: [{ type: Schema.Types.ObjectId, ref: "activity" }],
-    status: { type: String, enum: Object.values(statusEnum), required: true },
+    status: { type: String, enum: Object.values(statusEnum), required: false },
     blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [
