@@ -38,6 +38,7 @@ export enum accountStatusEnum{
 
 export interface usersInterface extends mongoose.Document{
     name: string;
+    user_id: string;
     email: string;
     password: string;
     phone_number: number;
@@ -169,7 +170,11 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
-    name: { type: String }, // Name is optional due to Google/email signup
+    user_id:{
+        type: String,
+        required:true,
+        unique:true
+    },
     email: {
         type: String,
         required: true,
