@@ -16,7 +16,7 @@ import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
-
+import viewUserProfileRoutes from './src/routes/view.user.profile.routes.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config();
@@ -26,10 +26,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
+
 connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
+      
     });
   })
   .catch(err => {
@@ -74,8 +76,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updateRoutes
-app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updateRoutes);
+//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updateRoutes & viewUserProfileRoutes
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updateRoutes,viewUserProfileRoutes);
 
 
 
