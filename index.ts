@@ -18,6 +18,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import errorHandler from './src/middleware/errorHandler.ts'; 
 
+
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,7 +39,7 @@ connectToDatabase()
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(cookieParser());
 
 // Session Configuration

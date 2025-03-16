@@ -8,7 +8,7 @@ import { AuthService } from '../services/authService.service.ts';
 const authService = new AuthService();
 
 /**
- * Local Email/Password Login
+ * Local Email or Phone/Password Login
  */
 const login = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const { email, password } = req.body;
