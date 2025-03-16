@@ -1,0 +1,20 @@
+import { Router } from "express";
+import upload from "../../config/multer.ts";
+import * as resumeController from "../controllers/resumeController.ts";
+
+const router = Router();
+
+// Route to upload a resume
+router.post("/resume/:user_id", upload.single("resume"), resumeController.uploadResume);
+
+// Route to update a resume
+router.put("/resume/:user_id", upload.single("resume"), resumeController.updateResume);
+
+// Route to delete a resume
+router.delete("/resume/:user_id", resumeController.deleteResume);
+
+// Get the resume
+router.get("/resume/:user_id", resumeController.getResume);
+
+
+export default router;

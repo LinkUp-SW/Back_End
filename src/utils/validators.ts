@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import Client from "../models/clients.model.ts"; 
+import User from "../models/users.model.ts";
 
 /**
  * Validates that the user_id is present and is a valid MongoDB ObjectId.
@@ -25,7 +25,7 @@ export const validateUserId = (req: Request, res: Response): string | null => {
  */
 export const findClientById = async (user_id: string, res: Response) => {
     try {
-        const client = await Client.findById(user_id);
+        const client = await User.findById(user_id);
         if (!client) {
             res.status(404).json({ message: "User not found" });
             return null;
