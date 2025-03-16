@@ -37,6 +37,7 @@ export enum accountStatusEnum{
 
 
 export interface usersInterface extends mongoose.Document{
+    user_id: string;
     name: string;
     email: string;
     password: string;
@@ -124,7 +125,7 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
-    connections: usersInterface[];
+    connections: string[];
     followers: usersInterface[];
     following: usersInterface[];
     privacy_settings: {
@@ -145,7 +146,7 @@ export interface usersInterface extends mongoose.Document{
         }];
     }[]
     status: statusEnum; 
-    blocked: usersInterface[];
+    blocked: string[];
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -169,6 +170,7 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
+    user_id: { type: String, required: true, unique: true},
     name: { type: String }, // Name is optional due to Google/email signup
     email: {
         type: String,
@@ -277,7 +279,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     profile_photo: { type: String, validate: validator.isURL },
     cover_photo: { type: String, validate: validator.isURL },
     resume: { type: String, validate: validator.isURL },
-    connections: [{ type: Schema.Types.ObjectId, ref: "users" }],
+    connections: [{ type: String}],
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     following: [{ type: Schema.Types.ObjectId, ref: "users" }],
     privacy_settings: {
@@ -298,7 +300,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         }]
     }],
     status: { type: String, enum: Object.values(statusEnum), required: true },
-    blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
+    blocked: [{ type: String}],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },
