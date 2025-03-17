@@ -1,157 +1,156 @@
 import { Request, Response } from "express";
-import cloudinary from "../../config/cloudinary.ts"
-import { validateUserId, findClientById, checkFileUploaded } from "../utils/validators.ts";
+import cloudinary from "../../config/cloudinary.ts";
 import { extractPublicId } from "../services/cloudinaryService.ts";
+import { validateTokenAndUser} from "../utils/helper.ts";
+import { usersInterface } from "../models/users.model.ts";
 
 
 
 // Upload Profile Picture
 const uploadProfilePicture = async (req: Request, res: Response): Promise<void> => {
-    try {
-        // Validate user_id parameter
-        const user_id = validateUserId(req, res);
-        if (!user_id) return;
-
-        // Ensure a file was uploaded
-        if (!checkFileUploaded(req, res)) return;
-
-        // Retrieve Cloudinary URL from the file uploaded by multer
-        const profilePictureUrl = req.file?.path;
-        if (!profilePictureUrl) {
-            res.status(400).json({ message: "Error processing file upload" });
-            return;
-        }
-
-        // Find the client in the database
-        const client = await findClientById(user_id, res);
-        if (!client) return;
-
-        // Update the client's profile_photo field with the new URL
-        client.profile_photo = profilePictureUrl;
-        await client.save();
-
-        res.status(200).json({
-            message: "Profile picture uploaded and updated successfully",
-            profilePicture: profilePictureUrl
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Error uploading profile picture", error });
+  try {
+    // Check if a file was uploaded
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded or invalid file type. Only image files are allowed." });
+      return;
     }
+
+    const user = req.user as usersInterface; // Retrieved from `authorizeUpload` middleware
+    if (!user) {
+      res.status(500).json({ message: "User information is missing. Please try again." });
+      return;
+    }
+
+    const profilePictureUrl = req.file.path; // Cloudinary URL
+
+    // If an old profile picture exists, delete it from Cloudinary
+    if (user.profile_photo) {
+      const publicId = extractPublicId(user.profile_photo);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId, { invalidate: true });
+      }
+    }
+
+    // Update the user's profile_photo field with the new Cloudinary URL
+    user.profile_photo = profilePictureUrl;
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile picture uploaded and updated successfully",
+      profilePicture: profilePictureUrl,
+    });
+  } catch (error) {
+    console.error("Error uploading profile picture:", error);
+    res.status(500).json({ message: "Error uploading profile picture", error: error instanceof Error ? error.message : "Unknown error" });
+  }
 };
 
 // Update Profile Picture
 const updateProfilePicture = async (req: Request, res: Response): Promise<void> => {
-    try {
-        // Validate user_id parameter
-        const user_id = validateUserId(req, res);
-        if (!user_id) return;
-
-        // Ensure a new file was uploaded
-        if (!checkFileUploaded(req, res)) return;
-
-        // Find the client in the database
-        const client = await findClientById(user_id, res);
-        if (!client) return;
-
-        // Retrieve the old Cloudinary URL from the client's document
-        const oldProfilePictureUrl = client.profile_photo;
-
-        // If an old URL exists, extract its publicId and delete the old image from Cloudinary
-        if (oldProfilePictureUrl) {
-            const publicId = extractPublicId(oldProfilePictureUrl);
-            if (publicId) {
-                await cloudinary.uploader.destroy(publicId, { invalidate: true });
-            }
-        }
-
-        // Update the client's profile_photo field with the new Cloudinary URL
-        const newProfilePictureUrl = req.file?.path;
-        if (newProfilePictureUrl) {
-            client.profile_photo = newProfilePictureUrl;
-        } else {
-            res.status(400).json({ message: "Error processing file upload" });
-            return;
-        }
-        await client.save();
-
-        res.status(200).json({
-            message: "Profile picture updated successfully",
-            profilePicture: newProfilePictureUrl,
-        });
-    } catch (error) {
-        console.error("Error updating profile picture:", error);
-        res.status(500).json({ message: "Error updating profile picture", error });
+  try {
+    // Check if a file was uploaded
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded or invalid file type. Only image files are allowed." });
+      return;
     }
+
+    const user = req.user as usersInterface; // Retrieved from `authorizeUpload` middleware
+    if (!user) {
+      res.status(500).json({ message: "User information is missing. Please try again." });
+      return;
+    }
+
+    const newProfilePictureUrl = req.file.path; // Cloudinary URL
+
+    // If an old profile picture exists, delete it from Cloudinary
+    if (user.profile_photo) {
+      const publicId = extractPublicId(user.profile_photo);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId, { invalidate: true });
+      }
+    }
+
+    // Update the user's profile_photo field with the new Cloudinary URL
+    user.profile_photo = newProfilePictureUrl;
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile picture updated successfully",
+      profilePicture: newProfilePictureUrl,
+    });
+  } catch (error) {
+    console.error("Error updating profile picture:", error);
+    res.status(500).json({ message: "Error updating profile picture", error: error instanceof Error ? error.message : "Unknown error" });
+  }
 };
+
 
 // Delete Profile Picture
 const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
-    try {
-        // Validate user_id parameter
-        const user_id = validateUserId(req, res);
-        if (!user_id) return;
+  try {
+    const validation = await validateTokenAndUser(req, res);
+    if (!validation) return;
 
-        // Find the client in the database
-        const client = await findClientById(user_id, res);
-        if (!client) return;
+    const { viewerId, userId, user } = validation;
 
-        // Retrieve the current profile picture URL from the client's document
-        const profilePictureUrl = client.profile_photo;
-        if (!profilePictureUrl) {
-            res.status(400).json({ message: "No profile picture to delete" });
-            return;
-        }
-
-        // Extract publicId from the URL using your utility function
-        const publicId = extractPublicId(profilePictureUrl);
-        if (!publicId) {
-            res.status(400).json({ message: "Invalid profile picture URL" });
-            return;
-        }
-
-        // Delete the image from Cloudinary
-        const result = await cloudinary.uploader.destroy(publicId, { invalidate: true });
-        if (result.result !== "ok") {
-            res.status(500).json({ message: "Cloudinary failed to delete the image" });
-            return;
-        }
-
-        // Clear the profile_photo field in the client's document
-        client.profile_photo = "";
-        await client.save();
-
-        res.status(200).json({ message: "Profile picture deleted successfully" });
-    } catch (error) {
-        console.error("Error deleting profile picture:", error);
-        res.status(500).json({ message: "Error deleting profile picture", error });
+    // Ensure the viewer is the same as the user (only the user can delete their own profile picture)
+    if (viewerId !== userId) {
+      res.status(403).json({ message: "You are not authorized to delete the profile picture for this user." });
+      return;
     }
+
+    // Retrieve the current profile picture URL from the user's document
+    const profilePictureUrl = user.profile_photo;
+    if (!profilePictureUrl) {
+      res.status(400).json({ message: "No profile picture to delete" });
+      return;
+    }
+
+    // Extract publicId from the URL using your utility function
+    const publicId = extractPublicId(profilePictureUrl);
+    if (!publicId) {
+      res.status(400).json({ message: "Invalid profile picture URL" });
+      return;
+    }
+
+    // Delete the image from Cloudinary
+    const result = await cloudinary.uploader.destroy(publicId, { invalidate: true });
+    if (result.result !== "ok") {
+      res.status(500).json({ message: "Cloudinary failed to delete the image" });
+      return;
+    }
+
+    // Clear the profile_photo field in the user's document
+    user.profile_photo = "";
+    await user.save();
+
+    res.status(200).json({ message: "Profile picture deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting profile picture:", error);
+    res.status(500).json({ message: "Error deleting profile picture", error });
+  }
 };
 
-//Get Profile Picture
-
+// Get Profile Picture
 const getProfilePicture = async (req: Request, res: Response): Promise<void> => {
-    try {
-        // Validate user_id parameter using the common validator
-        const user_id = validateUserId(req, res);
-        if (!user_id) return;
+  try {
+    const validation = await validateTokenAndUser(req, res);
+    if (!validation) return;
 
-        // Retrieve the client from the database using the common helper
-        const client = await findClientById(user_id, res);
-        if (!client) return;
+    const { user } = validation;
 
-        // Check if a profile picture exists
-        if (!client.profile_photo) {
-            res.status(404).json({ message: "Profile picture not found" });
-            return;
-        }
-
-        // Return the profile picture URL
-        res.status(200).json({ profilePicture: client.profile_photo });
-    } catch (error) {
-        res.status(500).json({ message: "Error retrieving profile picture", error });
+    // Check if a profile picture exists
+    if (!user.profile_photo) {
+      res.status(404).json({ message: "Profile picture not found" });
+      return;
     }
+
+    // Return the profile picture URL
+    res.status(200).json({ profilePicture: user.profile_photo });
+  } catch (error) {
+    console.error("Error retrieving profile picture:", error);
+    res.status(500).json({ message: "Error retrieving profile picture", error });
+  }
 };
 
 export { uploadProfilePicture, updateProfilePicture, deleteProfilePicture, getProfilePicture };
-
-
