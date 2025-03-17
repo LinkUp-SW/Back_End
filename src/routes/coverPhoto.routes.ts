@@ -1,19 +1,35 @@
 import { Router } from "express";
-import upload from "../../config/multer.ts";
-import * as coverPhotoController from "../controllers/coverPhotoController.ts";
+import {
+  uploadCoverPhoto,
+  updateCoverPhoto,
+  deleteCoverPhoto,
+  getCoverPhoto,
+} from "../controllers/coverPhotoController.ts";
+import { authorizeUpload } from "../middleware/authMiddleware.ts";
+import { multerImageErrorHandler } from "../middleware/multer.error.handler.ts";
 
 const router = Router();
 
 // Route to upload a cover photo
-router.post("/cover-photo/:user_id", upload.single("coverPhoto"), coverPhotoController.uploadCoverPhoto);
+router.post(
+  "/profile/cover-photo/:user_id",
+  authorizeUpload, // Validate token and user_id first
+  multerImageErrorHandler("coverPhoto"), // Upload coverPhoto & Handle Multer errors
+  uploadCoverPhoto
+);
 
 // Route to update a cover photo
-router.put("/cover-photo/:user_id", upload.single("coverPhoto"), coverPhotoController.updateCoverPhoto);
+router.put(
+  "/profile/cover-photo/:user_id",
+  authorizeUpload, // Validate token and user_id first
+  multerImageErrorHandler("coverPhoto"), // Update coverPhoto & Handle Multer errors 
+  updateCoverPhoto
+);
 
 // Route to delete a cover photo
-router.delete("/cover-photo/:user_id", coverPhotoController.deleteCoverPhoto);
+router.delete("/profile/cover-photo/:user_id", deleteCoverPhoto);
 
 // Get the cover photo
-router.get("/cover-photo/:user_id", coverPhotoController.getCoverPhoto);
+router.get("/profile/cover-photo/:user_id", getCoverPhoto);
 
 export default router;
