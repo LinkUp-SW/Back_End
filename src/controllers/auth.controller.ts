@@ -17,10 +17,8 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
   }
 
   const { user, token } = await authService.login(email, password);
-  // creating a cookie with the JWT token and sending it as a string in the response
 
-
-  return res.status(200).json({ message: 'Login successful', user: { id: user._id, email: user.email }, cookie: {token: token, maxAge: 3600000} }); // 1 hour expiration
+  return res.status(200).json({ message: 'Login successful', user: { id: user._id, email: user.email, isVerified: user.is_verified }, cookie: {token: token, maxAge: 3600000} }); // 1 hour expiration
 });
 
 /**
