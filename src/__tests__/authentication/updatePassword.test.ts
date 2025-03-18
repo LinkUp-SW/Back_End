@@ -6,6 +6,7 @@ import updatePasswordRoutes from '../../../src/routes/updatePassword.routes.ts';
 import users, { sexEnum, statusEnum } from '../../../src/models/users.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 
+
 const app = express();
 app.use(express.json());
 app.use('/api/v1/user', updatePasswordRoutes);
@@ -30,6 +31,7 @@ describe('Update Password API', () => {
 
         userId = user._id.toString();
         token = tokenUtils.createToken({ time: '1h', userID: user.user_id });
+
     });
 
     afterAll(async () => {

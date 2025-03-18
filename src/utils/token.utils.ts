@@ -6,6 +6,7 @@ interface createTokenInterface {
     userID: string;
 }
 
+
  const createToken = ({ time, userID }: createTokenInterface): string => {
     return jwt.sign(
         { userId: userID },
@@ -13,6 +14,7 @@ interface createTokenInterface {
         { expiresIn: time } as SignOptions
     );
 };
+
 
  const validateToken = (token: string): string | object => {
     try {
@@ -22,4 +24,5 @@ interface createTokenInterface {
         throw new Error('Invalid or expired token');
     }
 };
+
 export default {createToken, validateToken};

@@ -37,6 +37,7 @@ export enum accountStatusEnum{
 
 
 export interface usersInterface extends mongoose.Document{
+    user_id: string;
     name: string;
     user_id: string;
     email: string;
@@ -125,7 +126,9 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
-    connections: usersInterface[];
+
+    connections: string[];
+
     followers: usersInterface[];
     following: usersInterface[];
     privacy_settings: {
@@ -146,7 +149,9 @@ export interface usersInterface extends mongoose.Document{
         }];
     }[]
     status: statusEnum; 
-    blocked: usersInterface[];
+
+    blocked: string[];
+
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -170,11 +175,13 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
+
     user_id:{
         type: String,
         required:true,
         unique:true
     },
+
     email: {
         type: String,
         required: true,
@@ -279,10 +286,39 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         },
     ],
     industry: { type: String },
-    profile_photo: { type: String, validate: validator.isURL },
-    cover_photo: { type: String, validate: validator.isURL },
-    resume: { type: String, validate: validator.isURL },
-    connections: [{ type: Schema.Types.ObjectId, ref: "users" }],
+
+    profile_photo: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Profile photo must be a valid URL, an empty string, or null",
+        },
+        default: null, // Allow null by default
+      },
+      cover_photo: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Cover photo must be a valid URL, an empty string, or null",
+        },
+        default: null,
+      },
+      resume: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Resume must be a valid URL, an empty string, or null",
+        },
+        default: null,
+      },
+    connections: [{ type: String}],
+
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     following: [{ type: Schema.Types.ObjectId, ref: "users" }],
     privacy_settings: {
@@ -302,8 +338,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     }],
+
     status: { type: String, enum: Object.values(statusEnum), required: true },
-    blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
+    blocked: [{ type: String}],
+  
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },

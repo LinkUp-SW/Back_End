@@ -502,6 +502,860 @@ paths:
                   message:
                     type: string
                     example: "Server error"
+
+  /profile/profile-picture/{user_id}:
+    post:
+      tags:
+        - Profile Picture
+      summary: Upload a profile picture
+      description: Uploads a profile picture for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Profile picture uploaded and updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile picture uploaded and updated successfully
+                  profilePicture:
+                    type: string
+                    example: https://res.cloudinary.com/test/image/upload/sample.jpg
+        '400':
+          description: No file uploaded or invalid file type. Only image files are allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No file uploaded or invalid file type. Only image files are allowed.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: You are not authorized to upload for this user.
+        '500':
+          description: Error uploading profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error uploading profile picture
+                  error:
+                    type: string
+                    example: Database error
+    put:
+      tags:
+        - Profile Picture
+      summary: Update a profile picture
+      description: Updates the profile picture for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Profile picture updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile picture updated successfully
+                  profilePicture:
+                    type: string
+                    example: https://res.cloudinary.com/test/image/upload/sample.jpg
+        '400':
+          description: No file uploaded or invalid file type. Only image files are allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No file uploaded or invalid file type. Only image files are allowed.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: You are not authorized to upload for this user.
+        '500':
+          description: Error updating profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error updating profile picture
+                  error:
+                    type: string
+                    example: Database error
+    delete:
+      tags:
+        - Profile Picture
+      summary: Delete a profile picture
+      description: Deletes the user's profile picture.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Profile picture deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profile picture deleted successfully"
+        '400':
+          description: No profile picture to delete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No profile picture to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this profile picture"
+        '500':
+          description: Error deleting profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting profile picture"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+    get:
+      tags:
+        - Profile Picture
+      summary: Get a profile picture
+      description: Retrieves the user's profile picture.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Profile picture retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profilePicture:
+                    type: string
+                    example: "https://cloudinary.com/user/profile_picture.jpg"
+        '404':
+          description: Profile picture not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profile picture not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Error retrieving profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving profile picture"
+                  error:
+                    type: string
+                    example: "Database error"
+  /profile/cover-photo/{user_id}:
+    post:
+      tags:
+        - Cover Photo
+      summary: Upload a cover photo
+      description: Uploads a new cover photo for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                coverPhoto:
+                  type: string
+                  format: binary
+                  description: The image file to upload.
+      responses:
+        '200':
+          description: Cover photo uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo uploaded and updated successfully"
+                  coverPhoto:
+                    type: string
+                    example: "https://cloudinary.com/user/cover_photo.jpg"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only image files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to upload for this user."
+        '500':
+          description: Error uploading cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error uploading cover photo"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    put:
+      tags:
+        - Cover Photo
+      summary: Update a cover photo
+      description: Updates the user's cover photo.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                coverPhoto:
+                  type: string
+                  format: binary
+                  description: The new image file to upload.
+      responses:
+        '200':
+          description: Cover photo updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo updated successfully"
+                  coverPhoto:
+                    type: string
+                    example: "https://cloudinary.com/user/new_cover_photo.jpg"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only image files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to update this cover photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to update this cover photo."
+        '500':
+          description: Error updating cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cover photo"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    delete:
+      tags:
+        - Cover Photo
+      summary: Delete a cover photo
+      description: Deletes the user's cover photo.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Cover photo deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo deleted successfully"
+        '400':
+          description: No cover photo to delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No cover photo to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this cover photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this cover photo."
+        '500':
+          description: Error deleting cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting cover photo"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    get:
+      tags:
+        - Cover Photo
+      summary: Get a cover photo
+      description: Retrieves the user's cover photo.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Cover photo retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coverPhoto:
+                    type: string
+                    example: "https://cloudinary.com/user/cover_photo.jpg"
+        '404':
+          description: Cover photo not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Error retrieving cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving cover photo"
+                  error:
+                    type: string
+                    example: "Database error"
+  /profile/resume/{user_id}:
+    post:
+      tags:
+        - Resume
+      summary: Upload a resume
+      description: Uploads a new resume for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resume:
+                  type: string
+                  format: binary
+                  description: The PDF file to upload.
+      responses:
+        '200':
+          description: Resume uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume uploaded and updated successfully"
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/resume.pdf"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only .pdf files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to upload for this user."
+        '500':
+          description: Error uploading resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error uploading resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    put:
+      tags:
+        - Resume
+      summary: Update a resume
+      description: Updates the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resume:
+                  type: string
+                  format: binary
+                  description: The new PDF file to upload.
+      responses:
+        '200':
+          description: Resume updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume updated successfully"
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/new_resume.pdf"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only .pdf files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to update this resume.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to update this resume."
+        '500':
+          description: Error updating resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+   delete:
+      tags:
+        - Resume
+      summary: Delete a resume
+      description: Deletes the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume deleted successfully"
+        '400':
+          description: No resume to delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No resume to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this resume.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this resume."
+        '500':
+          description: Error deleting resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    get:
+      tags:
+        - Resume
+      summary: Get a resume
+      description: Retrieves the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/resume.pdf"
+        '404':
+          description: Resume not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Error retrieving resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving resume"
+                  error:
+                    type: string
+                    example: "Database error"
   /api/v1/user/update-username:
     post:
       tags:
