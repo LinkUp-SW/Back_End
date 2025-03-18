@@ -50,7 +50,7 @@ export class AuthService {
       return { token, user };
     } else {
       // If user doesn't exist, create a new record.
-      let user_id = generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name);
+      let user_id = await generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name);
       user = await this.userRepo.createGoogleUser(
         user_id as unknown as string,
         googleUserInfo.email,
