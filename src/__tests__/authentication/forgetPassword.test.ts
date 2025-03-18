@@ -39,7 +39,7 @@ describe('Forget Password API', () => {
     
         const response = await request(app)
             .post('/api/v1/user/forget-password')
-            .send({ email: 'johndoe2@example.com' });
+            .send({ email: 'jane.smith@example.com' });
         expect(response.status).toBe(200);
         expect(response.body.message).toBe('Password reset link sent to your email');
     });

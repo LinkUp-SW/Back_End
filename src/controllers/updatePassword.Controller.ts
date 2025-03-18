@@ -1,8 +1,7 @@
 import { Request, Response} from 'express';
 import bcrypt from 'bcrypt';
 import users from '../models/users.model.ts';
-import jwt from 'jsonwebtoken';
-import { JWT_CONFIG } from '../../config/jwt.config.ts';
+import tokenUtils from '../utils/token.utils.ts';
 
 
 const updatePassword = async (req: Request, res: Response): Promise<Response | void> =>{
@@ -22,13 +21,8 @@ const updatePassword = async (req: Request, res: Response): Promise<Response | v
             return res.status(400).json({ message: 'New password must be at least 8 characters long' });
         }
         
-        let decodedUser;
-        try {
-        decodedUser = jwt.verify(token, JWT_CONFIG.SECRET as jwt.Secret) as { userId: string };
-        } catch (error) {
-        return res.status(401).json({ message: 'Invalid or expired token' });
-        }
-        const user = await users.findById(decodedUser.userId);
+        const decodedUser = tokenUtils.validateToken(token) as { userId: string };
+        const user = await users.findOne({user_id:decodedUser.userId});
         if (!user){
             return res.status(404).json({ message: 'User not found' });
 
@@ -47,7 +41,13 @@ const updatePassword = async (req: Request, res: Response): Promise<Response | v
 
     }catch (error) {
         console.error('Reset password error:', error);
-        res.status(500).json({ message: 'Server error', error });
+        if (error instanceof Error && error.message === 'Invalid or expired token') {
+            return res.status(401).json({ message: error.message });
+        }
+        else{
+            res.status(500).json({ message: 'Server error', error });
+
+        }
     }
 };
 

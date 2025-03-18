@@ -6,7 +6,7 @@ interface createTokenInterface {
     userID: string;
 }
 
-const createToken = ({ time, userID }: createTokenInterface): string => {
+ const createToken = ({ time, userID }: createTokenInterface): string => {
     return jwt.sign(
         { userId: userID },
         JWT_CONFIG.SECRET as jwt.Secret,
@@ -14,13 +14,12 @@ const createToken = ({ time, userID }: createTokenInterface): string => {
     );
 };
 
-const validateToken = (token: string): string | object => {
+ const validateToken = (token: string): string | object => {
     try {
         return jwt.verify(token, JWT_CONFIG.SECRET as jwt.Secret);
     }
     catch (error) {
-        return (error as Error).message;
+        throw new Error('Invalid or expired token');
     }
 };
-
 export default {createToken, validateToken};

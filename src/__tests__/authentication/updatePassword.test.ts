@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { connectToDatabase, disconnectFromDatabase } from '../../../config/database.ts';
 import updatePasswordRoutes from '../../../src/routes/updatePassword.routes.ts';
 import users, { sexEnum, statusEnum } from '../../../src/models/users.model.ts';
-import createToken from '../../utils/token.utils.ts';
+import tokenUtils from '../../utils/token.utils.ts';
 
 const app = express();
 app.use(express.json());
@@ -18,6 +18,7 @@ describe('Update Password API', () => {
         await connectToDatabase();
 
         const user: any = await users.create({
+            user_id:"test_test",
             email: 'test@example.com',
             password: 'OldPass@1234',
             status:statusEnum.finding_new_job,
@@ -28,7 +29,7 @@ describe('Update Password API', () => {
         });
 
         userId = user._id.toString();
-        token = createToken({ time: '1h', userID: userId });
+        token = tokenUtils.createToken({ time: '1h', userID: user.user_id });
     });
 
     afterAll(async () => {
