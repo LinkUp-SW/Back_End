@@ -32,18 +32,16 @@ export const emailTransporter = nodemailer.createTransport({
   });
 
 
-
-export function generateUniqueId(firstName: string, lastName: string): string {
-  let id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
-  // Check if the ID already exists in the database
-  // If it does, generate a new one
-  // Repeat until a unique ID is found
-  while(true){
-    let user = userRepo.findByUserId(id);
-    if (!user) {
-      break;
+export async function generateUniqueId(firstName: string, lastName: string): Promise<string> {
+    let id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
+    let attempt = 0;
+    while(attempt < 10) {
+      const user = await userRepo.findByUserId(id);
+      if (!user) {
+        return id;
+      }
+      id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
+      attempt++;
     }
-    id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
-  }
-  return id;
-}
+    throw new Error("Unable to generate unique user id after 10 attempts");
+    }

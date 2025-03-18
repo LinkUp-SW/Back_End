@@ -51,8 +51,9 @@ export class UserRepository {
         return User.findOne({ user_id: id });
     }
 
-    async createGoogleUser(email: string, firstName: string, lastName: string, password: string) {
+    async createGoogleUser(user_id: string, email: string, firstName: string, lastName: string, password: string) {
         return User.create({ 
+            user_id: user_id,
             email:email, 
             bio:{
                 first_name:firstName, 

@@ -48,11 +48,11 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
   // which handles user lookup/creation and token generation.
   const { user, token } = await authService.googleLogin(passportUser);
 
-  let user_id = generateUniqueId(user.bio.first_name, user.bio.last_name);
+ 
 
-  // Optionally, update the session with the authenticated user's ID.
+  // Store the user ID in the session.
   if (req.session) {
-    req.session.userId = user_id as string;
+    req.session.userId = user.user_id as unknown as string; // Cast to string
   }
 
   // Set the JWT as an HTTP-only cookie.
@@ -60,15 +60,10 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
     httpOnly: JWT_CONFIG.HTTP_ONLY,
     maxAge: 3600000, // 1 hour
   });
-
-  // generate uniques id from user fname and lname and check whether it is already in the database or not
-  // if not then create a new user
-  // if yes then return generate new unique id and check again
   
-
   return res.status(200).json({
     message: 'Google authentication successful',
-    user: { id: user_id,
+    user: { id: user.user_id,
             firstName: user.bio.first_name, 
             lastName:user.bio.last_name, 
             email: user.email, 

@@ -5,6 +5,7 @@ import { JWT_CONFIG } from "../../config/jwt.config.ts";
 import { Request, Response, NextFunction } from "express";
 import { oauth2Client, getGoogleUserInfo } from "../services/googleAuth.service.ts";
 import { generateHashedPassword } from "../utils/helperFunctions.utils.ts";
+import { generateUniqueId } from "../utils/helperFunctions.utils.ts";
 
 export class AuthService {
   private userRepo = new UserRepository();
@@ -49,7 +50,9 @@ export class AuthService {
       return { token, user };
     } else {
       // If user doesn't exist, create a new record.
+      let user_id = generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name);
       user = await this.userRepo.createGoogleUser(
+        user_id as unknown as string,
         googleUserInfo.email,
         googleUserInfo.given_name,
         googleUserInfo.family_name,
