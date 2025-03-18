@@ -50,7 +50,7 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
         throw new CustomError('Invalid token', 401, 'INVALID_TOKEN');
       }
       const userRepository = new UserRepository();
-      const user = await userRepository.findById(user1_id as string);
+      const user = await userRepository.findByUserId(user1_id as string);
       if (!user) {
         throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
       }

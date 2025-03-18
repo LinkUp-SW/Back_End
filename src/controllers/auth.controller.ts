@@ -4,6 +4,7 @@ import asyncHandler from '../middleware/asyncHandler.ts';
 import { CustomError } from '../utils/customError.utils.ts';
 import { JWT_CONFIG } from '../../config/jwt.config.ts';
 import { AuthService } from '../services/authService.service.ts';
+import { generateUniqueId } from '../utils/helperFunctions.utils.ts';
 
 const authService = new AuthService();
 
@@ -46,9 +47,11 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
   // which handles user lookup/creation and token generation.
   const { user, token } = await authService.googleLogin(passportUser);
 
+  let user_id = generateUniqueId(user.bio.first_name, user.bio.last_name);
+
   // Optionally, update the session with the authenticated user's ID.
   if (req.session) {
-    req.session.userId = user._id as string;
+    req.session.userId = user_id as string;
   }
 
   // Set the JWT as an HTTP-only cookie.
@@ -57,9 +60,15 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
     maxAge: 3600000, // 1 hour
   });
 
+  // generate uniques id from user fname and lname and check whether it is already in the database or not
+  // if not then create a new user
+  // if yes then return generate new unique id and check again
+  
+
   return res.status(200).json({
     message: 'Google authentication successful',
-    user: { firstName: user.bio.first_name, 
+    user: { id: user_id,
+            firstName: user.bio.first_name, 
             lastName:user.bio.last_name, 
             email: user.email, 
             password: user.password, 

@@ -1,5 +1,7 @@
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
+import { UserRepository } from '../repositories/user.repository.ts';
+const userRepo = new UserRepository();
 
 /**
  * Generates a random password and hashes it using SHA-256.
@@ -28,3 +30,20 @@ export const emailTransporter = nodemailer.createTransport({
     },
     tls: { rejectUnauthorized: false },
   });
+
+
+
+export function generateUniqueId(firstName: string, lastName: string): string {
+  let id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
+  // Check if the ID already exists in the database
+  // If it does, generate a new one
+  // Repeat until a unique ID is found
+  while(true){
+    let user = userRepo.findByUserId(id);
+    if (!user) {
+      break;
+    }
+    id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
+  }
+  return id;
+}
