@@ -41,6 +41,7 @@ describe('Forget Password API', () => {
             .post('/api/v1/user/forget-password')
             .send({ email: 'jane.smith@example.com' });
 
+
         expect(response.status).toBe(200);
         expect(response.body.message).toBe('Password reset link sent to your email');
     });

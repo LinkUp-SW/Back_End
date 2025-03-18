@@ -6,6 +6,7 @@ import users, { sexEnum, statusEnum } from '../../../src/models/users.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 
 
+
 const app = express();
 app.use(express.json());
 app.use('/api/v1/user', resetPasswordRoutes);
@@ -19,8 +20,8 @@ describe('Reset Password API', () => {
 
         // Create a mock user with all required fields
         const user: any = await users.create({
-            user_id:"test_test",
 
+            user_id:"test_test",
             email: 'test@example.com',
             password: 'OldPass@1234',
             status:statusEnum.finding_new_job,
@@ -32,8 +33,8 @@ describe('Reset Password API', () => {
 
 
         userId = user._id.toString(); 
-
         token = tokenUtils.createToken({ time: '1h', userID: user.user_id });
+
     });
 
     afterAll(async () => {

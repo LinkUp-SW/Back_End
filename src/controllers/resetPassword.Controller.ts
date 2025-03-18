@@ -1,7 +1,9 @@
 import { Request, Response} from 'express';
 import users from '../models/users.model.ts';
 import bcrypt from 'bcrypt';
+
 import tokenUtils from '../utils/token.utils.ts';
+
 
 
 const resetPassword = async (req: Request, res: Response): Promise<Response | void> =>{

@@ -20,6 +20,7 @@ describe('Update Password API', () => {
 
         const user: any = await users.create({
             user_id:"test_test",
+
             email: 'test@example.com',
             password: 'OldPass@1234',
             status:statusEnum.finding_new_job,
@@ -30,6 +31,7 @@ describe('Update Password API', () => {
         });
 
         userId = user._id.toString();
+
         token = tokenUtils.createToken({ time: '1h', userID: user.user_id });
 
     });

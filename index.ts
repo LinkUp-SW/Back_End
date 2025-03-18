@@ -19,6 +19,7 @@ import resumeRoutes from './src/routes/resume.routes.ts';
 import updatenameRoutes from './src/routes/updateUsername.routes.ts';
 
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
+import privacySettings from './src/routes/privacy.settings.routes.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
@@ -93,10 +94,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/auth', authRoutes); 
 //Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updatepassRoutes & updatenameRoutes & profilePictureRoutes & coverPhotoRoutes & resumeRoutes
 
-app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updatepassRoutes,updatenameRoutes,profilePictureRoutes,coverPhotoRoutes,resumeRoutes);
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updatepassRoutes,updatenameRoutes,profilePictureRoutes,coverPhotoRoutes,resumeRoutes,privacySettings);
 
 
 
+
+// Privacy Settings Routes
+app.use('/api/v1/user', privacySettings);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href= "/auth/google">Authenticate with google</a>');
