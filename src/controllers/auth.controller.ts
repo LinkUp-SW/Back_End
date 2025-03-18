@@ -34,7 +34,8 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
   if (!passportUser) {
     throw new CustomError('Google authentication failed', 401, 'GOOGLE_AUTH_FAILED');
   }
-
+  
+  // Store the Google access token in the session.
   if (req.session) {
     req.session.tokens = {
       access_token: passportUser.tokens?.accessToken,
