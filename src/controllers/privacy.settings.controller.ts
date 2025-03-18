@@ -13,9 +13,6 @@ export const getProfileVisibility = async (req: Request, res: Response): Promise
     const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
     const userIdFromToken = tokenValidation.validateToken(token) as { userId: string };
 
-
-    //const userIdFromToken = tokenValidation.validateToken(req.headers.authorization || "");
-    console.log(userIdFromToken.userId);
     if (!userIdFromToken || !userIdFromToken.userId) {
       res.status(401).json({ message: "Unauthorized" });
       return;
