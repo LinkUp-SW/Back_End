@@ -39,7 +39,6 @@ export enum accountStatusEnum{
 export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
-    user_id: string;
     email: string;
     password: string;
     phone_number: number;
@@ -339,7 +338,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         }]
     }],
 
-    status: { type: String, enum: Object.values(statusEnum), required: true },
+    status: { type: String, enum: Object.values(statusEnum)},
     blocked: [{ type: String}],
   
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
@@ -354,14 +353,14 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
-    sex: { type: String, enum: Object.values(sexEnum), required: true },
+    sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
-    is_student: { type: Boolean, required: true },
-    is_verified: { type: Boolean, required: true },
-    is_16_or_above: { type: Boolean, required: true },
+    is_student: { type: Boolean},
+    is_verified: { type: Boolean},
+    is_16_or_above: { type: Boolean },
 });
 
 usersSchema.pre('save', async function(next) {

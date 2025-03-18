@@ -1233,7 +1233,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-   delete:
+  delete:
       tags:
         - Resume
       summary: Delete a resume
@@ -1300,7 +1300,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-    get:
+  get:
       tags:
         - Resume
       summary: Get a resume

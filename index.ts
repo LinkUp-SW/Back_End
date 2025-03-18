@@ -22,6 +22,7 @@ import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import tokenUtils from './src/utils/token.utils.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,11 +33,18 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
+// Generate a token with a 1-hour expiration and user_id "Mahmoud-Amr-123"
+const generateStartupToken = () => {
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Mahmoud-Amr-123' });
+  console.log('Generated Token:', token);
+};
 
 connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
+      //generateStartupToken();
+
     });
   })
   .catch(err => {
