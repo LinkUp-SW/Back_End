@@ -33,14 +33,14 @@ export const emailTransporter = nodemailer.createTransport({
 
 
 export async function generateUniqueId(firstName: string, lastName: string): Promise<string> {
-    let id = firstName + "-" + lastName + Math.floor(Math.random() * 10000);
+    let id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
     let attempt = 0;
     while(attempt < 10) {
       const user = await userRepo.findByUserId(id);
       if (!user) {
         return id;
       }
-      id = firstName + "-" + lastName + Math.floor(Math.random() * 10000);
+      id = firstName + "-" + lastName + Math.floor(Math.random() * 100);
       attempt++;
     }
     throw new Error("Unable to generate unique user id after 10 attempts");

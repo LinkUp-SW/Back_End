@@ -56,28 +56,21 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
   }
 
   // Set the JWT as an HTTP-only cookie.
-  res.cookie('token', token, {
-    httpOnly: true,
-    maxAge: 3600000,
+  res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
+    httpOnly: JWT_CONFIG.HTTP_ONLY,
+    maxAge: 3600000, // 1 hour
   });
-
-  res.cookie('user_data', JSON.stringify({
-    id: user.user_id,
-    firstName: user.bio.first_name, 
-    lastName: user.bio.last_name, 
-    email: user.email, 
-    password: user.password, 
-    isVerified: user.is_verified
-  }), {
-    httpOnly: false,
-    sameSite: 'none',
-    maxAge: 3600000,
-    domain: 'localhost',
+  
+  return res.status(200).json({
+    message: 'Google authentication successful',
+    user: { id: user.user_id,
+            firstName: user.bio.first_name, 
+            lastName:user.bio.last_name, 
+            email: user.email, 
+            password: user.password, 
+            isVerified: user.is_verified },
+    tokens: token,
   });
-
-  // Redirect
-  res.redirect(200, `http://localhost:5173/feed`);
-
 });
 
 /**
