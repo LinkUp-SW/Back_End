@@ -12,9 +12,12 @@ import signupRoutes from './src/routes/signup.routes.ts';
 import forgetRoutes from './src/routes/forgetPassword.routes.ts';
 import resetRoutes from './src/routes/resetPassword.routes.ts';
 import updatepassRoutes from './src/routes/updatePassword.routes.ts';
+
 import profilePictureRoutes from './src/routes/profilePicture.routes.ts';
 import coverPhotoRoutes from './src/routes/coverPhoto.routes.ts';
 import resumeRoutes from './src/routes/resume.routes.ts';
+import updatenameRoutes from './src/routes/updateUsername.routes.ts';
+
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -28,6 +31,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET;
+
 
 connectToDatabase()
   .then(() => {
@@ -79,8 +83,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updatepassRoutes & updatenameRoutes
-app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updatepassRoutes,profilePictureRoutes,coverPhotoRoutes,resumeRoutes);
+//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updatepassRoutes & updatenameRoutes & profilePictureRoutes & coverPhotoRoutes & resumeRoutes
+
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updatepassRoutes,updatenameRoutes,profilePictureRoutes,coverPhotoRoutes,resumeRoutes);
+
 
 
 

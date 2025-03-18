@@ -1233,7 +1233,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-    delete:
+   delete:
       tags:
         - Resume
       summary: Delete a resume
@@ -1356,3 +1356,87 @@ paths:
                   error:
                     type: string
                     example: "Database error"
+  /api/v1/user/update-username:
+    post:
+      tags:
+        - Auth
+      summary: Update username
+      description: >
+        Updates the user's username using the provided token and new username.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - new_username
+              properties:
+                token:
+                  type: string
+                  example: "jwt_token"
+                new_username:
+                  type: string
+                  example: "new_username"
+      responses:
+        '200':
+          description: Username updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Username updated successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token and new username are required"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '403':
+          description: Username already in use
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Username already in use"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"

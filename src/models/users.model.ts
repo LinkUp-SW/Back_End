@@ -39,6 +39,7 @@ export enum accountStatusEnum{
 export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
+    user_id: string;
     email: string;
     password: string;
     phone_number: number;
@@ -125,7 +126,9 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
+
     connections: string[];
+
     followers: usersInterface[];
     following: usersInterface[];
     privacy_settings: {
@@ -146,7 +149,9 @@ export interface usersInterface extends mongoose.Document{
         }];
     }[]
     status: statusEnum; 
+
     blocked: string[];
+
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -170,8 +175,13 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
-    user_id: { type: String, required: true, unique: true},
-    name: { type: String }, // Name is optional due to Google/email signup
+
+    user_id:{
+        type: String,
+        required:true,
+        unique:true
+    },
+
     email: {
         type: String,
         required: true,
@@ -276,6 +286,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         },
     ],
     industry: { type: String },
+
     profile_photo: {
         type: String,
         validate: {
@@ -307,6 +318,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         default: null,
       },
     connections: [{ type: String}],
+
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     following: [{ type: Schema.Types.ObjectId, ref: "users" }],
     privacy_settings: {
@@ -326,8 +338,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     }],
-    status: { type: String, enum: Object.values(statusEnum) },
+
+    status: { type: String, enum: Object.values(statusEnum), required: true },
     blocked: [{ type: String}],
+  
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },

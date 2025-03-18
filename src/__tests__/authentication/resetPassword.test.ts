@@ -3,7 +3,8 @@ import express from 'express';
 import { connectToDatabase, disconnectFromDatabase } from '../../../config/database.ts';
 import resetPasswordRoutes from '../../../src/routes/resetPassword.routes.ts';
 import users, { sexEnum, statusEnum } from '../../../src/models/users.model.ts';
-import createToken from '../../utils/token.utils.ts';
+import tokenUtils from '../../utils/token.utils.ts';
+
 
 const app = express();
 app.use(express.json());
@@ -18,6 +19,8 @@ describe('Reset Password API', () => {
 
         // Create a mock user with all required fields
         const user: any = await users.create({
+            user_id:"test_test",
+
             email: 'test@example.com',
             password: 'OldPass@1234',
             status:statusEnum.finding_new_job,
@@ -27,10 +30,10 @@ describe('Reset Password API', () => {
             is_student:false
         });
 
-        userId = user._id.toString(); // Extract the user ID from MongoDB
 
-        // Generate a valid reset token using your real createToken function
-        token = createToken({ time: '1h', userID: userId });
+        userId = user._id.toString(); 
+
+        token = tokenUtils.createToken({ time: '1h', userID: user.user_id });
     });
 
     afterAll(async () => {
