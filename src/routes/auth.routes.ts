@@ -9,7 +9,7 @@ router.post('/login', login);
 router.get('/logout', logout);
 
 // Google OAuth routes
-// This route triggers Passport's Google strategy (scopes can be adjusted as needed)
+// This route triggers Passport's Google strategy
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 // Google OAuth callback route - Passport handles authentication and then calls our controller

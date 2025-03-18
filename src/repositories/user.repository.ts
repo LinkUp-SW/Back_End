@@ -38,7 +38,7 @@ export class UserRepository {
         work_experience:{   
                 title: jobTitle,
                 employmentType: employmentType,
-                organization: recentCompany
+                organization_name: recentCompany
             },
     });
     }

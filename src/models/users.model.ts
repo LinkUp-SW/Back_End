@@ -1,11 +1,13 @@
 import mongoose, { Schema } from "mongoose";
 import validator from "validator";
 import { conversationsInterface } from "./conversations.model.ts";
-import { activityInterface } from "./activity.model.ts";
+import { postsInterface } from "./posts.model.ts";
+import { repostsInterface } from "./reposts.model.ts";
+import { commentsInterface } from "./comments.model.ts";
+import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
-import { reactsInterface } from "./reactions.model.ts";
+// import { reactsInterface } from "../models_to_delete/reactions.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
-import { jobTypeEnum } from "./jobs.model.ts";
 import bcrypt from "bcrypt";
 
 
@@ -36,6 +38,7 @@ export enum accountStatusEnum{
 
 export interface usersInterface extends mongoose.Document{
     name: string;
+    user_id: string;
     email: string;
     password: string;
     phone_number: number;
@@ -61,7 +64,6 @@ export interface usersInterface extends mongoose.Document{
             city: string;
         };
     };
-
     education: {
         school: organizationsInterface;
         degree: string;
@@ -80,7 +82,7 @@ export interface usersInterface extends mongoose.Document{
     }[];
     work_experience: {
         title: string;
-        employee_type: jobTypeEnum; 
+        employee_type: string;
         organization: organizationsInterface | string;
         is_current: boolean;
         start_date: Date;
@@ -132,25 +134,35 @@ export interface usersInterface extends mongoose.Document{
         flag_messaging_requests: boolean;
         messaging_read_receipts: boolean;
     };
-    activity: activityInterface[]
+    activity: {
+        posts: postsInterface[];
+        reposted_posts: repostsInterface[];
+        reacted_posts:postsInterface[];
+        comments: commentsInterface[];
+        media: [{
+            media: string,
+            title: string,
+            description: string
+        }];
+    }[]
     status: statusEnum; 
     blocked: usersInterface[];
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
-        user_id :string,
-        sender_user_id:string,
-        conversation_id:string,
-        post_id:string,
-        comment_id:string,
-        react:reactsInterface
+        user_id : string,
+        sender_user_id: string,
+        conversation_id: string,
+        post_id: string,
+        comment_id: string,
+        react: boolean
     }[];
     applied_jobs: jobsInterface[];
     saved_jobs: jobsInterface[];
     sex: sexEnum;
     subscription:{
-        subscribed: Boolean,
-        subscription_started_at:Date
+        subscribed: boolean,
+        subscription_started_at: Date
     };
     is_student: boolean;
     is_verified: boolean;
@@ -158,7 +170,11 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
-    name: { type: String }, // Name is optional due to Google/email signup
+    user_id:{
+        type: String,
+        required:false,
+        unique:true
+    },
     email: {
         type: String,
         required: true,
@@ -235,19 +251,15 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         },
     ],
     organizations: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
-    skills: [
-        {
-            name: { type: String },
-            endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-            used_where: [
-                {
-                    educations: [{ type: String }],
-                    certificates: [{ type: String }],
-                    experience: [{ type: String }],
-                },
-            ],
-        },
-    ],
+    skills: [{
+        name: { type: String },
+        endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
+        used_where: [{
+            educations: [{ type: String }],
+            certificates: [{ type: String }],
+            experience: [{ type: String }],
+        },],
+    },],
     liscence_certificates: [
         {
             name: { type: String },
@@ -279,31 +291,39 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         flag_messaging_requests: { type: Boolean },
         messaging_read_receipts: { type: Boolean },
     },
-    activity: [{ type: Schema.Types.ObjectId, ref: "activity" }],
-    status: { type: String, enum: Object.values(statusEnum)},
+    activity: [{
+        posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
+        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "reposts" }],
+        reacted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
+        comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
+        media: [{
+            media: { type: String },
+            title: { type: String },
+            description: { type: String },
+        }]
+    }],
+    status: { type: String, enum: Object.values(statusEnum), required: false },
     blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
-    notification: [
-        {
-            seen: { type: Boolean },
-            user_id: { type: String },
-            sender_user_id: { type: String },
-            conversation_id: { type: String },
-            post_id: { type: String },
-            comment_id: { type: String },
-            react: { type: Schema.Types.ObjectId, ref: "reacts" },
-        },
-    ],
+    notification: [{
+        seen: { type: Boolean },
+        user_id: { type: String },
+        sender_user_id: { type: String },
+        conversation_id: { type: String },
+        post_id: { type: String },
+        comment_id: { type: String },
+        react: { type: Boolean },
+    },],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
-    sex: { type: String, enum: Object.values(sexEnum)},
+    sex: { type: String, enum: Object.values(sexEnum), required: false },
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
-    is_student: { type: Boolean},
-    is_verified: { type: Boolean},
-    is_16_or_above: { type: Boolean},
+    is_student: { type: Boolean, required: false },
+    is_verified: { type: Boolean, required: false },
+    is_16_or_above: { type: Boolean, required: false },
 });
 
 usersSchema.pre('save', async function(next) {

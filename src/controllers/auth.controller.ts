@@ -18,7 +18,7 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
 
   const { user, token } = await authService.login(email, password);
 
-  return res.status(200).json({ message: 'Login successful', user: { id: user._id, email: user.email, isVerified: user.is_verified }, cookie: {token: token, maxAge: 3600000} }); // 1 hour expiration
+  return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified }, cookie: {token: token, maxAge: 3600000} }); // 1 hour expiration
 });
 
 /**
@@ -34,7 +34,6 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
     throw new CustomError('Google authentication failed', 401, 'GOOGLE_AUTH_FAILED');
   }
 
-  // Optionally, store tokens in session for further use
   if (req.session) {
     req.session.tokens = {
       access_token: passportUser.tokens?.accessToken,
@@ -60,8 +59,12 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
 
   return res.status(200).json({
     message: 'Google authentication successful',
-    user: { id: user._id, email: user.email },
-    tokens: req.session?.tokens,
+    user: { firstName: user.bio.first_name, 
+            lastName:user.bio.last_name, 
+            email: user.email, 
+            password: user.password, 
+            isVerified: user.is_verified },
+    tokens: token,
   });
 });
 
