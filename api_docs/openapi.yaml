@@ -199,13 +199,14 @@ paths:
               type: object
               required:
                 - otp
+                - email
               properties:
                 otp:
                   type: string
                   example: "123456"
-                token:
+                email:
                   type: string
-                  example: "jwt_token"
+                  example: "test@example.com"
       responses:
         '200':
           description: OTP verified successfully.
@@ -274,7 +275,7 @@ paths:
       summary: Register a New User (Starter)
       description: >
         Registers a new user by creating an account with the provided starter information.
-        Required fields include firstName, lastName, email, password, and OTP for verification.
+        Required fields include firstName, lastName, email, password, country, and city.
       requestBody:
         required: true
         content:
@@ -326,8 +327,9 @@ paths:
                   type: boolean
                   example: true
                 birthDate:
-                  type: Date
-                  example: 1990-01-01
+                  type: string
+                  format: date
+                  example: "1990-01-01"
                 employmentType:
                   type: string
                   example: "Full-time"
@@ -352,7 +354,7 @@ paths:
                         type: string
                         example: "john.doe@example.com"
         '400':
-          description: Required fields missing or invalid OTP.
+          description: Required fields missing.
         '409':
           description: User already exists.
         '500':
