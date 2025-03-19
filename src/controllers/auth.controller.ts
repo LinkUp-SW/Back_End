@@ -4,9 +4,10 @@ import asyncHandler from '../middleware/asyncHandler.ts';
 import { CustomError } from '../utils/customError.utils.ts';
 import { JWT_CONFIG } from '../../config/jwt.config.ts';
 import { AuthService } from '../services/authService.service.ts';
-import { generateUniqueId } from '../utils/helperFunctions.utils.ts';
+import { UserRepository } from '../repositories/user.repository.ts';
 
 const authService = new AuthService();
+const userRepository = new UserRepository();
 
 /**
  * Local Email or Phone/Password Login
@@ -58,19 +59,47 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
   // Set the JWT as an HTTP-only cookie.
   res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
     httpOnly: JWT_CONFIG.HTTP_ONLY,
-    maxAge: 3600000, // 1 hour
+    maxAge: 3600000, // 1 hour,
   });
-  
-  return res.status(200).json({
-    message: 'Google authentication successful',
-    user: { id: user.user_id,
-            firstName: user.bio.first_name, 
-            lastName:user.bio.last_name, 
-            email: user.email, 
-            password: user.password, 
-            isVerified: user.is_verified },
-    tokens: token,
-  });
+
+
+  const userCheck = await userRepository.findByEmail(user.email);
+
+  if (!userCheck?.bio?.location) {
+    
+    return res.status(500).json({ message: 'User not found' });
+
+  }
+
+  if (Object.keys(userCheck.bio.location).length === 0) {
+    res.cookie("linkup_user_id", userCheck.user_id, {
+      maxAge: 3600000,
+      httpOnly: false,
+    });
+    return res
+      .status(200)
+      .redirect(`${process.env.FRONTEND_REDIRECT_URL}/feed`);
+  } else {
+    res.cookie(
+      "linkup_user_data",
+      JSON.stringify({
+        user_id: user.user_id,
+        firstName: user.bio.first_name,
+        lastName: user.bio.last_name,
+        email: user.email,
+        password: user.password,
+        isVerified: user.is_verified,
+      }),
+      {
+        httpOnly: false,
+        maxAge: 3600000,
+        sameSite: "lax",
+        secure: false,
+      }
+    );
+    return res.redirect(`${process.env.FRONTEND_REDIRECT_URL}/signup/location`);
+  }
+
 });
 
 /**

@@ -43,7 +43,7 @@ export class UserRepository {
     });
     }
 
-  async findByEmail(email: string ) {
+   async findByEmail(email: string ) {
         return User.findOne({ email });
     }
 

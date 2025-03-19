@@ -45,8 +45,10 @@ export class AuthService {
     if (user) {
       const token = tokenFunctionalities.createToken({
         time: "1h",
-        userID: user._id as string, // TODO: Change it to username.
+        userID: await generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name), // TODO: Change it to username.
       });
+      user.is_verified = true;
+      await user.save();
       return { token, user };
     } else {
       // If user doesn't exist, create a new record.
@@ -58,6 +60,8 @@ export class AuthService {
         googleUserInfo.family_name,
         generateHashedPassword() // Use a generated or placeholder password.
       );
+      user.is_verified = true;
+      await user.save();
       const token = tokenFunctionalities.createToken({
         time: "1h",
         userID: user._id as string,
