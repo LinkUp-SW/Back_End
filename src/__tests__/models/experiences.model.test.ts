@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import Experiences from "../../models/experiences.model.ts";
-import Skills from "../../models/skills.model.ts";
-import Media, { mediaInterface } from "../../models/media.model.ts";
+import Experiences from "../../models_to_delete/experiences.model.ts";
+import Skills from "../../models_to_delete/skills.model.ts";
+import Media, { mediaInterface } from "../../models_to_delete/media.model.ts";
 import organizations, { organizationsInterface, organizationSizeEnum, organizationTypeEnum } from "../../models/organizations.model.ts";
-import experiences from "../../models/experiences.model.ts";
+import experiences from "../../models_to_delete/experiences.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

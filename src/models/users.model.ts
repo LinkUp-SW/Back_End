@@ -39,6 +39,7 @@ export enum accountStatusEnum{
 export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
+    user_id: string;
     email: string;
     password: string;
     phone_number: number;
@@ -147,12 +148,8 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }];
     };
-    
     status: statusEnum; 
-
-
     blocked: string[];
-
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -176,14 +173,11 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
-
-
     user_id:{
         type: String,
-        required:true,
+        required:false,
         unique:true
     },
-
     email: {
         type: String,
         required: true,
@@ -340,12 +334,9 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             title: { type: String },
             description: { type: String },
         }]
-
-    }],
-
+    },
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [{ type: String}],
-
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },
@@ -358,13 +349,11 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
-
     sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
-
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },

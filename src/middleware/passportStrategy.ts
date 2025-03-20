@@ -10,7 +10,7 @@ export const googleAuth = (app: any) => {
       {
         clientID: googleConfig.clientID || "",
         clientSecret: googleConfig.clientSecret || "",
-        callbackURL: "/auth/google/callback",
+        callbackURL: googleConfig.callbackURL || "",
       },
       (
         accessToken: any,

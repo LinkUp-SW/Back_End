@@ -14,9 +14,10 @@ declare module 'express-session' {
 
 // Define Google user info interface
 export interface GoogleUserInfo {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-  verified_email?: boolean;
+  id: string,
+  email: string,
+  verified_email: boolean,
+  name: string,
+  given_name: string,
+  family_name: string
 }

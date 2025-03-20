@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import LicenseAndCertifications from "../../models/license_and_certifications.model.ts";
-import Skills from "../../models/skills.model.ts";
+import LicenseAndCertifications from "../../models_to_delete/license_and_certifications.model.ts";
+import Skills from "../../models_to_delete/skills.model.ts";
 import organizations, { organizationSizeEnum, organizationTypeEnum } from "../../models/organizations.model.ts";
 
 beforeAll(async () => {

@@ -23,7 +23,8 @@ const getGoogleUserInfo = async (accessToken: string): Promise<GoogleUserInfo> =
     throw new Error('Failed to fetch user info from Google');
   }
   
-  return response.json();
+  const userInfo = await response.json();
+  return userInfo as GoogleUserInfo;
 };
 
 export { oauth2Client, getGoogleUserInfo };

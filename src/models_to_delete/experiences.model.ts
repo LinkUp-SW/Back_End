@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { organizationsInterface } from "./organizations.model.ts";
+import { organizationsInterface } from "../models/organizations.model.ts";
 
 
 
