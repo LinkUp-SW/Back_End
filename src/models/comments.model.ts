@@ -5,23 +5,23 @@ import { postsInterface } from "./posts.model.ts";
 
 export interface commentsInterface extends mongoose.Document{
     post_id: postsInterface;
-    user_id: usersInterface;
+    user_id: string;
     content: string;
     date: Date;
     media: string[];
-    reacts: usersInterface[];
-    tagged_users: usersInterface[];
+    reacts: string[];
+    tagged_users: string[];
 } 
 
 const commentsSchema = new Schema<commentsInterface>({
     post_id: { type: Schema.Types.ObjectId, ref: "posts", required: true },
-    user_id: { type: Schema.Types.ObjectId, ref: "users", required: true },
+    user_id: { type: String,  required: true },
     content: { type: String, required: true },
     date: { type: Date, default: Date.now },
     media: [{ type: String }],
-    reacts: [{ type: Schema.Types.ObjectId, ref: "users" }],
-    tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
+    reacts: [{ type: String }],
+    tagged_users: [{ type: String }],
 });
-const comments =  mongoose.model<commentsInterface>('commments', commentsSchema);
+const comments =  mongoose.model<commentsInterface>('comments', commentsSchema);
 
 export default comments;
