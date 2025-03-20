@@ -14,6 +14,7 @@ import forgetRoutes from './src/routes/forgetPassword.routes.ts';
 import resetRoutes from './src/routes/resetPassword.routes.ts';
 import updateRoutes from './src/routes/updatePassword.routes.ts';
 import updateEmailRoutes from './src/routes/updateEmail.routes.ts';
+import deleteAccountRoutes from './src/routes/deleteAccount.routes.ts'
 import passport, { googleAuth } from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -80,7 +81,8 @@ app.use('/api/v1/user',
     forgetRoutes,
     resetRoutes, 
     updateRoutes,
-    updateEmailRoutes);
+    updateEmailRoutes,
+    deleteAccountRoutes);
 
 
 app.get('/', (req: Request, res: Response) => {

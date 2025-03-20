@@ -507,4 +507,41 @@ paths:
           description: Email already exists or invalid token.
         '500':
           description: Server error.
+  /api/v1/user/delete-account:
+    delete:
+      tags:
+        - User
+      summary: Delete User Account
+      description: >
+        Deletes the authenticated user's account from the system.
+        A valid token is required to verify the user's identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Account deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Account deleted successfully"
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized or invalid token.
+        '500':
+          description: Server error
 

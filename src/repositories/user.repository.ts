@@ -66,4 +66,8 @@ export class UserRepository {
     async updateEmail(user_id: string, email: string) {
         return User.updateOne({ user_id: user_id }, { $set: { email: email } });
     }
+
+    async deleteAccount(user_id:string){
+        return User.deleteOne({ user_id: user_id })
+    }
 }
