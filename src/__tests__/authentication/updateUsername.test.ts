@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { connectToDatabase, disconnectFromDatabase } from '../../../config/database.ts';
-import updateUsernameRoutes from '../../routes/updateUsername.routes.ts';
+import updateUsernameRoutes from '../../routes/authentication/updateUsername.routes.ts';
 import users, { sexEnum, statusEnum } from '../../models/users.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 
