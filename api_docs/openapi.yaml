@@ -1332,6 +1332,7 @@ paths:
                 properties:
                   message:
                     type: string
+
                     example: "Resume not found"
         '401':
           description: Unauthorized
@@ -1343,6 +1344,10 @@ paths:
                   message:
                     type: string
                     example: "Unauthorized"
+
+        '403':
+          description: Access denied
+
         '500':
           description: Error retrieving resume
           content:
@@ -1419,7 +1424,9 @@ paths:
                 properties:
                   message:
                     type: string
+
                     example: "Username already in use"
+
         '404':
           description: User not found
           content:
@@ -1439,6 +1446,7 @@ paths:
                 properties:
                   message:
                     type: string
+
                     example: "Server error"
   /api/v1/privacy/profile-visibility/{user_id}:
     get:
@@ -1601,3 +1609,193 @@ paths:
                   error:
                     type: string
                     example: "Database error"
+  /api/v1/user/profile/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user profile
+      description: >
+        Retrieves the profile of a user by their `user_id`. The response includes details such as bio, education, experience, skills, licenses, posts, comments, and reacted posts. 
+        Access to the profile depends on the user's privacy settings and whether the viewer is blocked or connected.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The unique identifier of the user whose profile is being requested.
+          schema:
+            type: string
+            example: "user123"
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the viewer is the profile owner.
+                    example: true
+                  bio:
+                    type: object
+                    description: The user's bio information.
+                    properties:
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+                      headline:
+                        type: string
+                        example: "Software Engineer"
+                      experience:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Google", "Microsoft"]
+                      education:
+                        type: array
+                        items:
+                          type: string
+                        example: ["MIT", "Stanford"]
+                      website:
+                        type: string
+                        example: "https://johndoe.com"
+                      contact_info:
+                        type: object
+                        properties:
+                          phone_number:
+                            type: string
+                            example: "1234567890"
+                          country_code:
+                            type: string
+                            example: "+1"
+                          phone_type:
+                            type: string
+                            example: "Mobile"
+                          address:
+                            type: string
+                            example: "123 Main St"
+                          birthday:
+                            type: string
+                            format: date
+                            example: "1990-01-01"
+                          website:
+                            type: string
+                            example: "https://johndoe.com"
+                      location:
+                        type: object
+                        properties:
+                          country_region:
+                            type: string
+                            example: "USA"
+                          city:
+                            type: string
+                            example: "San Francisco"
+                  education:
+                    type: array
+                    description: The user's education details.
+                    items:
+                      type: string
+                    example: []
+                  experience:
+                    type: array
+                    description: The user's work experience.
+                    items:
+                      type: string
+                    example: []
+                  skills:
+                    type: array
+                    description: The user's skills.
+                    items:
+                      type: string
+                    example: []
+                  licenses:
+                    type: array
+                    description: The user's licenses and certifications.
+                    items:
+                      type: string
+                    example: []
+                  posts:
+                    type: array
+                    description: The user's most recent posts.
+                    items:
+                      type: object
+                    example: []
+                  comments:
+                    type: array
+                    description: The user's most recent comments.
+                    items:
+                      type: object
+                    example: []
+                  reacted:
+                    type: array
+                    description: The user's most recent reacted posts.
+                    items:
+                      type: object
+                    example: []
+                  profile_photo:
+                    type: string
+                    description: The URL of the user's profile photo.
+                    example: "https://example.com/profile_photo.jpg"
+                  cover_photo:
+                    type: string
+                    description: The URL of the user's cover photo.
+                    example: "https://example.com/cover_photo.jpg"
+                  resume:
+                    type: string
+                    description: The URL of the user's resume.
+                    example: "https://example.com/resume.pdf"
+        '400':
+          description: Invalid user ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid user ID format."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are blocked from viewing this profile."
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching user profile"
+

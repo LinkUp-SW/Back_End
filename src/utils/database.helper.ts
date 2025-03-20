@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
-import mongoose from "mongoose";
+
+//import mongoose from "mongoose";
 import Users from "../models/users.model.ts";
-import { usersInterface } from "../models/users.model.ts"; 
-import posts from "../models/posts.model.ts";
-import comments from "../models/comments.model.ts";
+//import { usersInterface } from "../models/users.model.ts"; // Ensure this path is correct
+import  "../models/posts.model.ts";
+import  "../models/comments.model.ts";
+
 /**
  * Validates that the provided user_id is a valid MongoDB ObjectId.
  * Returns the user_id if valid; otherwise sends an error response and returns null.
@@ -111,8 +113,17 @@ export const checkProfileAccess = async (
  * @returns An array of cleaned posts.
  */
 export const getUserPostsLimited = async (userId: string): Promise<any[]> => {
-  const userPosts = await posts.find({ userId }).sort({ date: -1 }).limit(10).lean();
-  return userPosts.map(({ __v, ...rest }: any) => rest);
+  const user = await Users.findOne({ user_id: userId })
+      .select("activity.posts")
+      .populate({
+          path: "activity.posts",
+          model: 'posts', // Reference the posts collection
+          options: { sort: { date: -1 } }, // Sort by date in descending order
+      })
+      .lean();
+
+  if (!user || !user.activity || !user.activity.posts) return [];
+  return user.activity.posts.slice(0, 10); // Return the 10 most recent posts with full data
 };
 
 /**
@@ -121,8 +132,19 @@ export const getUserPostsLimited = async (userId: string): Promise<any[]> => {
  * @returns An array of cleaned comments.
  */
 export const getUserCommentsLimited = async (userId: string): Promise<any[]> => {
-  const userComments = await comments.find({ userId }).sort({ date: -1 }).limit(10).lean();
-  return userComments.map(({ __v, ...rest }: any) => rest);
+
+  const user = await Users.findOne({ user_id: userId })
+      .select("activity.comments")
+      .populate({
+          path: 'activity.comments',
+          model: 'comments', // Reference the comments collection
+          options: { sort: { date: -1 } }, // Sort by date in descending order
+      })
+      .lean();
+
+  if (!user || !user.activity || !user.activity.comments) return [];
+  return user.activity.comments.slice(0, 10); // Return the 10 most recent comments with full data
+
 };
 
 /**
@@ -131,6 +153,23 @@ export const getUserCommentsLimited = async (userId: string): Promise<any[]> => 
  * @returns An array of cleaned reacted posts.
  */
 export const getUserReactedPostsLimited = async (userId: string): Promise<any[]> => {
-  const userReactedPosts = await posts.find({ userId }).sort({ date: -1 }).limit(10).lean();
-  return userReactedPosts.map(({ __v, ...rest }: any) => rest);
+
+  const user = await Users.findOne({ user_id: userId })
+      .select("activity.reacted_posts")
+      .populate({
+          path: 'activity.reacted_posts',
+          model: 'posts', // Reference the posts collection
+          options: { sort: { date: -1 } }, // Sort by date in descending order
+      })
+      .lean();
+
+  if (!user || !user.activity || !user.activity.reacted_posts) return [];
+  return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
 };
+
+
+
+
+
+
+

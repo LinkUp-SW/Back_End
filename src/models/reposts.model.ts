@@ -5,13 +5,13 @@ import { postsInterface } from "./posts.model.ts";
 
 export interface repostsInterface extends mongoose.Document{
     post_id: postsInterface;
-    user_id: usersInterface;
+    user_id: string;
     content: string;
 }
 
 const repostsSchema = new Schema<repostsInterface>({
     post_id: { type: Schema.Types.ObjectId, ref: "posts", required:true },
-    user_id: { type: Schema.Types.ObjectId, ref: "users", required:true },
+    user_id: { type: String , required:true },
     content: { type: String}
 });
 

@@ -23,6 +23,9 @@ import privacySettings from './src/routes/privacy.settings.routes.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+
+import viewUserProfileRoutes from './src/routes/view.user.profile.routes.ts';
+
 import tokenUtils from './src/utils/token.utils.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,16 +37,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET;
 
+
 // Generate a token with a 1-hour expiration and user_id "Mahmoud-Amr-123"
 const generateStartupToken = () => {
   const token = tokenUtils.createToken({ time: '1000h', userID: 'Mahmoud-Amr-123' });
   console.log('Generated Token:', token);
 };
 
+
 connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
+
       //generateStartupToken();
 
     });
@@ -92,9 +98,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Google Auth Routes
 app.use('/auth', authRoutes); 
-//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updatepassRoutes & updatenameRoutes & profilePictureRoutes & coverPhotoRoutes & resumeRoutes
 
-app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updatepassRoutes,updatenameRoutes,profilePictureRoutes,coverPhotoRoutes,resumeRoutes,privacySettings);
+//Login/Logout Routes & OTP Routes & signupRoutes & forgetRoutes & resetRoutes & updatepassRoutes & updatenameRoutes & profilePictureRoutes & coverPhotoRoutes & resumeRoutes & viewUserProfileRoutes
+
+app.use('/api/v1/user', loginRoutes, otpRoutes, signupRoutes,forgetRoutes,resetRoutes,updatepassRoutes,updatenameRoutes,profilePictureRoutes,coverPhotoRoutes,resumeRoutes,privacySettings,viewUserProfileRoutes);
 
 
 

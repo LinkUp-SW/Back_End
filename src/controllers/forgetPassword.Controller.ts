@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import users from '../models/users.model.ts';
 import { sendResetPasswordEmail } from '../services/forgetPassword.service.ts';
+
 import tokenUtils from '../utils/token.utils.ts';
 
 
@@ -20,6 +21,7 @@ const forgetPassword = async (req: Request, res: Response): Promise<Response | v
             return res.status(404).json({ message: 'Email not registered' });
         }
         const token=tokenUtils.createToken({time: '15m',
+
 
             userID: user.user_id
 

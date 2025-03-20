@@ -126,8 +126,8 @@ export interface usersInterface extends mongoose.Document{
     cover_photo: string;
     resume: string;
 
-    connections: string[];
 
+    connections: string[];
     followers: usersInterface[];
     following: usersInterface[];
     privacy_settings: {
@@ -146,8 +146,10 @@ export interface usersInterface extends mongoose.Document{
             title: string,
             description: string
         }];
-    }[]
+    };
+    
     status: statusEnum; 
+
 
     blocked: string[];
 
@@ -174,6 +176,7 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
+
 
     user_id:{
         type: String,
@@ -286,6 +289,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     ],
     industry: { type: String },
 
+
     profile_photo: {
         type: String,
         validate: {
@@ -326,7 +330,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         flag_messaging_requests: { type: Boolean },
         messaging_read_receipts: { type: Boolean },
     },
-    activity: [{
+    activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
         reposted_posts: [{ type: Schema.Types.ObjectId, ref: "reposts" }],
         reacted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
@@ -336,11 +340,12 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             title: { type: String },
             description: { type: String },
         }]
+
     }],
 
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [{ type: String}],
-  
+
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },
@@ -353,11 +358,13 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
+
     sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
+
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
