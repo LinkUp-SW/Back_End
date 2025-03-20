@@ -25,7 +25,7 @@ const verifyEmail = asyncHandler(
 
 
 const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
-    const { firstName, lastName, email, password,
+    const { userId, firstName, lastName, email, password,
       country,
       city,
       isStudent,
@@ -38,7 +38,9 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       employmentType,
       recentCompany } = req.body;
     const userRepository = new UserRepository();
+    email.toLowerCase();
     const user = await userRepository.create(
+      userId,
       firstName, lastName, email, password,
       country,
       city,

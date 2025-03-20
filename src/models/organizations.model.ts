@@ -57,23 +57,23 @@ export interface organizationsInterface extends mongoose.Document{
 }
 
 const organizationsSchema = new Schema<organizationsInterface>({
-    organization_name: { type: String, required: true },
-    category_type: { type: String, enum: Object.values(categoryTypeEnum), required: true },
-    unique_url: { type: String, required: true },
+    organization_name: { type: String },
+    category_type: { type: String, enum: Object.values(categoryTypeEnum) },
+    unique_url: { type: String },
     website: { type: String},
     logo: { type: String},
     description: { type: String},
-    industry: { type: String, required: true },
+    industry: { type: String },
     location: { type: String},
-    size: { type: String, enum: Object.values(organizationSizeEnum), required: true },
-    type: { type: String, enum: Object.values(organizationTypeEnum), required: true },
+    size: { type: String, enum: Object.values(organizationSizeEnum) },
+    type: { type: String, enum: Object.values(organizationTypeEnum) },
     posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     admins:[{
         admin:{ type: Schema.Types.ObjectId, ref: "users" },
-        level:{ type: String, enum: Object.values(adminLevelEnum), required: true }
+        level:{ type: String, enum: Object.values(adminLevelEnum) }
     }]
 });
 

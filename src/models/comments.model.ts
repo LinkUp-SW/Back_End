@@ -14,9 +14,9 @@ export interface commentsInterface extends mongoose.Document{
 } 
 
 const commentsSchema = new Schema<commentsInterface>({
-    post_id: { type: Schema.Types.ObjectId, ref: "posts", required: true },
-    user_id: { type: String,  required: true },
-    content: { type: String, required: true },
+    post_id: { type: Schema.Types.ObjectId, ref: "posts"},
+    user_id: { type: String },
+    content: { type: String},
     date: { type: Date, default: Date.now },
     media: [{ type: String }],
     reacts: [{ type: String }],

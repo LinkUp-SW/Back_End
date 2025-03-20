@@ -23,8 +23,8 @@ export interface conversationsInterface extends mongoose.Document{
 }
 
 const conversationsSchema = new Schema<conversationsInterface>({
-    user1_id: { type: Schema.Types.ObjectId, ref: "users", required: true },
-    user2_id: { type: Schema.Types.ObjectId, ref: "users", required: true },
+    user1_id: { type: Schema.Types.ObjectId, ref: "users" },
+    user2_id: { type: Schema.Types.ObjectId, ref: "users" },
     user1_sent_messages: [
         {
             message: { type: String },

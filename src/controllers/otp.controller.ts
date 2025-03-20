@@ -18,7 +18,7 @@ declare module 'express-session' {
 const OTP_EXPIRATION_MINUTES = 10;
 
 const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-  const { email } = req.body;
+  const email = req.body.email.toLowerCase();
 
   if (!email) {
       throw new CustomError('Email is required', 400, 'MISSING_EMAIL');
@@ -42,7 +42,8 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const { otp, email } = req.body;
-
+  email.toLowerCase();
+  
   if (!otp) {
       throw new CustomError('OTP is required', 400, 'MISSING_OTP');
   }

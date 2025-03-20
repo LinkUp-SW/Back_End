@@ -20,7 +20,13 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
 
   const { user, token } = await authService.login(email, password);
 
-  return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified }, cookie: {token: token, maxAge: 3600000} }); // 1 hour expiration
+  res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
+    httpOnly: JWT_CONFIG.HTTP_ONLY,
+    maxAge: 3600000, // 1 hour,
+  });
+
+
+  return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified }}); // 1 hour expiration
 });
 
 /**
@@ -86,7 +92,7 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
         user_id: user.user_id,
         firstName: user.bio.first_name,
         lastName: user.bio.last_name,
-        email: user.email,
+        email: user.email.toLowerCase(),
         password: user.password,
         isVerified: user.is_verified,
       }),

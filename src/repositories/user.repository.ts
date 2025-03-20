@@ -3,7 +3,7 @@ import { jobTypeEnum } from '../models/jobs.model.ts';
 
 export class UserRepository {
 
-  async create(firstName: string, lastName: string, email: string, password: string,
+  async create(userId:string, firstName: string, lastName: string, email: string, password: string,
     country: string,
     city: string,
     isStudent: boolean | null,
@@ -17,6 +17,7 @@ export class UserRepository {
     recentCompany: string | null
     ){
     return User.create({ 
+        user_id: userId,
         email: email,
         password: password,
         bio:{
