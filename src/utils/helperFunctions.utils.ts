@@ -1,7 +1,8 @@
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { UserRepository } from '../repositories/user.repository.ts';
-const userRepo = new UserRepository();
+const userRepo = new UserRepository()
+
 
 /**
  * Generates a random password and hashes it using SHA-256.
@@ -44,4 +45,10 @@ export async function generateUniqueId(firstName: string, lastName: string): Pro
       attempt++;
     }
     throw new Error("Unable to generate unique user id after 10 attempts");
-    }
+}
+
+export const isEmailTaken = async (email: string): Promise<boolean> => {
+  const user = await userRepo.findByEmail(email);
+  return Boolean(user);
+};
+

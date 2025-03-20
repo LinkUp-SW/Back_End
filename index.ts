@@ -6,12 +6,14 @@ import path from 'path';
 import cors from 'cors';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
+import tokenUtils from './src/utils/token.utils.ts';
 import authRoutes from './src/routes/auth.routes.ts';
 import otpRoutes from './src/routes/otp.routes.js';
 import signupRoutes from './src/routes/signup.routes.ts';
 import forgetRoutes from './src/routes/forgetPassword.routes.ts';
 import resetRoutes from './src/routes/resetPassword.routes.ts';
 import updateRoutes from './src/routes/updatePassword.routes.ts';
+import updateEmailRoutes from './src/routes/updateEmail.routes.ts';
 import passport, { googleAuth } from './src/middleware/passportStrategy.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
@@ -27,10 +29,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
 
+
 connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
+      console.log(tokenUtils.createToken({time:'1hr',userID:'John-Doe-123'}));
     });
   })
   .catch(err => {
@@ -66,10 +70,18 @@ googleAuth(app);
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Routes
+// Authenticatio Routes
 app.use('/auth', authRoutes); 
-// Mount other routes for OTP, signup, forget/reset/update password
-app.use('/api/v1/user', otpRoutes, signupRoutes, forgetRoutes, resetRoutes, updateRoutes);
+
+// Mount User Routes
+app.use('/api/v1/user',
+    otpRoutes,
+    signupRoutes, 
+    forgetRoutes,
+    resetRoutes, 
+    updateRoutes,
+    updateEmailRoutes);
+
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');

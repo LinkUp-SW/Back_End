@@ -464,3 +464,47 @@ paths:
           description: User not found.
         '500':
           description: Server error
+  /api/v1/user/update-email:
+    put:
+      tags:
+        - User
+      summary: Update user email
+      description: >
+        Updates the email address of an authenticated user. A valid token is required to verify the user's identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - token
+              properties:
+                email:
+                  type: string
+                  example: "new.email@example.com"
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Email updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email updated successfully"
+                  user_updated_email:
+                    type: string
+                    example: "new.email@example.com"
+        '400':
+          description: Email is required.
+        '401':
+          description: Email already exists or invalid token.
+        '500':
+          description: Server error.
+
