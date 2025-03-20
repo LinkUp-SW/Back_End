@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import messages from "../../models/messages.model.ts";
-import { reactsEnum } from "../../models/reactions.model.ts";
+import messages from "../../models_to_delete/messages.model.ts";
+import { reactsEnum } from "../../models_to_delete/reactions.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

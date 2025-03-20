@@ -18,14 +18,13 @@ const createToken = ({ time, userID }: createTokenInterface): string => {
     Returns the decoded token if valid, otherwise returns an error message
     The decoded token is an object with the userId property (e.g. { userId: '123' })
  */
-const validateToken = (token: string): string => {
-  const decoded = jwt.verify(token, JWT_CONFIG.SECRET as jwt.Secret) as {
-    userId?: string;
-  };
-  if (!decoded.userId) {
-    throw new Error("Token does not contain a userId");
-  }
-  return decoded.userId;
+ const validateToken = (token: string): string | object => {
+    try {
+        return jwt.verify(token, JWT_CONFIG.SECRET as jwt.Secret);
+    }
+    catch (error) {
+        throw new Error('Invalid or expired token');
+    }
 };
 
 export default { createToken, validateToken };

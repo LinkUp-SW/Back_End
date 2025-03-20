@@ -18,6 +18,8 @@ describe('Reset Password API', () => {
 
         // Create a mock user with all required fields
         const user: any = await users.create({
+
+            user_id:"test_test",
             email: 'test@example.com',
             password: 'OldPass@1234',
             status:statusEnum.finding_new_job,
@@ -27,10 +29,8 @@ describe('Reset Password API', () => {
             is_student:false
         });
 
-        userId = user._id.toString(); // Extract the user ID from MongoDB
-
-        // Generate a valid reset token using your real createToken function
-        token = tokenUtils.createToken({ time: '1h', userID: userId });
+        userId = user._id.toString(); 
+        token = tokenUtils.createToken({ time: '1h', userID: user.user_id });
     });
 
     afterAll(async () => {

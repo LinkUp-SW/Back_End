@@ -6,7 +6,7 @@ import { repostsInterface } from "./reposts.model.ts";
 import { commentsInterface } from "./comments.model.ts";
 import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
-// import { reactsInterface } from "../models_to_delete/reactions.model.ts";
+import { reactsInterface } from "../models_to_delete/reactions.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
 
@@ -37,6 +37,7 @@ export enum accountStatusEnum{
 
 
 export interface usersInterface extends mongoose.Document{
+    user_id: string;
     name: string;
     user_id: string;
     email: string;
@@ -125,7 +126,9 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
-    connections: usersInterface[];
+
+
+    connections: string[];
     followers: usersInterface[];
     following: usersInterface[];
     privacy_settings: {
@@ -144,9 +147,9 @@ export interface usersInterface extends mongoose.Document{
             title: string,
             description: string
         }];
-    }[]
+    };
     status: statusEnum; 
-    blocked: usersInterface[];
+    blocked: string[];
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -279,10 +282,40 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         },
     ],
     industry: { type: String },
-    profile_photo: { type: String, validate: validator.isURL },
-    cover_photo: { type: String, validate: validator.isURL },
-    resume: { type: String, validate: validator.isURL },
-    connections: [{ type: Schema.Types.ObjectId, ref: "users" }],
+
+
+    profile_photo: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Profile photo must be a valid URL, an empty string, or null",
+        },
+        default: null, // Allow null by default
+      },
+      cover_photo: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Cover photo must be a valid URL, an empty string, or null",
+        },
+        default: null,
+      },
+      resume: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Resume must be a valid URL, an empty string, or null",
+        },
+        default: null,
+      },
+    connections: [{ type: String}],
+
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     following: [{ type: Schema.Types.ObjectId, ref: "users" }],
     privacy_settings: {
@@ -291,7 +324,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         flag_messaging_requests: { type: Boolean },
         messaging_read_receipts: { type: Boolean },
     },
-    activity: [{
+    activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
         reposted_posts: [{ type: Schema.Types.ObjectId, ref: "reposts" }],
         reacted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
@@ -301,9 +334,9 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             title: { type: String },
             description: { type: String },
         }]
-    }],
-    status: { type: String, enum: Object.values(statusEnum), required: false },
-    blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
+    },
+    status: { type: String, enum: Object.values(statusEnum)},
+    blocked: [{ type: String}],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },
@@ -316,14 +349,14 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
-    sex: { type: String, enum: Object.values(sexEnum), required: false },
+    sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
-    is_student: { type: Boolean, required: false },
-    is_verified: { type: Boolean, required: false },
-    is_16_or_above: { type: Boolean, required: false },
+    is_student: { type: Boolean},
+    is_verified: { type: Boolean},
+    is_16_or_above: { type: Boolean },
 });
 
 usersSchema.pre('save', async function(next) {
