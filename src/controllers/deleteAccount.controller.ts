@@ -16,11 +16,11 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response): P
 
     // Validate token and extract the user ID.
     // This function should throw an error if the token is invalid.
-    const userId = tokenUtils.validateToken(token);
+    const userId = tokenUtils.validateToken(token) as { userId: string };
 
     // Delete the user account from the database.
     // This method should delete the user by their ID and return the deleted user data or a confirmation.
-    const deletedUser = await userRepository.deleteAccount(userId);
+    const deletedUser = await userRepository.deleteAccount(userId.userId);
     
     res.status(200).json({
       message: 'Account deleted successfully',

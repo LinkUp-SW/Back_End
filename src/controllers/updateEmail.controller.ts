@@ -11,7 +11,7 @@ const userRepository = new UserRepository();
 const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<Response> => {
   const { email, token } = req.body;
 
-  let userId = tokenUtils.validateToken(token);
+  const userId = tokenUtils.validateToken(token) as { userId: string };;
 
   if (!email) {
     throw new CustomError('Email is required', 400, 'EMAIL_REQUIRED');
@@ -23,9 +23,9 @@ const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<R
     throw new CustomError('Email already exists', 401, 'EMAIL_EXISTS');
   }
 
-  await userRepository.updateEmail(userId, email);
+  await userRepository.updateEmail(userId.userId, email);
 
-  let user_updated = await userRepository.findByUserId(userId)
+  let user_updated = await userRepository.findByUserId(userId.userId)
 
   return res.status(200).json({ message: 'Email updated successfully', user_updated_email: user_updated?.email  });
 }); 
