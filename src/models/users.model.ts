@@ -125,6 +125,8 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
+
+
     connections: string[];
     followers: usersInterface[];
     following: usersInterface[];
@@ -147,7 +149,10 @@ export interface usersInterface extends mongoose.Document{
     };
     
     status: statusEnum; 
+
+
     blocked: string[];
+
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -171,8 +176,14 @@ export interface usersInterface extends mongoose.Document{
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
-    user_id: { type: String, required: true, unique: true},
-    name: { type: String }, // Name is optional due to Google/email signup
+
+
+    user_id:{
+        type: String,
+        required:true,
+        unique:true
+    },
+
     email: {
         type: String,
         required: true,
@@ -277,10 +288,40 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         },
     ],
     industry: { type: String },
-    profile_photo: { type: String, validate: validator.isURL },
-    cover_photo: { type: String, validate: validator.isURL },
-    resume: { type: String, validate: validator.isURL },
+
+
+    profile_photo: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Profile photo must be a valid URL, an empty string, or null",
+        },
+        default: null, // Allow null by default
+      },
+      cover_photo: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Cover photo must be a valid URL, an empty string, or null",
+        },
+        default: null,
+      },
+      resume: {
+        type: String,
+        validate: {
+          validator: function (value: string | null) {
+            return value === null || value === "" || validator.isURL(value);
+          },
+          message: "Resume must be a valid URL, an empty string, or null",
+        },
+        default: null,
+      },
     connections: [{ type: String}],
+
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     following: [{ type: Schema.Types.ObjectId, ref: "users" }],
     privacy_settings: {
@@ -299,9 +340,12 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             title: { type: String },
             description: { type: String },
         }]
-    },
+
+    }],
+
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [{ type: String}],
+
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },
@@ -314,12 +358,14 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },],
     applied_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
-    sex: { type: String, enum: Object.values(sexEnum) },
+
+    sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
         subscribed: { type: Boolean },
         subscription_started_at: { type: Date },
     },
-    is_student: { type: Boolean },
+
+    is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
 });

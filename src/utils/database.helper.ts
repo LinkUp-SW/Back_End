@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
+
 //import mongoose from "mongoose";
 import Users from "../models/users.model.ts";
 //import { usersInterface } from "../models/users.model.ts"; // Ensure this path is correct
 import  "../models/posts.model.ts";
 import  "../models/comments.model.ts";
+
 /**
  * Validates that the provided user_id is a valid MongoDB ObjectId.
  * Returns the user_id if valid; otherwise sends an error response and returns null.
@@ -130,6 +132,7 @@ export const getUserPostsLimited = async (userId: string): Promise<any[]> => {
  * @returns An array of cleaned comments.
  */
 export const getUserCommentsLimited = async (userId: string): Promise<any[]> => {
+
   const user = await Users.findOne({ user_id: userId })
       .select("activity.comments")
       .populate({
@@ -141,6 +144,7 @@ export const getUserCommentsLimited = async (userId: string): Promise<any[]> => 
 
   if (!user || !user.activity || !user.activity.comments) return [];
   return user.activity.comments.slice(0, 10); // Return the 10 most recent comments with full data
+
 };
 
 /**
@@ -149,6 +153,7 @@ export const getUserCommentsLimited = async (userId: string): Promise<any[]> => 
  * @returns An array of cleaned reacted posts.
  */
 export const getUserReactedPostsLimited = async (userId: string): Promise<any[]> => {
+
   const user = await Users.findOne({ user_id: userId })
       .select("activity.reacted_posts")
       .populate({
@@ -161,6 +166,7 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
   if (!user || !user.activity || !user.activity.reacted_posts) return [];
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
 };
+
 
 
 
