@@ -78,7 +78,7 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
 
   }
 
-  if (userCheck.bio.location.country_region && userCheck.bio.location.country_region.length === 0) {
+  if (userCheck.bio.location.country_region && userCheck.bio.location.country_region.length !== 0) {
     res.cookie("linkup_user_id", userCheck.user_id, {
       maxAge: 3600000,
       httpOnly: false,
