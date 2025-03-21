@@ -4,9 +4,7 @@ import { conversationsInterface } from "./conversations.model.ts";
 import { postsInterface } from "./posts.model.ts";
 import { repostsInterface } from "./reposts.model.ts";
 import { commentsInterface } from "./comments.model.ts";
-import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
-import { reactsInterface } from "../models_to_delete/reactions.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
 
@@ -39,7 +37,6 @@ export enum accountStatusEnum{
 export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
-    user_id: string;
     email: string;
     password: string;
     phone_number: number;
@@ -66,6 +63,7 @@ export interface usersInterface extends mongoose.Document{
         };
     };
     education: {
+        _id: string;
         school: organizationsInterface;
         degree: string;
         field_of_study: string;
@@ -82,6 +80,7 @@ export interface usersInterface extends mongoose.Document{
         }];
     }[];
     work_experience: {
+        _id : string
         title: string;
         employee_type: string;
         organization: organizationsInterface | string;
@@ -92,21 +91,18 @@ export interface usersInterface extends mongoose.Document{
         description: string;
         location_type: string;
         skills: string[];   
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     }[];
     organizations: organizationsInterface;
     skills: {
+        _id: string;
         name: string;
-        endorsments:usersInterface[];
-        used_where:[{
-            educations: string[], 
-            certificates: string[],
-            experience: string[] 
-        }];
+        endorsments: usersInterface[];
+        used_where: string[];
     }[];
     liscence_certificates: {
         name: string;
@@ -214,6 +210,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     education: [
         {
+            _id: { type: String },
             school: { type: Schema.Types.ObjectId, ref: "organizations" },
             degree: { type: String },
             field_of_study: { type: String },
@@ -234,6 +231,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     ],
     work_experience: [
         {
+            _id: { type: String },
             title: { type: String },
             employee_type: { type: String },
             organization: { type: Schema.Types.ObjectId, ref: "organizations" },
@@ -255,13 +253,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     ],
     organizations: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
     skills: [{
+        _id: { type: String },
         name: { type: String },
         endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        used_where: [{
-            educations: [{ type: String }],
-            certificates: [{ type: String }],
-            experience: [{ type: String }],
-        },],
+        used_where: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
     },],
     liscence_certificates: [
         {
