@@ -27,10 +27,45 @@ const verifyEmail = asyncHandler(
 
  
 const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
-    const {
+  const {
+    firstName, 
+    lastName, 
+    email, 
+    password,
+    country,
+    city,
+    isStudent,
+    jobTitle,
+    school,
+    schoolStartYear,
+    schoolEndYear,
+    is16OrAbove,
+    birthDate,
+    employmentType,
+    recentCompany 
+  } = req.body;
+
+  // Validate essential fields
+  if (!firstName || !lastName || !email || !password || !country || !city) {
+    throw new CustomError('Required fields missing', 400);
+  }
+  
+  const userRepository = new UserRepository();
+  
+  // Check if email already exists
+  const emailExists = await isEmailTaken(email.toLowerCase());
+  if (emailExists) {
+    const existingUser = await userRepository.findByEmail(email.toLowerCase());
+    if (!existingUser) {
+      throw new CustomError('User not found', 404);
+    }
+    
+    // Update the existing user with the new information - use existing user ID
+    const updatedUser = await userRepository.update(
+      existingUser.user_id,  // Use existing user_id instead of creating a new one
       firstName, 
       lastName, 
-      email, 
+      email.toLowerCase(), 
       password,
       country,
       city,
@@ -40,50 +75,14 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       schoolStartYear,
       schoolEndYear,
       is16OrAbove,
-      birthDate,
+      birthDate ? new Date(birthDate) : null,
       employmentType,
-      recentCompany 
-    } = req.body;
+      recentCompany
+    );
 
-    // Validate essential fields
-    if (!firstName || !lastName || !email || !password || !country || !city) {
-      throw new CustomError('Required fields missing', 400);
+    if (!updatedUser) {
+      throw new CustomError('Failed to update user', 500);
     }
-    
-    const userRepository = new UserRepository();
-    const userId = await generateUniqueId(firstName, lastName);
-    
-    // Check if email already exists
-    const emailExists = await isEmailTaken(email.toLowerCase());
-    if (emailExists) {
-      const existingUser = await userRepository.findByEmail(email.toLowerCase());
-      if (!existingUser) {
-        throw new CustomError('User not found', 404);
-      }
-      
-      // Update the existing user with the new information
-      const updatedUser = await userRepository.update(
-        userId.toString(),
-        firstName, 
-        lastName, 
-        email.toLowerCase(), 
-        password,
-        country,
-        city,
-        isStudent,
-        jobTitle,
-        school,
-        schoolStartYear,
-        schoolEndYear,
-        is16OrAbove,
-        birthDate ? new Date(birthDate) : null,
-        employmentType,
-        recentCompany
-      );
-
-      if (!updatedUser) {
-        throw new CustomError('Failed to update user', 500);
-      }
 
       const token = tokenFunctionalities.createToken({
         time: "1h",
@@ -115,6 +114,8 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
     }
 
     // Create a new user
+    const userId = await generateUniqueId(firstName, lastName);
+    
     const newUser = await userRepository.create(
       userId.toString(),
       firstName, 
