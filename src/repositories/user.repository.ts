@@ -44,8 +44,47 @@ export class UserRepository {
     });
     }
 
-    async update(user: any) {
-        return user.save();
+    async update(userId:string, firstName: string, lastName: string, email: string, password: string,
+        country: string,
+        city: string,
+        isStudent: boolean | null,
+        jobTitle: string | null,
+        school: string | null,
+        schoolStartYear: number | null,
+        schoolEndYear: number | null,
+        is16OrAbove: boolean | null,
+        birthDate: Date | null,
+        employmentType: string | null,
+        recentCompany: string | null
+        ){
+        return User.updateMany(
+            { user_id: userId }, 
+            { 
+                email: email,
+                password: password,
+                bio:{
+                    first_name: firstName,
+                    last_name: lastName,    
+                    location: {
+                        country_region: country,
+                        city: city
+                    },
+                    birthday: birthDate
+                },
+                isStudent: isStudent,
+                education:{
+                    school: school,
+                    start_date: schoolStartYear,
+                    end_date: schoolEndYear
+                },
+                is_16_or_above: is16OrAbove,
+                work_experience:{   
+                        title: jobTitle,
+                        employmentType: employmentType,
+                        organization_name: recentCompany
+                    },
+            }
+        );
     }
 
    async findByEmail(email: string ) {
