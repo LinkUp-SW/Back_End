@@ -64,7 +64,7 @@ export class AuthService {
       await user.save();
       const token = tokenFunctionalities.createToken({
         time: "1h",
-        userID: user._id as string,
+        userID: user.user_id,
       });
       return { token, user };
     }

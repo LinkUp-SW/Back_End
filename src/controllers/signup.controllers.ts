@@ -13,7 +13,7 @@ const verifyEmail = asyncHandler(
       throw new CustomError('Email is required', 400);
     }
 
-    const emailExists = await isEmailTaken(email);
+    const emailExists = await isEmailTaken(email.toLowerCase());
 
     if (emailExists) {
       throw new CustomError('Email already exists', 400);
@@ -39,11 +39,11 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       employmentType,
       recentCompany } = req.body;
     const userRepository = new UserRepository();
-    email.toLowerCase();
+    
     const userId = await generateUniqueId(firstName, lastName);
     const user = await userRepository.create(
       userId.toString(),
-      firstName, lastName, email, password,
+      firstName, lastName, email.toLowerCase(), password,
       country,
       city,
       isStudent,
