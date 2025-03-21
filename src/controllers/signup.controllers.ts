@@ -43,6 +43,33 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
     const userRepository = new UserRepository();
     
     const userId = await generateUniqueId(firstName, lastName);
+    // Check if email is already taken
+    // If email is taken, update the user's info
+    const emailExists = await isEmailTaken(email.toLowerCase());
+    if (emailExists) {
+      const user = await userRepository.findByEmail(email.toLowerCase());
+      if (!user) {
+        throw new CustomError('User not found', 404);
+      }
+      user.bio.first_name = firstName;
+      user.bio.last_name = lastName;
+      user.password = password;
+      user.bio.location.country_region = country;
+      user.bio.location.city = city;
+      user.is_student = isStudent;
+      user.work_experience[0].title = jobTitle;
+      user.education[0].school = school;
+      user.education[0].start_date = schoolStartYear;
+      user.education[0].end_date = schoolEndYear;
+      user.is_16_or_above = is16OrAbove;
+      user.bio.contact_info.birthday = birthDate;
+      user.work_experience[0].employee_type = employmentType;
+      user.work_experience[0].organization = recentCompany;
+      await userRepository.update(user);
+      return res.status(200).json({ message: 'User updated successfully', user });
+
+    }
+
     const user = await userRepository.create(
       userId.toString(),
       firstName, lastName, email.toLowerCase(), password,

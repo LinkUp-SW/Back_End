@@ -44,6 +44,10 @@ export class UserRepository {
     });
     }
 
+    async update(user: any) {
+        return user.save();
+    }
+
    async findByEmail(email: string ) {
         return User.findOne({ email });
     }
