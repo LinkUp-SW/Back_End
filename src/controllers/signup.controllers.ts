@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UserRepository } from '../repositories/user.repository.ts';
 import { CustomError } from '../utils/customError.utils.ts';
 import asyncHandler from '../middleware/asyncHandler.ts';
-import { isEmailTaken } from '../utils/helperFunctions.utils.ts';
+import { generateUniqueId, isEmailTaken } from '../utils/helperFunctions.utils.ts';
 
 
 const verifyEmail = asyncHandler(
@@ -23,9 +23,10 @@ const verifyEmail = asyncHandler(
   }
 );
 
+ 
 
 const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next: NextFunction) => {
-    const { userId, firstName, lastName, email, password,
+    const {firstName, lastName, email, password,
       country,
       city,
       isStudent,
@@ -39,8 +40,9 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       recentCompany } = req.body;
     const userRepository = new UserRepository();
     email.toLowerCase();
+    const userId = await generateUniqueId(firstName, lastName);
     const user = await userRepository.create(
-      userId,
+      userId.toString(),
       firstName, lastName, email, password,
       country,
       city,
