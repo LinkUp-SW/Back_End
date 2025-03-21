@@ -30,6 +30,7 @@ import viewUserProfileRoutes from './src/routes/user_profile/view.user.profile.r
 import experienceRoutes from './src/routes/user_profile/experience.routes.ts';
 import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
+import updateUserRoutes from './src/routes/user_profile/update.user.profile.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -111,7 +112,8 @@ app.use('/api/v1/user',
     deleteAccountRoutes,
     experienceRoutes,
     educationRoutes,
-    licenseRoutes);
+    licenseRoutes,
+    updateUserRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
