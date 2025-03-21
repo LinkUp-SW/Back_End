@@ -108,14 +108,15 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
           bio: {
             first_name: updatedUser.bio.first_name,
             last_name: updatedUser.bio.last_name
-          }
+          },
+          is_verified: updatedUser.is_verified
         }
       });
     }
 
     // Create a new user
     const userId = await generateUniqueId(firstName, lastName);
-    
+
     const newUser = await userRepository.create(
       userId.toString(),
       firstName, 
@@ -159,7 +160,8 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
         bio: {
           first_name: newUser.bio.first_name,
           last_name: newUser.bio.last_name
-        }
+        },
+        is_verified: newUser.is_verified
       }
     });
 });
