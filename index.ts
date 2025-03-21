@@ -87,7 +87,7 @@ googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
-app.get('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
@@ -111,7 +111,7 @@ app.use('/api/v1/user',
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
 
-app.use('/google-auth', (req: Request, res: Response) => {
+app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
 
