@@ -28,6 +28,8 @@ import updateNameRoutes from './src/routes/authentication/updateUsername.routes.
 import privacySettingsRoutes from './src/routes/user_profile/privacy.settings.routes.ts';
 import viewUserProfileRoutes from './src/routes/user_profile/view.user.profile.routes.ts';
 import experienceRoutes from './src/routes/user_profile/experience.routes.ts';
+import educationRoutes from './src/routes/user_profile/education.routes.ts'
+import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,9 +41,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 
 
-// Generate a token with a 1-hour expiration and user_id "Mahmoud-Amr-123"
+// Generate a token with a 1-hour expiration and user_id "Hamza-Elghonemy35"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Mahmoud-Amr-123' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Hamza-Elghonemy35' });
   console.log('Generated Token:', token);
 };
 
@@ -107,7 +109,9 @@ app.use('/api/v1/user',
     privacySettingsRoutes,
     viewUserProfileRoutes,
     deleteAccountRoutes,
-    experienceRoutes);
+    experienceRoutes,
+    educationRoutes,
+    licenseRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);

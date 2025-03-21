@@ -73,17 +73,17 @@ export interface usersInterface extends mongoose.Document{
         activites_and_socials: string;
         skills: string[];
         description: string;
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     }[];
     work_experience: {
         _id : string
         title: string;
         employee_type: string;
-        organization: organizationsInterface | string;
+        organization: organizationsInterface;
         is_current: boolean;
         start_date: Date;
         end_date: Date; 
@@ -105,6 +105,7 @@ export interface usersInterface extends mongoose.Document{
         used_where: string[];
     }[];
     liscence_certificates: {
+        _id: string;
         name: string;
         issuing_organization: organizationsInterface;
         issue_date: Date;
@@ -112,11 +113,11 @@ export interface usersInterface extends mongoose.Document{
         credintial_id: number;
         credintial_url: string;
         skills: string[];
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     }[];
     industry: string;
     profile_photo: string;
@@ -138,11 +139,11 @@ export interface usersInterface extends mongoose.Document{
         reposted_posts: repostsInterface[];
         reacted_posts:postsInterface[];
         comments: commentsInterface[];
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     };
     status: statusEnum; 
     blocked: string[];
@@ -260,6 +261,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },],
     liscence_certificates: [
         {
+            _id: { type: String},
             name: { type: String },
             issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             issue_date: { type: Date },
