@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-
-//import mongoose from "mongoose";
 import Users from "../models/users.model.ts";
-//import { usersInterface } from "../models/users.model.ts"; // Ensure this path is correct
+import { usersInterface } from "../models/users.model.ts";
+import { organizationsInterface } from "../models/organizations.model.ts";
+import { ObjectId } from "mongodb";
 import  "../models/posts.model.ts";
 import  "../models/comments.model.ts";
 
@@ -167,9 +167,66 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
 };
 
+export const updateUserSkills = (user: usersInterface, skills: string[], organization: string) => {
+  if (skills && skills.length > 0) {
+      for (const skillName of skills) {
+          const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+          
+          if (skillIndex !== -1) {
+              // If skill exists, update used_where
+              const experienceExists = user.skills[skillIndex].used_where.includes(organization);
+              
+              if (!experienceExists) {
+                  // If this skill doesn't have this experience in used_where, add it
+                  user.skills[skillIndex].used_where.push(organization);  
+              }
+          } else {
+              // If skill doesn't exist, create a new one
+              user.skills.push({
+                  _id: new ObjectId().toString(),
+                  name: skillName,
+                  endorsments: [],
+                  used_where: [organization]
+              });
+          }
+      }
+  }
+};
 
+// Helper function to handle removed skills
+export const handleRemovedSkills = (user: usersInterface, oldSkills: string[], newSkills: string[], organization: string) => {
+  const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
+  for (const skillName of removedSkills) {
+      const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+      if (skillIndex !== -1) {
+          // Remove this experience from the skill's used_where array
+          user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
+              org => org.toString() !== organization.toString()
+          );
+      }
+  }
+};
 
-
-
-
-
+/**
+ * Handles skill and organization updates when deleting a work experience
+ * @param user The user document
+ * @param experienceSkills Array of skill names from the deleted experience
+ * @param organization The organization from the deleted experience
+ */
+export const handleDeletedExperienceSkills = (user: usersInterface, experienceSkills: string[], organization: organizationsInterface): void => {
+  // Check if this organization is used in any remaining work experiences
+  const organizationStillUsed = user.work_experience.some(exp => 
+    exp.organization === organization
+  );
+  
+  // Process skills - remove organization from skills' used_where arrays if needed
+  for (const skillName of experienceSkills) {
+    const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+    if (skillIndex !== -1 && !organizationStillUsed) {
+      // Remove the organization from the skill's used_where array
+      user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
+        org => org.toString() !== organization.toString()
+      );
+    }
+  }
+};
