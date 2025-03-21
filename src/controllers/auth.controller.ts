@@ -17,6 +17,7 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
   if (!email || !password) {
     throw new CustomError('Email and password are required', 400, 'MISSING_CREDENTIALS');
   }
+  email.toLowerCase();
 
   const { user, token } = await authService.login(email, password);
 
