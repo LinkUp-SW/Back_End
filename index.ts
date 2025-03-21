@@ -31,6 +31,7 @@ import experienceRoutes from './src/routes/user_profile/experience.routes.ts';
 import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/update.user.profile.routes.ts';
+import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -113,7 +114,8 @@ app.use('/api/v1/user',
     experienceRoutes,
     educationRoutes,
     licenseRoutes,
-    updateUserRoutes);
+    updateUserRoutes,
+    skillsRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
