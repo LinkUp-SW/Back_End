@@ -3,6 +3,8 @@ import { UserRepository } from '../repositories/user.repository.ts';
 import { CustomError } from '../utils/customError.utils.ts';
 import asyncHandler from '../middleware/asyncHandler.ts';
 import { generateUniqueId, isEmailTaken } from '../utils/helperFunctions.utils.ts';
+import tokenFunctionalities from '../utils/token.utils.ts';
+import { JWT_CONFIG } from '../../config/jwt.config.ts';
 
 
 const verifyEmail = asyncHandler(
@@ -56,6 +58,20 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       employmentType,
       recentCompany);
 
+    const token = tokenFunctionalities.createToken({
+            time: "1h",
+            userID: user.user_id,
+          });
+
+    res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
+        httpOnly: JWT_CONFIG.HTTP_ONLY,
+        maxAge: 3600000, // 1 hour,
+      });
+
+    res.cookie("linkup_user_id", user.user_id, {
+        maxAge: 3600000,
+        httpOnly: false,
+      });
     res.status(201).json({ message: 'User created successfully', user });
 });
 
