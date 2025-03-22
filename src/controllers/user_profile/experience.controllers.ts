@@ -68,7 +68,6 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
             media,
         };
         
-        // Update skills and handle removed skills
         updateUserSkills(user, skills, organization);
         handleRemovedSkills(user, oldSkills, skills, organization);
         
@@ -93,14 +92,11 @@ const deleteWorkExperience = async (req: Request, res: Response, next: NextFunct
           return;
         }
         
-        // Get the skills and organization from the experience to be deleted
         const experienceSkills = user.work_experience[experienceIndex].skills || [];
         const organization = user.work_experience[experienceIndex].organization;
         
-        // Remove the experience to be deleted
         user.work_experience.splice(experienceIndex, 1);
         
-        // Handle skill and organization updates using the helper function
         handleDeletedExperienceSkills(user, experienceSkills, organization);
 
         await user.save();

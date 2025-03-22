@@ -26,7 +26,6 @@ const addEducation = async (req: Request, res: Response, next: NextFunction): Pr
 
         user.education.push(newEducation);
         
-        // Update user skills
         updateUserSkills(user, skills, school);
         
         await user.save();
@@ -67,7 +66,6 @@ const updateEducation = async (req: Request, res: Response, next: NextFunction):
             media,
         };
         
-        // Update skills and handle removed skills
         updateUserSkills(user, skills, school);
         handleRemovedSkills(user, oldSkills, skills, school);
         
@@ -92,14 +90,11 @@ const deleteEducation = async (req: Request, res: Response, next: NextFunction):
           return;
         }
         
-        // Get the skills and school from the education to be deleted
         const educationSkills = user.education[educationIndex].skills || [];
         const school = user.education[educationIndex].school;
         
-        // Remove the education to be deleted
         user.education.splice(educationIndex, 1);
         
-        // Handle skill and school updates
         handleDeletedExperienceSkills(user, educationSkills, school);
 
         await user.save();

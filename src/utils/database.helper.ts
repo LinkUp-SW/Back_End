@@ -173,15 +173,13 @@ export const updateUserSkills = (user: usersInterface, skills: string[], organiz
           const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
           
           if (skillIndex !== -1) {
-              // If skill exists, update used_where
               const experienceExists = user.skills[skillIndex].used_where.includes(organization);
               
               if (!experienceExists) {
-                  // If this skill doesn't have this experience in used_where, add it
                   user.skills[skillIndex].used_where.push(organization);  
               }
           } else {
-              // If skill doesn't exist, create a new one
+              
               user.skills.push({
                   _id: new ObjectId().toString(),
                   name: skillName,
@@ -193,13 +191,12 @@ export const updateUserSkills = (user: usersInterface, skills: string[], organiz
   }
 };
 
-// Helper function to handle removed skills
+
 export const handleRemovedSkills = (user: usersInterface, oldSkills: string[], newSkills: string[], organization: string) => {
   const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
   for (const skillName of removedSkills) {
       const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
       if (skillIndex !== -1) {
-          // Remove this experience from the skill's used_where array
           user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
               org => org.toString() !== organization.toString()
           );
@@ -207,23 +204,15 @@ export const handleRemovedSkills = (user: usersInterface, oldSkills: string[], n
   }
 };
 
-/**
- * Handles skill and organization updates when deleting a work experience
- * @param user The user document
- * @param experienceSkills Array of skill names from the deleted experience
- * @param organization The organization from the deleted experience
- */
+
 export const handleDeletedExperienceSkills = (user: usersInterface, experienceSkills: string[], organization: organizationsInterface): void => {
-  // Check if this organization is used in any remaining work experiences
   const organizationStillUsed = user.work_experience.some(exp => 
     exp.organization === organization
   );
   
-  // Process skills - remove organization from skills' used_where arrays if needed
   for (const skillName of experienceSkills) {
     const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
     if (skillIndex !== -1 && !organizationStillUsed) {
-      // Remove the organization from the skill's used_where array
       user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
         org => org.toString() !== organization.toString()
       );

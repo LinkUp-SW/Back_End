@@ -1652,147 +1652,45 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /api/v1/user/profile/{user_id}:
-    get:
+  /api/v1/user/update-user-profile:
+    put:
       tags:
         - User Profile
-      summary: Get user profile
+      summary: Update user profile
       description: >
-        Retrieves the profile of a user by their `user_id`. The response includes details such as bio, education, experience, skills, licenses, posts, comments, and reacted posts. 
-        Access to the profile depends on the user's privacy settings and whether the viewer is blocked or connected.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          description: The unique identifier of the user whose profile is being requested.
-          schema:
-            type: string
-            example: "user123"
+        Updates the authenticated user's profile information such as bio, industry, 
+        profile photo, cover photo, resume and contact information.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bio:
+                  type: string
+                  example: "Experienced software engineer specializing in web development"
+                industry:
+                  type: string
+                  example: "Technology"
+                profile_photo:
+                  type: string
+                  example: "https://example.com/profile_photo.jpg"
+                cover_photo:
+                  type: string
+                  example: "https://example.com/cover_photo.jpg"
+                resume:
+                  type: string
+                  example: "https://example.com/resume.pdf"
+                phone_number:
+                  type: string
+                  example: "1234567890"
+                country_code:
+                  type: string
+                  example: "+1"
       responses:
         '200':
-          description: User profile retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  is_me:
-                    type: boolean
-                    description: Indicates if the viewer is the profile owner.
-                    example: true
-                  bio:
-                    type: object
-                    description: The user's bio information.
-                    properties:
-                      first_name:
-                        type: string
-                        example: "John"
-                      last_name:
-                        type: string
-                        example: "Doe"
-                      headline:
-                        type: string
-                        example: "Software Engineer"
-                      experience:
-                        type: array
-                        items:
-                          type: string
-                        example: ["Google", "Microsoft"]
-                      education:
-                        type: array
-                        items:
-                          type: string
-                        example: ["MIT", "Stanford"]
-                      website:
-                        type: string
-                        example: "https://johndoe.com"
-                      contact_info:
-                        type: object
-                        properties:
-                          phone_number:
-                            type: string
-                            example: "1234567890"
-                          country_code:
-                            type: string
-                            example: "+1"
-                          phone_type:
-                            type: string
-                            example: "Mobile"
-                          address:
-                            type: string
-                            example: "123 Main St"
-                          birthday:
-                            type: string
-                            format: date
-                            example: "1990-01-01"
-                          website:
-                            type: string
-                            example: "https://johndoe.com"
-                      location:
-                        type: object
-                        properties:
-                          country_region:
-                            type: string
-                            example: "USA"
-                          city:
-                            type: string
-                            example: "San Francisco"
-                  education:
-                    type: array
-                    description: The user's education details.
-                    items:
-                      type: string
-                    example: []
-                  experience:
-                    type: array
-                    description: The user's work experience.
-                    items:
-                      type: string
-                    example: []
-                  skills:
-                    type: array
-                    description: The user's skills.
-                    items:
-                      type: string
-                    example: []
-                  licenses:
-                    type: array
-                    description: The user's licenses and certifications.
-                    items:
-                      type: string
-                    example: []
-                  posts:
-                    type: array
-                    description: The user's most recent posts.
-                    items:
-                      type: object
-                    example: []
-                  comments:
-                    type: array
-                    description: The user's most recent comments.
-                    items:
-                      type: object
-                    example: []
-                  reacted:
-                    type: array
-                    description: The user's most recent reacted posts.
-                    items:
-                      type: object
-                    example: []
-                  profile_photo:
-                    type: string
-                    description: The URL of the user's profile photo.
-                    example: "https://example.com/profile_photo.jpg"
-                  cover_photo:
-                    type: string
-                    description: The URL of the user's cover photo.
-                    example: "https://example.com/cover_photo.jpg"
-                  resume:
-                    type: string
-                    description: The URL of the user's resume.
-                    example: "https://example.com/resume.pdf"
-        '400':
-          description: Invalid user ID format
+          description: User profile updated successfully
           content:
             application/json:
               schema:
@@ -1800,7 +1698,34 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Invalid user ID format."
+                    example: "User profile updated successfully"
+                  user:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d0fe4f5311236168a109ca"
+                      bio:
+                        type: string
+                        example: "Experienced software engineer specializing in web development"
+                      industry:
+                        type: string
+                        example: "Technology"
+                      profile_photo:
+                        type: string
+                        example: "https://example.com/profile_photo.jpg"
+                      cover_photo:
+                        type: string
+                        example: "https://example.com/cover_photo.jpg"
+                      resume:
+                        type: string
+                        example: "https://example.com/resume.pdf"
+                      phone_number:
+                        type: string
+                        example: "1234567890"
+                      country_code:
+                        type: string
+                        example: "+1"
         '401':
           description: Unauthorized
           content:
@@ -1811,16 +1736,6 @@ paths:
                   message:
                     type: string
                     example: "Unauthorized"
-        '403':
-          description: Access denied
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "You are blocked from viewing this profile."
         '404':
           description: User not found
           content:
@@ -1840,6 +1755,601 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error fetching user profile"
+                    example: "Server error"
+                  error:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Error updating user profile"
+                    
+  /api/v1/user/add-work-experience:
+    post:
+      tags:
+        - User Profile
+      summary: Add work experience
+      description: Adds a new work experience entry to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - organization
+              properties:
+                title:
+                  type: string
+                  example: "Software Engineer"
+                employee_type:
+                  type: string
+                  example: "Full-time"
+                organization:
+                  type: string
+                  example: "60d0fe4f5311236168a109ca"
+                  description: "MongoDB ObjectId of the organization"
+                is_current:
+                  type: boolean
+                  example: true
+                start_date:
+                  type: string
+                  format: date
+                  example: "2020-01-15"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2023-05-30"
+                location:
+                  type: string
+                  example: "San Francisco, CA"
+                description:
+                  type: string
+                  example: "Developed scalable web applications using React and Node.js"
+                location_type:
+                  type: string
+                  example: "Remote"
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["JavaScript", "React", "Node.js"]
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media:
+                        type: string
+                        example: "https://example.com/project-screenshot.jpg"
+                      title:
+                        type: string
+                        example: "Project Screenshot"
+                      description:
+                        type: string
+                        example: "Screenshot of the dashboard I developed"
+      responses:
+        '200':
+          description: Work experience added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Work experience added successfully"
+                  experience:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d0fe4f5311236168a109cb"
+                      title:
+                        type: string
+                        example: "Software Engineer"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error adding work experience"
 
+  /api/v1/user/update-work-experience/{experienceId}:
+    put:
+      tags:
+        - User Profile
+      summary: Update work experience
+      description: Updates an existing work experience entry in the user's profile
+      parameters:
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the work experience to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Senior Software Engineer"
+                employee_type:
+                  type: string
+                  example: "Full-time"
+                organization:
+                  type: string
+                  example: "60d0fe4f5311236168a109ca"
+                  description: "MongoDB ObjectId of the organization"
+                is_current:
+                  type: boolean
+                  example: true
+                start_date:
+                  type: string
+                  format: date
+                  example: "2020-01-15"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2023-05-30"
+                location:
+                  type: string
+                  example: "San Francisco, CA"
+                description:
+                  type: string
+                  example: "Developed scalable web applications using React and Node.js"
+                location_type:
+                  type: string
+                  example: "Remote"
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["JavaScript", "React", "Node.js", "TypeScript"]
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media:
+                        type: string
+                      title:
+                        type: string
+                      description:
+                        type: string
+      responses:
+        '200':
+          description: Work experience updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Work experience updated successfully"
+                  experience:
+                    type: object
+        '401':
+          description: Unauthorized
+        '404':
+          description: Experience not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Experience not found"
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-work-experience/{experienceId}:
+    delete:
+      tags:
+        - User Profile
+      summary: Delete work experience
+      description: Deletes a work experience entry from the user's profile
+      parameters:
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the work experience to delete
+      responses:
+        '200':
+          description: Work experience deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Work experience deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: Work Experience not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Work Experience not found"
+        '500':
+          description: Server error
+
+  /api/v1/user/add-skill:
+    post:
+      tags:
+        - User Profile
+      summary: Add skill
+      description: Adds a new skill to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "JavaScript"
+                used_where:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
+                  description: "Array of organization IDs where this skill was used"
+      responses:
+        '200':
+          description: Skill added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill added successfully"
+                  skill:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d0fe4f5311236168a109cc"
+                      name:
+                        type: string
+                        example: "JavaScript"
+                      endorsments:
+                        type: array
+                        items:
+                          type: string
+                        example: []
+                      used_where:
+                        type: array
+                        items:
+                          type: string
+                        example: ["60d0fe4f5311236168a109ca"]
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/user/update-skill/{skillId}:
+    put:
+      tags:
+        - User Profile
+      summary: Update skill
+      description: Updates an existing skill in the user's profile
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the skill to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "JavaScript/TypeScript"
+                used_where:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
+      responses:
+        '200':
+          description: Skill updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill updated successfully"
+                  skill:
+                    type: object
+        '401':
+          description: Unauthorized
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill not found"
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-skill/{skillId}:
+    delete:
+      tags:
+        - User Profile
+      summary: Delete skill
+      description: Deletes a skill from the user's profile
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the skill to delete
+      responses:
+        '200':
+          description: Skill deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill not found"
+        '500':
+          description: Server error
+
+  /api/v1/user/add-license:
+    post:
+      tags:
+        - User Profile
+      summary: Add license or certification
+      description: Adds a new license or certification to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - issuing_organization
+              properties:
+                name:
+                  type: string
+                  example: "AWS Certified Solutions Architect"
+                issuing_organization:
+                  type: string
+                  example: "60d0fe4f5311236168a109cb"
+                  description: "MongoDB ObjectId of the issuing organization"
+                issue_date:
+                  type: string
+                  format: date
+                  example: "2023-01-15"
+                expiration_date:
+                  type: string
+                  format: date
+                  example: "2026-01-15"
+                credintial_id:
+                  type: integer
+                  example: 12345678
+                credintial_url:
+                  type: string
+                  example: "https://aws.amazon.com/verification/12345678"
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["AWS", "Cloud Architecture"]
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media:
+                        type: string
+                        example: "https://example.com/certification.pdf"
+                      title:
+                        type: string
+                        example: "AWS Certification"
+                      description:
+                        type: string
+                        example: "My AWS Solutions Architect certification"
+      responses:
+        '200':
+          description: License/Certificate added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "License/Certificate added successfully"
+                  license:
+                    type: object
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/user/update-license/{licenseId}:
+    put:
+      tags:
+        - User Profile
+      summary: Update license or certification
+      description: Updates an existing license or certification in the user's profile
+      parameters:
+        - name: licenseId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the license or certification to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "AWS Certified Solutions Architect - Professional"
+                issuing_organization:
+                  type: string
+                  example: "60d0fe4f5311236168a109cb"
+                issue_date:
+                  type: string
+                  format: date
+                  example: "2023-01-15"
+                expiration_date:
+                  type: string
+                  format: date
+                  example: "2026-01-15"
+                credintial_id:
+                  type: integer
+                  example: 12345678
+                credintial_url:
+                  type: string
+                  example: "https://aws.amazon.com/verification/12345678"
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["AWS", "Cloud Architecture", "DevOps"]
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media:
+                        type: string
+                      title:
+                        type: string
+                      description:
+                        type: string
+      responses:
+        '200':
+          description: License/Certificate updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "License/Certificate updated successfully"
+                  license:
+                    type: object
+        '401':
+          description: Unauthorized
+        '404':
+          description: License/Certificate not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "License/Certificate not found"
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-license/{licenseId}:
+    delete:
+      tags:
+        - User Profile
+      summary: Delete license or certification
+      description: Deletes a license or certification from the user's profile
+      parameters:
+        - name: licenseId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the license or certification to delete
+      responses:
+        '200':
+          description: License/Certificate deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "License/Certificate deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: License/Certificate not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "License/Certificate not found"
+        '500':
+          description: Server error
 

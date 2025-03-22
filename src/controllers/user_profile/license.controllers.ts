@@ -28,7 +28,6 @@ const addLicense = async (req: Request, res: Response, next: NextFunction): Prom
         
         user.liscence_certificates.push(newLicense);
         
-        // Update user skills
         updateUserSkills(user, skills, issuing_organization);
         
         await user.save();
@@ -71,7 +70,6 @@ const updateLicense = async (req: Request, res: Response, next: NextFunction): P
             media,
         };
         
-        // Update skills and handle removed skills
         updateUserSkills(user, skills, issuing_organization);
         handleRemovedSkills(user, oldSkills, skills, issuing_organization);
         
@@ -100,14 +98,11 @@ const deleteLicense = async (req: Request, res: Response, next: NextFunction): P
           return;
         }
         
-        // Get the skills and organization from the license to be deleted
         const licenseSkills = user.liscence_certificates[licenseIndex].skills || [];
         const organization = user.liscence_certificates[licenseIndex].issuing_organization;
         
-        // Remove the license to be deleted
         user.liscence_certificates.splice(licenseIndex, 1);
         
-        // Handle skill and organization updates
         handleDeletedExperienceSkills(user, licenseSkills, organization);
 
         await user.save();
