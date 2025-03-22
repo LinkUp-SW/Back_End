@@ -22,7 +22,7 @@ const forgetPassword = async (req: Request, res: Response): Promise<Response | v
         const token=tokenUtils.createToken({time: '15m',
             userID: user.user_id
         })
-        const resetLink = `reset password link:localhost:5174/reset-password/${token}`
+        const resetLink = `${process.env.FRONTEND_REDIRECT_URL}/reset-password/${token}`;
         await sendResetPasswordEmail(email,resetLink);
         return res.status(200).json({ message: 'Password reset link sent to your email' });
 
