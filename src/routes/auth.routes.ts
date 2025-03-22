@@ -13,7 +13,7 @@ router.get('/logout', logout);
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 // Google OAuth callback route - Passport handles authentication and then calls our controller
-router.get('/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), googleCallback);
+router.get('/google/callback', passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_REDIRECT_URL}/login` }), googleCallback);
 
 // Google logout route - revokes token, destroys session, clears cookie
 router.get('/google/logout', googleLogout);
