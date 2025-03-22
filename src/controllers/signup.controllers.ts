@@ -101,17 +101,11 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       });
       
       return res.status(200).json({ 
-        message: 'User updated successfully', 
-        user: {
-          user_id: updatedUser.user_id,
-          email: updatedUser.email,
-          bio: {
-            first_name: updatedUser.bio.first_name,
-            last_name: updatedUser.bio.last_name
-          },
-          is_verified: updatedUser.is_verified
-        }
-      });
+        message: 'Login successful',
+        user: { 
+          id: updatedUser.user_id, 
+          email: updatedUser.email, 
+          isVerified: updatedUser.is_verified }});
     }
 
     // Create a new user
@@ -152,18 +146,12 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       httpOnly: false,
     });
     
-    return res.status(201).json({ 
-      message: 'User created successfully', 
-      user: {
-        user_id: newUser.user_id,
-        email: newUser.email,
-        bio: {
-          first_name: newUser.bio.first_name,
-          last_name: newUser.bio.last_name
-        },
-        is_verified: newUser.is_verified
-      }
-    });
+    return res.status(200).json({ 
+      message: 'Login successful',
+      user: { 
+        id: newUser.user_id, 
+        email: newUser.email, 
+        isVerified: newUser.is_verified }});
 });
 
 export { verifyEmail, addUserStarterInfo };
