@@ -33,3 +33,31 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response): P
     });
   }
 });
+
+
+export const testDeleteAccount = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      throw new CustomError('Email is required', 400);
+    }
+
+    // Delete the user account from the database.
+    let user = await userRepository.findByEmail(email);
+    if (!user) {
+      throw new CustomError('User not found', 404);
+    }
+    await userRepository.deleteAccount(user.user_id);
+    
+    res.status(200).json({
+      message: 'Account deleted successfully',
+    });
+  } catch (error) {
+    // Return error message and appropriate status code.
+    res.status((error as CustomError).statusCode || 400).json({
+      error: (error as Error).message,
+    });
+  }
+
+});
