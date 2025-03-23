@@ -9,32 +9,14 @@ servers:
   - url: http://localhost:3000
     description: Development server
 paths:
-  /auth/google:
-    get:
-      tags:
-        - Google Auth
-      summary: Initiates Google authentication
-      description: Redirects the user to Google to initiate OAuth2 authentication.
-      responses:
-        '302':
-          description: Redirects to Google for authentication.
-  /api/v1/auth/logout:
-    get:
-      tags:
-        - Google Auth
-      summary: Logs the user out
-      description: Revokes Google tokens if applicable and destroys the session.
-      responses:
-        '302':
-          description: Redirects to the login page after logging out.
-  /api/v1/user/login:
+  /auth/login:
     post:
       tags:
         - Auth
-      summary: Logs in a user
+      summary: Logs in a user (Local)
       description: >
-        Authenticates a user using email and password. 
-        On successful authentication, sets a JWT cookie.
+        Authenticates a user using email and password. On successful authentication, a JWT token is generated,
+        set as an HTTP-only cookie, and user details are returned.
       requestBody:
         required: true
         content:
@@ -62,15 +44,27 @@ paths:
                   message:
                     type: string
                     example: "Login successful"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "unique_user_id"
+                      email:
+                        type: string
+                        example: "user@example.com"
         '400':
           description: Email and password are required
         '401':
           description: Invalid credentials
-  /api/v1/user/logout:
+        '500':
+          description: Server error
+
+  /auth/logout:
     get:
       tags:
         - Auth
-      summary: Logs out a user
+      summary: Logs out a user (Local)
       description: >
         Clears the JWT cookie to log out the user.
       responses:
@@ -84,13 +78,82 @@ paths:
                   message:
                     type: string
                     example: "Logout successful"
+
+  /auth/google:
+    get:
+      tags:
+        - Google Auth
+      summary: Initiates Google authentication
+      description: >
+        Redirects the user to Google to initiate OAuth2 authentication.
+      responses:
+        '302':
+          description: Redirects to Google for authentication.
+
+  /auth/google/callback:
+    get:
+      tags:
+        - Google Auth
+      summary: Google OAuth callback
+      description: >
+        Handles the callback from Google OAuth. On successful authentication, a JWT token is issued,
+        set as an HTTP-only cookie, and user details are returned.
+      responses:
+        '200':
+          description: Google authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google authentication successful"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "unique_user_id"
+                      email:
+                        type: string
+                        example: "user@example.com"
+                  tokens:
+                    type: object
+                    description: Google tokens stored in session (if applicable)
+        '401':
+          description: Google authentication failed
+        '500':
+          description: Server error
+
+  /auth/google/logout:
+    get:
+      tags:
+        - Google Auth
+      summary: Logs out a Google authenticated user
+      description: >
+        Revokes the Google access token (if applicable), destroys the session, and clears the JWT cookie.
+      responses:
+        '200':
+          description: Google logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google logout successful"
+        '500':
+          description: Server error
+
   /api/v1/user/send-otp:
     post:
       tags:
         - OTP
       summary: Generate and send OTP
       description: >
-        Generates a one-time password (OTP) and sends it to the user's email (and optionally via SMS).
+        Generates a one-time password (OTP) and sends it to the user's email.
         The OTP is stored in the session and expires in 10 minutes.
       requestBody:
         required: true
@@ -104,9 +167,6 @@ paths:
                 email:
                   type: string
                   example: "test@example.com"
-                phone:
-                  type: string
-                  example: "1234567890"
       responses:
         '200':
           description: OTP has been sent to your email.
@@ -120,31 +180,16 @@ paths:
                     example: "OTP has been sent to your email"
         '400':
           description: Email is required.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email is required"
         '500':
-          description: Server error.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
+          description: Server error
+
   /api/v1/user/verify-otp:
     post:
       tags:
         - OTP
       summary: Verify OTP
       description: >
-        Verifies the one-time password (OTP) provided by the user. Requires email and OTP.
+        Verifies the one-time password (OTP) provided by the user.
         If the OTP is valid and not expired, the session values are cleared and a success message is returned.
       requestBody:
         required: true
@@ -153,15 +198,15 @@ paths:
             schema:
               type: object
               required:
-                - email
                 - otp
+                - email
               properties:
-                email:
-                  type: string
-                  example: "test@example.com"
                 otp:
                   type: string
                   example: "123456"
+                email:
+                  type: string
+                  example: "test@example.com"
       responses:
         '200':
           description: OTP verified successfully.
@@ -174,32 +219,19 @@ paths:
                     type: string
                     example: "OTP verified successfully"
         '400':
-          description: Email and OTP are required.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email and OTP are required"
+          description: OTP is required.
         '401':
           description: Invalid OTP or OTP expired.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid OTP"
-  /api/v1/user/signup:
+        '500':
+          description: Server error
+
+  /api/v1/user/verify-email:
     post:
       tags:
         - Auth
-      summary: Register a new user
+      summary: Verify Email Availability
       description: >
-        Registers a new user by creating an account with the provided email, password, and optional name.
+        Checks if the provided email is available (i.e., not already in use).
       requestBody:
         required: true
         content:
@@ -208,20 +240,105 @@ paths:
               type: object
               required:
                 - email
-                - password
               properties:
                 email:
                   type: string
-                  example: "newuser@example.com"
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Email is available.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email is available"
+        '400':
+          description: Email already exists.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email already exists"
+        '500':
+          description: Server error
+
+  /api/v1/user/signup/starter:
+    post:
+      tags:
+        - Auth
+      summary: Register a New User (Starter)
+      description: >
+        Registers a new user by creating an account with the provided starter information.
+        Required fields include firstName, lastName, email, password, country, and city.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - country
+                - city
+              properties:
+                firstName:
+                  type: string
+                  example: "John"
+                lastName:
+                  type: string
+                  example: "Doe"
+                email:
+                  type: string
+                  example: "john.doe@example.com"
                 password:
                   type: string
                   example: "securepassword"
-                name:
+                country:
                   type: string
-                  example: "John Doe"
+                  example: "USA"
+                city:
+                  type: string
+                  example: "New York"
+                isStudent:
+                  type: boolean
+                  example: false
+                jobTitle:
+                  type: string
+                  example: "Software Engineer"
+                school:
+                  type: string
+                  example: "MIT"
+                schoolStartYear:
+                  type: number
+                  example: 2015
+                schoolEndYear:
+                  type: number
+                  example: 2019
+                is16OrAbove:
+                  type: boolean
+                  example: true
+                birthDate:
+                  type: string
+                  format: date
+                  example: "1990-01-01"
+                employmentType:
+                  type: string
+                  example: "Full-time"
+                recentCompany:
+                  type: string
+                  example: "Google"
       responses:
         '201':
-          description: Signup successful
+          description: Signup successful.
           content:
             application/json:
               schema:
@@ -235,19 +352,144 @@ paths:
                     properties:
                       email:
                         type: string
-                        example: "newuser@example.com"
+                        example: "john.doe@example.com"
         '400':
-          description: Email or Username and password are required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email or Username and password are required"
+          description: Required fields missing.
         '409':
-          description: User already exists
+          description: User already exists.
+        '500':
+          description: Server error
+
+  /api/v1/user/forget-password:
+    post:
+      tags:
+        - Auth
+      summary: Request password reset
+      description: >
+        Sends a password reset link to the user's email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Password reset link sent.
+        '400':
+          description: Invalid email format.
+        '404':
+          description: Email not registered.
+        '500':
+          description: Server error
+
+  /api/v1/user/reset-password:
+    post:
+      tags:
+        - Auth
+      summary: Reset password
+      description: >
+        Resets the user's password using the provided token and new password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+                - token
+              properties:
+                password:
+                  type: string
+                  example: "new_secure_password"
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Password reset successful.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Invalid or expired token.
+        '404':
+          description: User not found.
+        '500':
+          description: Server error
+
+  /api/v1/user/update-password:
+    post:
+      tags:
+        - Auth
+      summary: Update password
+      description: >
+        Updates the user's password using the provided old password, new password, and token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - old_password
+                - new_password
+              properties:
+                old_password:
+                  type: string
+                  example: "old_password"
+                new_password:
+                  type: string
+                  example: "new_secure_password"
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Password updated successfully.
+        '400':
+          description: Invalid request.
+        '401':
+          description: Invalid or expired token.
+        '403':
+          description: Old password is incorrect.
+        '404':
+          description: User not found.
+        '500':
+          description: Server error
+  /api/v1/user/update-email:
+    put:
+      tags:
+        - User
+      summary: Update user email
+      description: >
+        Updates the email address of an authenticated user. A valid token is required to verify the user's identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - token
+              properties:
+                email:
+                  type: string
+                  example: "new.email@example.com"
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Email updated successfully.
           content:
             application/json:
               schema:
@@ -255,7 +497,989 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "User already exists"
+                    example: "Email updated successfully"
+                  user_updated_email:
+                    type: string
+                    example: "new.email@example.com"
+        '400':
+          description: Email is required.
+        '401':
+          description: Email already exists or invalid token.
+        '500':
+          description: Server error.
+  /api/v1/user/delete-account:
+    delete:
+      tags:
+        - User
+      summary: Delete User Account
+      description: >
+        Deletes the authenticated user's account from the system.
+        A valid token is required to verify the user's identity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  example: "jwt_token"
+      responses:
+        '200':
+          description: Account deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Account deleted successfully"
+        '400':
+          description: Invalid request.
+        '401':
+          description: Unauthorized or invalid token.
+        '500':
+          description: Server error
+                    example: "Server error"
+
+  /profile/profile-picture/{user_id}:
+    post:
+      tags:
+        - Profile Picture
+      summary: Upload a profile picture
+      description: Uploads a profile picture for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Profile picture uploaded and updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile picture uploaded and updated successfully
+                  profilePicture:
+                    type: string
+                    example: https://res.cloudinary.com/test/image/upload/sample.jpg
+        '400':
+          description: No file uploaded or invalid file type. Only image files are allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No file uploaded or invalid file type. Only image files are allowed.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: You are not authorized to upload for this user.
+        '500':
+          description: Error uploading profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error uploading profile picture
+                  error:
+                    type: string
+                    example: Database error
+    put:
+      tags:
+        - Profile Picture
+      summary: Update a profile picture
+      description: Updates the profile picture for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profilePicture:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Profile picture updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile picture updated successfully
+                  profilePicture:
+                    type: string
+                    example: https://res.cloudinary.com/test/image/upload/sample.jpg
+        '400':
+          description: No file uploaded or invalid file type. Only image files are allowed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No file uploaded or invalid file type. Only image files are allowed.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Unauthorized
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: You are not authorized to upload for this user.
+        '500':
+          description: Error updating profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error updating profile picture
+                  error:
+                    type: string
+                    example: Database error
+    delete:
+      tags:
+        - Profile Picture
+      summary: Delete a profile picture
+      description: Deletes the user's profile picture.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Profile picture deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profile picture deleted successfully"
+        '400':
+          description: No profile picture to delete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No profile picture to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this profile picture"
+        '500':
+          description: Error deleting profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting profile picture"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+    get:
+      tags:
+        - Profile Picture
+      summary: Get a profile picture
+      description: Retrieves the user's profile picture.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Profile picture retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profilePicture:
+                    type: string
+                    example: "https://cloudinary.com/user/profile_picture.jpg"
+        '404':
+          description: Profile picture not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profile picture not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Error retrieving profile picture
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving profile picture"
+                  error:
+                    type: string
+                    example: "Database error"
+  /profile/cover-photo/{user_id}:
+    post:
+      tags:
+        - Cover Photo
+      summary: Upload a cover photo
+      description: Uploads a new cover photo for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                coverPhoto:
+                  type: string
+                  format: binary
+                  description: The image file to upload.
+      responses:
+        '200':
+          description: Cover photo uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo uploaded and updated successfully"
+                  coverPhoto:
+                    type: string
+                    example: "https://cloudinary.com/user/cover_photo.jpg"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only image files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to upload for this user."
+        '500':
+          description: Error uploading cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error uploading cover photo"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    put:
+      tags:
+        - Cover Photo
+      summary: Update a cover photo
+      description: Updates the user's cover photo.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                coverPhoto:
+                  type: string
+                  format: binary
+                  description: The new image file to upload.
+      responses:
+        '200':
+          description: Cover photo updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo updated successfully"
+                  coverPhoto:
+                    type: string
+                    example: "https://cloudinary.com/user/new_cover_photo.jpg"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only image files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to update this cover photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to update this cover photo."
+        '500':
+          description: Error updating cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating cover photo"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    delete:
+      tags:
+        - Cover Photo
+      summary: Delete a cover photo
+      description: Deletes the user's cover photo.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Cover photo deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo deleted successfully"
+        '400':
+          description: No cover photo to delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No cover photo to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this cover photo.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this cover photo."
+        '500':
+          description: Error deleting cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting cover photo"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    get:
+      tags:
+        - Cover Photo
+      summary: Get a cover photo
+      description: Retrieves the user's cover photo.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Cover photo retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coverPhoto:
+                    type: string
+                    example: "https://cloudinary.com/user/cover_photo.jpg"
+        '404':
+          description: Cover photo not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cover photo not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Error retrieving cover photo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving cover photo"
+                  error:
+                    type: string
+                    example: "Database error"
+  /profile/resume/{user_id}:
+    post:
+      tags:
+        - Resume
+      summary: Upload a resume
+      description: Uploads a new resume for the user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resume:
+                  type: string
+                  format: binary
+                  description: The PDF file to upload.
+      responses:
+        '200':
+          description: Resume uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume uploaded and updated successfully"
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/resume.pdf"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only .pdf files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to upload for this user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to upload for this user."
+        '500':
+          description: Error uploading resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error uploading resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+    put:
+      tags:
+        - Resume
+      summary: Update a resume
+      description: Updates the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                resume:
+                  type: string
+                  format: binary
+                  description: The new PDF file to upload.
+      responses:
+        '200':
+          description: Resume updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume updated successfully"
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/new_resume.pdf"
+        '400':
+          description: No file uploaded or invalid file type.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No file uploaded or invalid file type. Only .pdf files are allowed."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to update this resume.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to update this resume."
+        '500':
+          description: Error updating resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+  delete:
+      tags:
+        - Resume
+      summary: Delete a resume
+      description: Deletes the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume deleted successfully"
+        '400':
+          description: No resume to delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No resume to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this resume.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this resume."
+        '500':
+          description: Error deleting resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
+
+  get:
+      tags:
+        - Resume
+      summary: Get a resume
+      description: Retrieves the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/resume.pdf"
+        '404':
+          description: Resume not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+                    example: "Resume not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+
+        '403':
+          description: Access denied
+
+        '500':
+          description: Error retrieving resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving resume"
+                  error:
+                    type: string
+                    example: "Database error"
+  /api/v1/user/update-username:
+    post:
+      tags:
+        - Auth
+      summary: Update username
+      description: >
+        Updates the user's username using the provided token and new username.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - new_username
+              properties:
+                token:
+                  type: string
+                  example: "jwt_token"
+                new_username:
+                  type: string
+                  example: "new_username"
+      responses:
+        '200':
+          description: Username updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Username updated successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token and new username are required"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '403':
+          description: Username already in use
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+                    example: "Username already in use"
+
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
         '500':
           description: Server error
           content:
@@ -265,4 +1489,357 @@ paths:
                 properties:
                   message:
                     type: string
+
                     example: "Server error"
+  /api/v1/privacy/profile-visibility/{user_id}:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get profile visibility
+      description: Retrieves the profile visibility setting for the specified user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose profile visibility is being retrieved.
+      responses:
+        '200':
+          description: Profile visibility retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profileVisibility:
+                    type: string
+                    example: "Public"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: User is not authorized to access this profile visibility.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User is not authorized to access this profile visibility."
+        '404':
+          description: User not found or privacy settings not available.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving privacy settings"
+                  error:
+                    type: string
+                    example: "Database error"
+
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update profile visibility
+      description: Updates the profile visibility setting for the specified user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose profile visibility is being updated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profileVisibility:
+                  type: string
+                  description: The new profile visibility setting.
+                  enum:
+                    - Public
+                    - Private
+                  example: "Private"
+      responses:
+        '200':
+          description: Profile visibility updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Profile visibility updated successfully"
+                  profileVisibility:
+                    type: string
+                    example: "Private"
+        '400':
+          description: Invalid profile visibility setting.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid profile visibility setting"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: User is not authorized to update this profile visibility.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User is not authorized to update this profile visibility."
+        '404':
+          description: User not found or privacy settings not available.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating privacy settings"
+                  error:
+                    type: string
+                    example: "Database error"
+  /api/v1/user/profile/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user profile
+      description: >
+        Retrieves the profile of a user by their `user_id`. The response includes details such as bio, education, experience, skills, licenses, posts, comments, and reacted posts. 
+        Access to the profile depends on the user's privacy settings and whether the viewer is blocked or connected.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The unique identifier of the user whose profile is being requested.
+          schema:
+            type: string
+            example: "user123"
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the viewer is the profile owner.
+                    example: true
+                  bio:
+                    type: object
+                    description: The user's bio information.
+                    properties:
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+                      headline:
+                        type: string
+                        example: "Software Engineer"
+                      experience:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Google", "Microsoft"]
+                      education:
+                        type: array
+                        items:
+                          type: string
+                        example: ["MIT", "Stanford"]
+                      website:
+                        type: string
+                        example: "https://johndoe.com"
+                      contact_info:
+                        type: object
+                        properties:
+                          phone_number:
+                            type: string
+                            example: "1234567890"
+                          country_code:
+                            type: string
+                            example: "+1"
+                          phone_type:
+                            type: string
+                            example: "Mobile"
+                          address:
+                            type: string
+                            example: "123 Main St"
+                          birthday:
+                            type: string
+                            format: date
+                            example: "1990-01-01"
+                          website:
+                            type: string
+                            example: "https://johndoe.com"
+                      location:
+                        type: object
+                        properties:
+                          country_region:
+                            type: string
+                            example: "USA"
+                          city:
+                            type: string
+                            example: "San Francisco"
+                  education:
+                    type: array
+                    description: The user's education details.
+                    items:
+                      type: string
+                    example: []
+                  experience:
+                    type: array
+                    description: The user's work experience.
+                    items:
+                      type: string
+                    example: []
+                  skills:
+                    type: array
+                    description: The user's skills.
+                    items:
+                      type: string
+                    example: []
+                  licenses:
+                    type: array
+                    description: The user's licenses and certifications.
+                    items:
+                      type: string
+                    example: []
+                  posts:
+                    type: array
+                    description: The user's most recent posts.
+                    items:
+                      type: object
+                    example: []
+                  comments:
+                    type: array
+                    description: The user's most recent comments.
+                    items:
+                      type: object
+                    example: []
+                  reacted:
+                    type: array
+                    description: The user's most recent reacted posts.
+                    items:
+                      type: object
+                    example: []
+                  profile_photo:
+                    type: string
+                    description: The URL of the user's profile photo.
+                    example: "https://example.com/profile_photo.jpg"
+                  cover_photo:
+                    type: string
+                    description: The URL of the user's cover photo.
+                    example: "https://example.com/cover_photo.jpg"
+                  resume:
+                    type: string
+                    description: The URL of the user's resume.
+                    example: "https://example.com/resume.pdf"
+        '400':
+          description: Invalid user ID format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid user ID format."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are blocked from viewing this profile."
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching user profile"
+
+

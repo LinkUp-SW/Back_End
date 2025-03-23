@@ -1,16 +1,12 @@
 import express from 'express';
-import * as otpFunctionality from '../controllers/otp.contorller.ts';;
+import * as otpFunctionality from '../controllers/otp.controller.ts';;
 
 const router = express.Router();
 
-// POST /api/v1/otp/generate
-router.post('/send-otp', (req, res, next) => {
-    otpFunctionality.generateOTP(req, res, next);
-});
+// POST /api/v1/user/send-otp
+router.post('/send-otp', otpFunctionality.generateOTP);
 
 // POST /api/v1/otp/verify
-router.post('/verify-otp', (req, res, next) => {
-     otpFunctionality.verifyOTP(req, res, next);
-    });
+router.post('/verify-otp', otpFunctionality.verifyOTP);
 
 export default router;

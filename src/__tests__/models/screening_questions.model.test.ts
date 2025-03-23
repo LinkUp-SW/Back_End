@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import screeningQuestions from "../../models/screening_questions.model.ts";
+import screeningQuestions from "../../models_to_delete/screening_questions.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");

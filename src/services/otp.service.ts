@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+import { emailTransporter } from '../utils/helperFunctions.utils.ts';
+import asyncHandler from '../middleware/asyncHandler.ts';
 import twilio from 'twilio';
 
 export const generateOTPCode = (length = 6): number => {
@@ -6,23 +7,19 @@ export const generateOTPCode = (length = 6): number => {
   return Math.floor(Math.random() * (10 ** length));
 };
 
-// Email OTP Integration using Nodemailer
-const emailTransporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE, // e.g. 'Gmail'
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 export const sendEmailOTP = async (email: string, otp: number): Promise<void> => {
-  const mailOptions = {
+  try{
+    const mailOptions = {
     from: process.env.EMAIL_FROM,
     to: email,
     subject: 'Your OTP Code',
     text: `Your OTP code is: ${otp}. It will expire in 10 minutes.`,
   };
   await emailTransporter.sendMail(mailOptions);
+  } catch (error){
+    throw error;
+  }
 };
 
 // SMS OTP Integration using Twilio
@@ -39,15 +36,3 @@ export const sendSmsOTP = async (phone: string, otp: number): Promise<void> => {
   });
 };
 
-// Combined function to send OTP via your preferred channels (can be one or both)
-export const sendOTPCode = async (
-  email: string,
-  phone: string | null,
-  otp: number
-): Promise<void> => {
-  const promises = [sendEmailOTP(email, otp)];
-  if (phone) {
-    promises.push(sendSmsOTP(phone, otp));
-  }
-  await Promise.all(promises);
-};

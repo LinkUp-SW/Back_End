@@ -1,69 +1,175 @@
-import bcrypt from "bcrypt";
-import users from "../../models/users.model.ts";
 import mongoose from "mongoose";
-
+import clients from "../../models/users.model.ts";
 
 beforeAll(async () => {
-    await mongoose.connect(process.env.MONGO_URI || "");
+  await mongoose.connect(process.env.MONGO_URI || "");
 });
 
 beforeEach(async () => {
-    await users.deleteMany({});
+  await clients.deleteMany({});
 });
 
 afterAll(async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
+  await mongoose.connection.dropDatabase();
+  await mongoose.connection.close();
 });
 
-describe("User Model", () => {
+describe("Clients Model", () => {
+  it("should create a client document successfully", async () => {
+    const clientDoc = new clients({
+      name: "John Doe",
+      email: "john.doe@example.com",
+      password: "password123",
+      phone_number: 1234567890,
+      country_code: "US",
+      bio: new mongoose.Types.ObjectId(),
+      education: [new mongoose.Types.ObjectId()],
+      work_experience: [new mongoose.Types.ObjectId()],
+      organizations:[new mongoose.Types.ObjectId()],
+      skills: [new mongoose.Types.ObjectId()],
+      liscence_certificates: [new mongoose.Types.ObjectId()],
+      industry: "Software",
+      pprofile_photo: "http://example.com/profile.jpg",
+      cover_photo: "http://example.com/cover.jpg",
+      resume: "http://example.com/resume.jpg",
+      connections: [new mongoose.Types.ObjectId()],
+      followers: [new mongoose.Types.ObjectId()],
+      following: [new mongoose.Types.ObjectId()],
+      privacy_settings: new mongoose.Types.ObjectId(),
+      activity: [new mongoose.Types.ObjectId()],
+      status: "Finding a new job",
+      blocked: [new mongoose.Types.ObjectId()],
+      conversations: [new mongoose.Types.ObjectId()],
+      notification: [
+        {
+          seen: true,
+          user_id: "user123",
+          sender_user_id: "user456",
+          conversation_id: "conv123",
+          post_id: "post123",
+          comment_id: "comment123",
+          react: new mongoose.Types.ObjectId(),
+        },
+      ],
+      applied_jobs: [new mongoose.Types.ObjectId()],
+      saved_jobs: [new mongoose.Types.ObjectId()],
+      sex: "Male",
+      subscription: {
+        subscribed: true,
+        subscription_started_at: new Date(),
+      },
+      is_student: true,
+      is_verified: true,
+      is_16_or_above: true,
+    });
 
-    it("should create a user successfully", async () => {
-        const user = new users({
-            name: "John Doe",
-            email: "johndoe@example.com",
-            password: "securepassword",
-            phone_number: 1234567890,
-            country_code: "+1"
-        });
-        
-        await expect(user.save()).resolves.toBeDefined();
-    }, 15000);
+    await expect(clientDoc.save()).resolves.toBeDefined();
+  }, 15000);
 
-    it("should not allow duplicate emails", async () => {
-        await users.create({
-            name: "Alice",
-            email: "alice@example.com",
-            password: "password123",
-            phone_number: 9876543210,
-            country_code: "+44"
-        });
-        
-        const duplicateUser = new users({
-            name: "Bob",
-            email: "alice@example.com",
-            password: "password456",
-            phone_number: 1122334455,
-            country_code: "+44"
-        });
-        
-        await expect(duplicateUser.save()).rejects.toThrow();
-    }, 15000);
+  it("should require all necessary fields", async () => {
+    const clientDoc = new clients({});
+    await expect(clientDoc.save()).rejects.toThrow();
+  }, 15000);
 
-    it("should hash the password before saving", async () => {
-        const user = await users.create({
-            name: "Charlie",
-            email: "charlie@example.com",
-            password: "mypassword",
-            phone_number: 1010101010,
-            country_code: "+91"
-        });
-        
-        expect(await bcrypt.compare("mypassword", user.password)).toBe(true);
-    }, 30000);
+  it("should validate the data types of fields", async () => {
+    const clientDoc = new clients({
+      name: 123,
+      email: "not-an-email",
+      password: 123,
+      phone_number: "not-a-number",
+      country_code: 123,
+      bio: "not-an-object-id",
+      education: ["not-an-object-id"],
+      work_experience: ["not-an-object-id"],
+      organizations:["not-an-object-id"],
+      skills: ["not-an-object-id"],
+      liscence_certificates: ["not-an-object-id"],
+      industry: 123,
+      profile_photo: "not-a-url",
+      cover_photo: "not-a-url",
+      resume: "not-a-url",
+      connections: ["not-an-object-id"],
+      followers: ["not-an-object-id"],
+      following: ["not-an-object-id"],
+      privacy_settings: "not-an-object-id",
+      activity: ["not-an-object-id"],
+      status: 123,
+      blocked: ["not-an-object-id"],
+      conversations: ["not-an-object-id"],
+      notification: [
+        {
+          seen: "not-a-boolean",
+          user_id: 123,
+          sender_user_id: 123,
+          conversation_id: 123,
+          post_id: 123,
+          comment_id: 123,
+          react: "not-an-object-id",
+        },
+      ],
+      applied_jobs: ["not-an-object-id"],
+      saved_jobs: ["not-an-object-id"],
+      sex: 123,
+      subscription: {
+        subscribed: "not-a-boolean",
+        subscription_started_at: "not-a-date",
+      },
+      is_student: "not-a-boolean",
+      is_verified: "not-a-boolean",
+      is_16_or_above: "not-a-boolean",
+    });
 
-    it("should require all necessary fields", async () => {
-        const user = new users({});
-        await expect(user.save()).rejects.toThrow();
-    }, 15000);
+    await expect(clientDoc.save()).rejects.toThrow();
+  }, 15000);
+
+  it("should validate nested objects", async () => {
+    const clientDoc = new clients({
+      name: "John Doe",
+      email: "john.doe@example.com",
+      password: "password123",
+      phone_number: 1234567890,
+      country_code: "US",
+      bio: new mongoose.Types.ObjectId(),
+      education: [new mongoose.Types.ObjectId()],
+      work_experience: [new mongoose.Types.ObjectId()],
+      organizations:[new mongoose.Types.ObjectId()],
+      skills: [new mongoose.Types.ObjectId()],
+      liscence_certificates: [new mongoose.Types.ObjectId()],
+      industry: "Software",
+      profile_photo: "http://example.com/profile.jpg",
+      cover_photo: "http://example.com/cover.jpg",
+      resume: "http://example.com/resume.jpg",
+      connections: [new mongoose.Types.ObjectId()],
+      followers: [new mongoose.Types.ObjectId()],
+      following: [new mongoose.Types.ObjectId()],
+      privacy_settings: new mongoose.Types.ObjectId(),
+      activity: [new mongoose.Types.ObjectId()],
+      status: "Finding a new job",
+      blocked: [new mongoose.Types.ObjectId()],
+      conversations: [new mongoose.Types.ObjectId()],
+      notification: [
+        {
+          seen: true,
+          user_id: "user123",
+          sender_user_id: "user456",
+          conversation_id: "conv123",
+          post_id: "post123",
+          comment_id: "comment123",
+          react: new mongoose.Types.ObjectId(),
+        },
+      ],
+      applied_jobs: [new mongoose.Types.ObjectId()],
+      saved_jobs: [new mongoose.Types.ObjectId()],
+      sex: "Male",
+      subscription: {
+        subscribed: true,
+        subscription_started_at: new Date(),
+      },
+      is_student: true,
+      is_verified: true,
+      is_16_or_above: true,
+    });
+
+    await expect(clientDoc.save()).resolves.toBeDefined();
+  }, 15000);
 });

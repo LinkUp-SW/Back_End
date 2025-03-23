@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { jobApplicationsInterface } from "./job_applications.model.ts";
-import { screeningQuestionsInterface } from "./screening_questions.model.ts";
-import { companiesInterface } from "./companies.model.ts";
+import { screeningQuestionsInterface } from "../models_to_delete/screening_questions.model.ts";
+import { organizationsInterface } from "./organizations.model.ts";
 
 export enum jobTypeEnum{
     full_time="Full-time",
@@ -38,39 +38,53 @@ export enum howDidYouHearAboutUsEnum{
 }
 
 export interface jobsInterface extends mongoose.Document{
-    company_id: companiesInterface;
+    organization_id: organizationsInterface;
     job_title: string;
     location: string;
     job_type: jobTypeEnum;
     workplace_type: workplaceTypeEnum;
-    company_industry:[];
-    experience_level:experienceLevelEnum;
+    organization_industry:[];
+    experience_level: experienceLevelEnum;
     job_description: string;
     targetted_skills: string[];
-    receive_applicants_by:receiveApplicantsByEnum;
+    receive_applicants_by: receiveApplicantsByEnum;
     receiving_method: string;
-    screening_questions:screeningQuestionsInterface;
-    how_did_you_hear_about_us:howDidYouHearAboutUsEnum;
+    screening_questions: {
+        questions: string;
+        answers: string[];
+        ideal_answer: string;
+        is_must_qualification: boolean;
+        rejection_message?: string;
+        is_filtererd: boolean;
+    };
+    how_did_you_hear_about_us: howDidYouHearAboutUsEnum;
     salary: number;
-    applied_applications:jobApplicationsInterface[];
+    applied_applications: jobApplicationsInterface[];
 }
 
 const jobsSchema = new Schema<jobsInterface>({
-    company_id: { type: Schema.Types.ObjectId, ref: "companies", required:true },
-    job_title: { type: String, required: true },
-    location: { type: String, required: true },
-    job_type: { type: String, enum: Object.values(jobTypeEnum), required: true },
-    workplace_type: { type: String, enum: Object.values(workplaceTypeEnum), required: true },
-    company_industry: [{ type: String, required: true }],
-    experience_level: { type: String, enum: Object.values(experienceLevelEnum), required: true },
-    job_description: { type: String, required: true },
-    targetted_skills: [{ type: String, required: true }],
-    receive_applicants_by: { type: String, required: true },
-    receiving_method: { type: String, required: true },
-    screening_questions: { type: Schema.Types.ObjectId, ref: "screeningQuestions"},
-    how_did_you_hear_about_us: { type: String, enum: Object.values(howDidYouHearAboutUsEnum), required: true },
-    salary: { type: Number},
-    applied_applications: [{ type: Schema.Types.ObjectId, ref: "jobApplications" }]
+    organization_id: { type: Schema.Types.ObjectId, ref: "organizations" },
+    job_title: { type: String },
+    location: { type: String },
+    job_type: { type: String, enum: Object.values(jobTypeEnum) },
+    workplace_type: { type: String, enum: Object.values(workplaceTypeEnum) },
+    organization_industry: [{ type: String }],
+    experience_level: { type: String, enum: Object.values(experienceLevelEnum) },
+    job_description: { type: String },
+    targetted_skills: [{ type: String }],
+    receive_applicants_by: { type: String, enum: Object.values(receiveApplicantsByEnum) },
+    receiving_method: { type: String },
+    screening_questions: {
+        questions: { type: String },
+        answers: [{ type: String }],
+        ideal_answer: { type: String },
+        is_must_qualification: { type: Boolean },
+        rejection_message: { type: String },
+        is_filtererd: { type: Boolean },
+    },
+    how_did_you_hear_about_us: { type: String, enum: Object.values(howDidYouHearAboutUsEnum) },
+    salary: { type: Number },
+    applied_applications: [{ type: Schema.Types.ObjectId, ref: "jobApplications" }],
 });
 
 const jobs = mongoose.model<jobsInterface>('jobs', jobsSchema);

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bio from "../../models/bio.model.ts";
+import bio from "../../models_to_delete/bio.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");
