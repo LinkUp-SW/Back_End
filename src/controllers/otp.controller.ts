@@ -28,6 +28,7 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
   const otpCode = generateOTPCode();
 
   await sendEmailOTP(email, otpCode);
+  console.log(`OTP code for ${email}: ${otpCode}`);
 
   if (req.session) {
       req.session.otp = otpCode;
@@ -53,7 +54,7 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
   }
 
   if (!req.session.otp || !req.session.otpEmail || email !== req.session.otpEmail) {
-      throw new CustomError('Invalid OTP', 401, 'INVALID_OTP');
+      throw new CustomError('Invalid OTP or email', 401, 'INVALID_OTP_MAIL');
   }
 
   if (req.session.otpExpires && Date.now() > req.session.otpExpires) {
