@@ -41,8 +41,8 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
 });
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-  const { otp, email } = req.body;
-  email.toLowerCase();
+  let { otp, email } = req.body;
+  email = email.toLowerCase();
   
   if (!otp) {
       throw new CustomError('OTP is required', 400, 'MISSING_OTP');
