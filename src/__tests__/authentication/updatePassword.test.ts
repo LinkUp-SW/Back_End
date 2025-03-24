@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { connectToDatabase, disconnectFromDatabase } from '../../../config/database.ts';
-import updatePasswordRoutes from '../../../src/routes/updatePassword.routes.ts';
+import updatePasswordRoutes from '../../routes/authentication/updatePassword.routes.ts';
 import users, { sexEnum, statusEnum } from '../../../src/models/users.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 
