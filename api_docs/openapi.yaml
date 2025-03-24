@@ -2352,4 +2352,34 @@ paths:
                     example: "License/Certificate not found"
         '500':
           description: Server error
+  /api/v1/user/hash-password:
+    get:
+      tags:
+        - Auth
+      summary: Generate a random hashed password
+      description: >
+        Generates a random password and returns its SHA-256 hash.
+        This can be used for testing or generating secure passwords.
+      responses:
+        '200':
+          description: Successfully generated hashed password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hashedPassword:
+                    type: string
+                    example: "7e2d58d8b5b08c252e7d93bbc873fe5ba56dba06ec5a03776e7b4b1cf5072574"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
 

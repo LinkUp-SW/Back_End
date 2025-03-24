@@ -41,7 +41,7 @@ export interface usersInterface extends mongoose.Document{
     password: string;
     phone_number: number;
     country_code: string;
-    comparePassword: (password: string) => Promise<boolean>;
+    comparePassword: (password: string) => Promise<boolean>; // 
     bio: {
         first_name:string;
         last_name:string;
