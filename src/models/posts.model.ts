@@ -24,11 +24,11 @@ export interface postsInterface extends mongoose.Document{
 }
 
 const postsSchema = new Schema<postsInterface>({
-    user_id: { type: String, required: true },
-    content: { type: String, required: true },
+    user_id: { type: String },
+    content: { type: String },
     date: { type: Date, default: Date.now },
     media: [{ type: String }],
-    comments_disabled: { type: String, enum: Object.values(commentsEnum), required: true },
+    comments_disabled: { type: String, enum: Object.values(commentsEnum) },
     visibility: { type: Boolean, default: true },
     reacts: [{ type: String }],
     tagged_users: [{ type: String }],

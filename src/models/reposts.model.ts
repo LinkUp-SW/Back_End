@@ -10,8 +10,8 @@ export interface repostsInterface extends mongoose.Document{
 }
 
 const repostsSchema = new Schema<repostsInterface>({
-    post_id: { type: Schema.Types.ObjectId, ref: "posts", required:true },
-    user_id: { type: String , required:true },
+    post_id: { type: Schema.Types.ObjectId, ref: "posts" },
+    user_id: { type: String  },
     content: { type: String}
 });
 

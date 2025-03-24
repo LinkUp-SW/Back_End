@@ -63,17 +63,17 @@ export interface jobsInterface extends mongoose.Document{
 }
 
 const jobsSchema = new Schema<jobsInterface>({
-    organization_id: { type: Schema.Types.ObjectId, ref: "organizations", required: true },
-    job_title: { type: String, required: true },
-    location: { type: String, required: true },
-    job_type: { type: String, enum: Object.values(jobTypeEnum), required: true },
-    workplace_type: { type: String, enum: Object.values(workplaceTypeEnum), required: true },
-    organization_industry: [{ type: String, required: true }],
-    experience_level: { type: String, enum: Object.values(experienceLevelEnum), required: true },
-    job_description: { type: String, required: true },
-    targetted_skills: [{ type: String, required: true }],
-    receive_applicants_by: { type: String, enum: Object.values(receiveApplicantsByEnum), required: true },
-    receiving_method: { type: String, required: true },
+    organization_id: { type: Schema.Types.ObjectId, ref: "organizations" },
+    job_title: { type: String },
+    location: { type: String },
+    job_type: { type: String, enum: Object.values(jobTypeEnum) },
+    workplace_type: { type: String, enum: Object.values(workplaceTypeEnum) },
+    organization_industry: [{ type: String }],
+    experience_level: { type: String, enum: Object.values(experienceLevelEnum) },
+    job_description: { type: String },
+    targetted_skills: [{ type: String }],
+    receive_applicants_by: { type: String, enum: Object.values(receiveApplicantsByEnum) },
+    receiving_method: { type: String },
     screening_questions: {
         questions: { type: String },
         answers: [{ type: String }],
@@ -82,7 +82,7 @@ const jobsSchema = new Schema<jobsInterface>({
         rejection_message: { type: String },
         is_filtererd: { type: Boolean },
     },
-    how_did_you_hear_about_us: { type: String, enum: Object.values(howDidYouHearAboutUsEnum), required: true },
+    how_did_you_hear_about_us: { type: String, enum: Object.values(howDidYouHearAboutUsEnum) },
     salary: { type: Number },
     applied_applications: [{ type: Schema.Types.ObjectId, ref: "jobApplications" }],
 });

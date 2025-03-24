@@ -18,7 +18,7 @@ declare module 'express-session' {
 const OTP_EXPIRATION_MINUTES = 10;
 
 const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-  const { email } = req.body;
+  const email = req.body.email.toLowerCase();
 
   if (!email) {
       throw new CustomError('Email is required', 400, 'MISSING_EMAIL');
@@ -42,7 +42,8 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const { otp, email } = req.body;
-
+  email.toLowerCase();
+  
   if (!otp) {
       throw new CustomError('OTP is required', 400, 'MISSING_OTP');
   }
@@ -52,8 +53,8 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
   }
 
   if (!req.session.otp || !req.session.otpEmail || email !== req.session.otpEmail) {
-      throw new CustomError('Invalid OTP', 401, 'INVALID_OTP');
-  }
+    throw new CustomError('Invalid OTP or email', 401, 'INVALID_OTP_MAIL');
+}
 
   if (req.session.otpExpires && Date.now() > req.session.otpExpires) {
       req.session.otp = undefined;
@@ -74,6 +75,11 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
 
   user.is_verified = true;
   await user.save();
+
+  res.cookie("linkup_user_id", user.user_id, {
+      maxAge: 3600000,
+      httpOnly: false,
+    });
 
   return res.status(200).json({ message: 'OTP verified successfully' });
 });

@@ -55,7 +55,7 @@ export class AuthService {
       let user_id = await generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name);
       user = await this.userRepo.createGoogleUser(
         user_id as unknown as string,
-        googleUserInfo.email,
+        googleUserInfo.email.toLowerCase(),
         googleUserInfo.given_name,
         googleUserInfo.family_name,
         generateHashedPassword() // Use a generated or placeholder password.
@@ -64,7 +64,7 @@ export class AuthService {
       await user.save();
       const token = tokenFunctionalities.createToken({
         time: "1h",
-        userID: user._id as string,
+        userID: user.user_id,
       });
       return { token, user };
     }

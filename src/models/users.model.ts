@@ -107,7 +107,7 @@ export interface usersInterface extends mongoose.Document{
     liscence_certificates: {
         _id: string;
         name: string;
-        issuing_organization: organizationsInterface;
+        issuing_organization: organizationsInterface | string;
         issue_date: Date;
         expiration_date: Date;
         credintial_id: number;
@@ -212,7 +212,15 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     education: [
         {
             _id: { type: String },
-            school: { type: Schema.Types.ObjectId, ref: "organizations" },
+            school: { type: Schema.Types.Mixed,
+                validate: {
+                  validator: function (value) {
+                    return typeof value === "string" || mongoose.isValidObjectId(value);
+                  },
+                  message: "School must be either an ObjectId or a string",
+                },
+                ref: "organizations",
+              },
             degree: { type: String },
             field_of_study: { type: String },
             start_date: { type: Date },
@@ -235,7 +243,15 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             _id: { type: String },
             title: { type: String },
             employee_type: { type: String },
-            organization: { type: Schema.Types.ObjectId, ref: "organizations" },
+            organization: { type: Schema.Types.Mixed,
+                validate: {
+                  validator: function (value) {
+                    return typeof value === "string" || mongoose.isValidObjectId(value);
+                  },
+                  message: "Company must be either an ObjectId or a string",
+                },
+                ref: "organizations",
+              },
             is_current: { type: Boolean },
             start_date: { type: Date },
             end_date: { type: Date },
@@ -263,7 +279,15 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         {
             _id: { type: String},
             name: { type: String },
-            issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
+            issuing_organization: { type: Schema.Types.Mixed,
+                validate: {
+                  validator: function (value) {
+                    return typeof value === "string" || mongoose.isValidObjectId(value);
+                  },
+                  message: "Company must be either an ObjectId or a string",
+                },
+                ref: "organizations",
+              },
             issue_date: { type: Date },
             expiration_date: { type: Date },
             credintial_id: { type: Number },
