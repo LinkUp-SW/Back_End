@@ -1,44 +1,42 @@
 import { Request, Response} from 'express';
-import users from '../../models/users.model.ts';
 import bcrypt from 'bcrypt';
-
-import tokenUtils from '../../utils/token.utils.ts';
+import { getUserIdFromToken } from '../../utils/helper.ts';
+import { findUserByUserId } from '../../utils/database.helper.ts';
 
 
 
 const resetPassword = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
 
-        const {password,token} = req.body;
+        const {password} = req.body;
         
-        if (!password || !token){
-            return res.status(400).json({ message: 'Token and new password are required' });
+        if (!password){
+            return res.status(400).json({ message: 'New password is required' });
         }
-
-
-        const decodedUser = tokenUtils.validateToken(token) as { userId: string };
-        const user = await users.findOne({user_id:decodedUser.userId});
-
-        if (!user){
-            return res.status(404).json({ message: 'User not found' });
-
-        }
-        const isSamePassword = await bcrypt.compare(password,user.password)
-        if (isSamePassword){
-            return res.status(400).json({ message: 'Please enter a new password' });
-        }
-        if (password.length < 8){
-            return res.status(400).json({ message: 'Password must be at least 8 characters long' });
-        }
-        user.password=password;
-        await user.save()
-
         
-        res.status(200).json({ message: 'Password reset successful' });
+        const userId = await getUserIdFromToken(req, res);
+        if (!userId) return;
+        let user;
+        if (userId){
+            user = await findUserByUserId(userId,res);
+        }
+        if (user){
+            const isSamePassword = await bcrypt.compare(password,user.password)
+            if (isSamePassword){
+                return res.status(400).json({ message: 'Please enter a new password' });
+            }
+            if (password.length < 8){
+                return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+            }
+            user.password=password;
+            await user.save()
+    
+            
+            res.status(200).json({ message: 'Password reset successful' });
+        }
 
 
     } catch (error) {
-        console.error('Reset password error:', error);
 
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message });
