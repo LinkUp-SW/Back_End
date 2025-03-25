@@ -37,8 +37,10 @@ export const deleteAccount = asyncHandler(async (req: Request, res: Response): P
 
 export const testDeleteAccount = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email } = req.body;
+    let { email } = req.body;
     
+    email = email.toLowerCase();
+
     if (!email) {
       throw new CustomError('Email is required', 400);
     }
