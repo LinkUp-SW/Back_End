@@ -147,7 +147,7 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
     });
     
     return res.status(200).json({ 
-      message: 'Login successful',
+      message: 'Signup successful',
       user: { 
         id: newUser.user_id, 
         email: newUser.email, 
