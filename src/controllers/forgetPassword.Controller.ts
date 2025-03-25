@@ -24,7 +24,7 @@ const forgetPassword = async (req: Request, res: Response): Promise<Response | v
         })
         const resetLink = `${process.env.FRONTEND_REDIRECT_URL}/reset-password/${token}`;
         await sendResetPasswordEmail(email,resetLink);
-        return res.status(200).json({ message: 'Password reset link sent to your email' });
+        return res.status(200).json({ message: 'Password reset link sent to your email',reset_link:resetLink });
 
     } catch (error) {
         console.error('Forget password error:', error);
