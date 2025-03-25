@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import users from '../../models/users.model.ts';
 import { sendResetPasswordEmail } from '../../services/forgetPassword.service.ts';
 import tokenUtils from '../../utils/token.utils.ts';

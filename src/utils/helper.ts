@@ -41,6 +41,20 @@ export const validateTokenAndUser = async (req: Request, res: Response): Promise
   return { viewerId, userId, user };
 };
 
+export const getUserIdFromToken = async (req: Request, res: Response): Promise<string | null> => {
+  // Validate token and extract user ID from the token
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
+    if (!decodedToken || !decodedToken.userId) {
+      res.status(401).json({ message: "Unauthorized",success:false });
+      return null;
+    }
+    const viewerId = decodedToken.userId;
+  
+    return viewerId;
+};
+
 export const validateFileUpload = (req: Request, res: Response): string | null => {
   // Ensure a file was uploaded
   if (!req.file) {
