@@ -388,14 +388,20 @@ paths:
           description: Email not registered.
         '500':
           description: Server error
-
   /api/v1/user/reset-password:
-    post:
+    patch:
       tags:
         - Auth
       summary: Reset password
       description: >
         Resets the user's password using the provided token and new password.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -404,33 +410,139 @@ paths:
               type: object
               required:
                 - password
-                - token
               properties:
                 password:
                   type: string
-                  example: "new_secure_password"
-                token:
-                  type: string
-                  example: "jwt_token"
+                  example: "new_password"
       responses:
         '200':
-          description: Password reset successful.
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset successful"
         '400':
-          description: Invalid request.
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "New password is required"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '403':
+          description: Old password is incorrect
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Old password is incorrect"
         '404':
-          description: User not found.
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
         '500':
           description: Server error
-
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+  /api/v1/user/validate-token:
+    get:
+      tags:
+        - Auth
+      summary: Validate token and user
+      description: >
+        Validates the provided token and retrieves the user information.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      responses:
+        '200':
+          description: Validate token successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Validate token successful"
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  success:
+                    type: boolean
+                    example: false
   /api/v1/user/update-password:
-    post:
+    patch:
       tags:
         - Auth
       summary: Update password
       description: >
         Updates the user's password using the provided old password, new password, and token.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -438,7 +550,6 @@ paths:
             schema:
               type: object
               required:
-                - token
                 - old_password
                 - new_password
               properties:
@@ -447,23 +558,68 @@ paths:
                   example: "old_password"
                 new_password:
                   type: string
-                  example: "new_secure_password"
-                token:
-                  type: string
-                  example: "jwt_token"
+                  example: "new_password"
       responses:
         '200':
-          description: Password updated successfully.
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password updated successfully"
         '400':
-          description: Invalid request.
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "passwords are required"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
         '403':
-          description: Old password is incorrect.
+          description: Old password is incorrect
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Old password is incorrect"
         '404':
-          description: User not found.
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
   /api/v1/user/update-email:
     put:
       tags:
@@ -545,7 +701,6 @@ paths:
         '500':
           description: Server error
                     example: "Server error"
-
   /profile/profile-picture/{user_id}:
     post:
       tags:
@@ -1276,141 +1431,148 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-  delete:
-      tags:
-        - Resume
-      summary: Delete a resume
-      description: Deletes the user's resume.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the user
-      responses:
-        '200':
-          description: Resume deleted successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Resume deleted successfully"
-        '400':
-          description: No resume to delete.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "No resume to delete"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '403':
-          description: You are not authorized to delete this resume.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "You are not authorized to delete this resume."
-        '500':
-          description: Error deleting resume
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error deleting resume"
-                  error:
-                    type: string
-                    example: "Cloudinary error"
+    delete:
+        tags:
+          - Resume
+        summary: Delete a resume
+        description: Deletes the user's resume.
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            schema:
+              type: string
+            description: The ID of the user
+        responses:
+          '200':
+            description: Resume deleted successfully.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Resume deleted successfully"
+          '400':
+            description: No resume to delete.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "No resume to delete"
+          '401':
+            description: Unauthorized
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Unauthorized"
+          '403':
+            description: You are not authorized to delete this resume.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "You are not authorized to delete this resume."
+          '500':
+            description: Error deleting resume
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Error deleting resume"
+                    error:
+                      type: string
+                      example: "Cloudinary error"
 
-  get:
-      tags:
-        - Resume
-      summary: Get a resume
-      description: Retrieves the user's resume.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the user
-      responses:
-        '200':
-          description: Resume retrieved successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  resume:
-                    type: string
-                    example: "https://cloudinary.com/user/resume.pdf"
-        '404':
-          description: Resume not found.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+    get:
+        tags:
+          - Resume
+        summary: Get a resume
+        description: Retrieves the user's resume.
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            schema:
+              type: string
+            description: The ID of the user
+        responses:
+          '200':
+            description: Resume retrieved successfully.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    resume:
+                      type: string
+                      example: "https://cloudinary.com/user/resume.pdf"
+          '404':
+            description: Resume not found.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
 
-                    example: "Resume not found"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
+                      example: "Resume not found"
+          '401':
+            description: Unauthorized
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Unauthorized"
 
-        '403':
-          description: Access denied
+          '403':
+            description: Access denied
 
-        '500':
-          description: Error retrieving resume
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error retrieving resume"
-                  error:
-                    type: string
-                    example: "Database error"
+          '500':
+            description: Error retrieving resume
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Error retrieving resume"
+                    error:
+                      type: string
+                      example: "Database error"
   /api/v1/user/update-username:
-    post:
+    patch:
       tags:
         - Auth
       summary: Update username
       description: >
         Updates the user's username using the provided token and new username.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -1418,12 +1580,8 @@ paths:
             schema:
               type: object
               required:
-                - token
                 - new_username
               properties:
-                token:
-                  type: string
-                  example: "jwt_token"
                 new_username:
                   type: string
                   example: "new_username"
@@ -1437,7 +1595,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Username updated successfully"
+                    example: "User name updated successfully"
         '400':
           description: Invalid request
           content:
@@ -1447,7 +1605,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Token and new username are required"
+                    example: "new username is required"
         '401':
           description: Invalid or expired token
           content:
@@ -1467,9 +1625,7 @@ paths:
                 properties:
                   message:
                     type: string
-
                     example: "Username already in use"
-
         '404':
           description: User not found
           content:
@@ -1489,7 +1645,6 @@ paths:
                 properties:
                   message:
                     type: string
-
                     example: "Server error"
   /api/v1/privacy/profile-visibility/{user_id}:
     get:
