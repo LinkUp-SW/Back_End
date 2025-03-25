@@ -19,6 +19,7 @@ import signupRoutes from './src/routes/authentication/signup.routes.ts';
 import forgetRoutes from './src/routes/authentication/forgetPassword.routes.ts';
 import resetRoutes from './src/routes/authentication/resetPassword.routes.ts';
 import updateEmailRoutes from './src/routes/authentication/updateEmail.routes.ts';
+import validateTokenRoutes from './src/routes/authentication/validateToken.routes.ts';
 import deleteAccountRoutes from './src/routes/user_profile/deleteAccount.routes.ts'
 import updatePassRoutes from './src/routes/authentication/updatePassword.routes.ts';
 import profilePictureRoutes from './src/routes/user_uploads/profilePicture.routes.ts';
@@ -43,9 +44,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 
 
-// Generate a token with a 1-hour expiration and user_id "Hamza-Elghonemy35"
+// Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Hamza-Elghonemy35' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
   console.log('Generated Token:', token);
 };
 
@@ -111,6 +112,7 @@ app.use('/api/v1/user',
     privacySettingsRoutes,
     viewUserProfileRoutes,
     deleteAccountRoutes,
+    validateTokenRoutes,
     experienceRoutes,
     educationRoutes,
     licenseRoutes,
