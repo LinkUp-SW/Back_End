@@ -107,7 +107,7 @@ export interface usersInterface extends mongoose.Document{
     liscence_certificates: {
         _id: string;
         name: string;
-        issuing_organization: organizationsInterface | string;
+        issuing_organization: organizationsInterface;
         issue_date: Date;
         expiration_date: Date;
         credintial_id: number;
@@ -123,7 +123,6 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
-
 
     connections: string[];
     followers: usersInterface[];

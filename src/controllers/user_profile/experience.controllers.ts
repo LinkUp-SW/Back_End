@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
+import { processMediaArray } from "../../services/cloudinaryService.ts";
 
 const addWorkExperience = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -9,6 +10,8 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
         if (!user) return;
 
         const { title, employee_type, organization, is_current, start_date, end_date, location, description, location_type, skills, media } = req.body;
+
+        const processedMedia = await processMediaArray(media);
 
         const newExperience = {
             _id: new ObjectId().toString(),
@@ -22,7 +25,7 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
             description,
             location_type,
             skills,
-            media,
+            media: processedMedia,
         };
 
         user.work_experience.push(newExperience);
@@ -53,6 +56,8 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
 
         const oldSkills = user.work_experience[experienceIndex].skills || [];
         
+        const processedMedia = await processMediaArray(media);
+
         user.work_experience[experienceIndex] = {
             _id: experienceId,
             title,
@@ -65,7 +70,7 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
             description,
             location_type,
             skills,
-            media,
+            media: processedMedia,
         };
         
         updateUserSkills(user, skills, organization);
