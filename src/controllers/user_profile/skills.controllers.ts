@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
+import { processMediaArray } from "../../services/cloudinaryService.ts";
 
 const addSkill = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

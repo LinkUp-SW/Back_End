@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
+import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinaryService.ts";
 
 const addLicense = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -9,6 +10,8 @@ const addLicense = async (req: Request, res: Response, next: NextFunction): Prom
         if (!user) return;
 
         const { name, issuing_organization, issue_date, expiration_date, credintial_id, credintial_url, skills, media } = req.body;
+
+        const processedMedia = await processMediaArray(media);
 
         const newLicense = {
             _id: new ObjectId().toString(),
@@ -19,7 +22,7 @@ const addLicense = async (req: Request, res: Response, next: NextFunction): Prom
             credintial_id,
             credintial_url,
             skills,
-            media,
+            media: processedMedia,
         };
 
         if (!user.liscence_certificates) {
@@ -58,6 +61,8 @@ const updateLicense = async (req: Request, res: Response, next: NextFunction): P
 
         const oldSkills = user.liscence_certificates[licenseIndex].skills || [];
         
+        const processedMedia = await processMediaArray(media);
+
         user.liscence_certificates[licenseIndex] = {
             _id: licenseId,
             name,
@@ -67,7 +72,7 @@ const updateLicense = async (req: Request, res: Response, next: NextFunction): P
             credintial_id,
             credintial_url,
             skills,
-            media,
+            media: processedMedia,
         };
         
         updateUserSkills(user, skills, issuing_organization);
@@ -100,6 +105,11 @@ const deleteLicense = async (req: Request, res: Response, next: NextFunction): P
         
         const licenseSkills = user.liscence_certificates[licenseIndex].skills || [];
         const organization = user.liscence_certificates[licenseIndex].issuing_organization;
+        
+        const mediaObjects = user.liscence_certificates[licenseIndex].media || [];
+        const mediaUrls = mediaObjects.map(media => media.media);
+        
+        await deleteMediaFromCloud(mediaUrls);
         
         user.liscence_certificates.splice(licenseIndex, 1);
         

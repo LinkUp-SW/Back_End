@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
+import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinaryService.ts";
 
 const addEducation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -9,6 +10,8 @@ const addEducation = async (req: Request, res: Response, next: NextFunction): Pr
         if (!user) return;
 
         const { school, degree, field_of_study, start_date, end_date, grade, activites_and_socials, skills, description, media } = req.body;
+
+        const processedMedia = await processMediaArray(media);
 
         const newEducation = {
             _id: new ObjectId().toString(),
@@ -21,7 +24,7 @@ const addEducation = async (req: Request, res: Response, next: NextFunction): Pr
             activites_and_socials,
             skills,
             description,
-            media,
+            media: processedMedia,
         };
 
         user.education.push(newEducation);
@@ -52,6 +55,8 @@ const updateEducation = async (req: Request, res: Response, next: NextFunction):
 
         const oldSkills = user.education[educationIndex].skills || [];
         
+        const processedMedia = await processMediaArray(media);
+        
         user.education[educationIndex] = {
             _id: educationId,
             school,
@@ -63,7 +68,7 @@ const updateEducation = async (req: Request, res: Response, next: NextFunction):
             activites_and_socials,
             skills,
             description,
-            media,
+            media: processedMedia,
         };
         
         updateUserSkills(user, skills, school);
@@ -92,6 +97,10 @@ const deleteEducation = async (req: Request, res: Response, next: NextFunction):
         
         const educationSkills = user.education[educationIndex].skills || [];
         const school = user.education[educationIndex].school;
+        
+        const mediaObjects = user.liscence_certificates[educationIndex].media || [];
+        const mediaUrls = mediaObjects.map(media => media.media);
+        await deleteMediaFromCloud(mediaUrls);
         
         user.education.splice(educationIndex, 1);
         
