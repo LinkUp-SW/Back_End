@@ -2156,13 +2156,13 @@ paths:
                     example: "Work Experience not found"
         '500':
           description: Server error
-
-  /api/v1/user/add-skill:
+  
+  /api/v1/user/add-education:
     post:
       tags:
         - User Profile
-      summary: Add skill
-      description: Adds a new skill to the user's profile
+      summary: Add education entry
+      description: Adds a new education entry to the user's profile
       requestBody:
         required: true
         content:
@@ -2170,20 +2170,57 @@ paths:
             schema:
               type: object
               required:
-                - name
+                - school
               properties:
-                name:
+                school:
                   type: string
-                  example: "JavaScript"
-                used_where:
+                  example: "60d0fe4f5311236168a109ca"
+                  description: "MongoDB ObjectId of the school or university"
+                degree:
+                  type: string
+                  example: "Bachelor of Science"
+                field_of_study:
+                  type: string
+                  example: "Computer Science"
+                start_date:
+                  type: string
+                  format: date
+                  example: "2018-09-01"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2022-06-30"
+                grade:
+                  type: string
+                  example: "3.8 GPA"
+                activites_and_socials:
+                  type: string
+                  example: "Coding Club, Student Government"
+                skills:
                   type: array
                   items:
                     type: string
-                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
-                  description: "Array of organization IDs where this skill was used"
+                  example: ["JavaScript", "Python", "Data Structures"]
+                description:
+                  type: string
+                  example: "Studied computer science with focus on software engineering."
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media:
+                        type: string
+                        example: "https://example.com/diploma.jpg"
+                      title:
+                        type: string
+                        example: "Diploma"
+                      description:
+                        type: string
+                        example: "My university diploma"
       responses:
         '200':
-          description: Skill added successfully
+          description: Education entry added successfully
           content:
             application/json:
               schema:
@@ -2191,44 +2228,50 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Skill added successfully"
-                  skill:
+                    example: "Education entry added successfully"
+                  education:
                     type: object
                     properties:
                       _id:
                         type: string
-                        example: "60d0fe4f5311236168a109cc"
-                      name:
+                        example: "60d0fe4f5311236168a109cb"
+                      school:
                         type: string
-                        example: "JavaScript"
-                      endorsments:
-                        type: array
-                        items:
-                          type: string
-                        example: []
-                      used_where:
-                        type: array
-                        items:
-                          type: string
-                        example: ["60d0fe4f5311236168a109ca"]
+                        example: "60d0fe4f5311236168a109ca"
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error adding education entry"
 
-  /api/v1/user/update-skill/{skillId}:
+  /api/v1/user/update-education/{educationId}:
     put:
       tags:
         - User Profile
-      summary: Update skill
-      description: Updates an existing skill in the user's profile
+      summary: Update education entry
+      description: Updates an existing education entry in the user's profile
       parameters:
-        - name: skillId
+        - name: educationId
           in: path
           required: true
           schema:
             type: string
-          description: The ID of the skill to update
+          description: The ID of the education entry to update
       requestBody:
         required: true
         content:
@@ -2236,17 +2279,54 @@ paths:
             schema:
               type: object
               properties:
-                name:
+                school:
                   type: string
-                  example: "JavaScript/TypeScript"
-                used_where:
+                  example: "60d0fe4f5311236168a109ca"
+                degree:
+                  type: string
+                  example: "Bachelor of Science"
+                field_of_study:
+                  type: string
+                  example: "Computer Engineering"
+                start_date:
+                  type: string
+                  format: date
+                  example: "2018-09-01"
+                end_date:
+                  type: string
+                  format: date
+                  example: "2022-06-30"
+                grade:
+                  type: string
+                  example: "4.0 GPA"
+                activites_and_socials:
+                  type: string
+                  example: "Robotics Club, Hackathons"
+                skills:
                   type: array
                   items:
                     type: string
-                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
+                  example: ["JavaScript", "React", "Node.js", "TypeScript"]
+                description:
+                  type: string
+                  example: "Specialized in software architecture and web development."
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media:
+                        type: string
+                        example: "https://example.com/updated-diploma.jpg"
+                      title:
+                        type: string
+                        example: "Updated Diploma"
+                      description:
+                        type: string
+                        example: "My updated university diploma"
       responses:
         '200':
-          description: Skill updated successfully
+          description: Education entry updated successfully
           content:
             application/json:
               schema:
@@ -2254,13 +2334,13 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Skill updated successfully"
-                  skill:
+                    example: "Education entry updated successfully"
+                  education:
                     type: object
         '401':
           description: Unauthorized
         '404':
-          description: Skill not found
+          description: Education entry not found
           content:
             application/json:
               schema:
@@ -2268,26 +2348,26 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Skill not found"
+                    example: "Education entry not found"
         '500':
           description: Server error
 
-  /api/v1/user/delete-skill/{skillId}:
+  /api/v1/user/delete-education/{educationId}:
     delete:
       tags:
         - User Profile
-      summary: Delete skill
-      description: Deletes a skill from the user's profile
+      summary: Delete education entry
+      description: Deletes an education entry from the user's profile
       parameters:
-        - name: skillId
+        - name: educationId
           in: path
           required: true
           schema:
             type: string
-          description: The ID of the skill to delete
+          description: The ID of the education entry to delete
       responses:
         '200':
-          description: Skill deleted successfully
+          description: Education entry deleted successfully
           content:
             application/json:
               schema:
@@ -2295,11 +2375,11 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Skill deleted successfully"
+                    example: "Education entry deleted successfully"
         '401':
           description: Unauthorized
         '404':
-          description: Skill not found
+          description: Education entry not found
           content:
             application/json:
               schema:
@@ -2307,10 +2387,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Skill not found"
+                    example: "Education entry not found"
         '500':
           description: Server error
-
   /api/v1/user/add-license:
     post:
       tags:
@@ -2536,5 +2615,156 @@ paths:
                   message:
                     type: string
                     example: "Server error"
+  /api/v1/user/add-skill:
+    post:
+      tags:
+        - User Profile
+      summary: Add skill
+      description: Adds a new skill to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "JavaScript"
+                used_where:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
+                  description: "Array of organization IDs where this skill was used"
+      responses:
+        '200':
+          description: Skill added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill added successfully"
+                  skill:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d0fe4f5311236168a109cc"
+                      name:
+                        type: string
+                        example: "JavaScript"
+                      endorsments:
+                        type: array
+                        items:
+                          type: string
+                        example: []
+                      used_where:
+                        type: array
+                        items:
+                          type: string
+                        example: ["60d0fe4f5311236168a109ca"]
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
 
+  /api/v1/user/update-skill/{skillId}:
+    put:
+      tags:
+        - User Profile
+      summary: Update skill
+      description: Updates an existing skill in the user's profile
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the skill to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "JavaScript/TypeScript"
+                used_where:
+                  type: array
+                  items:
+                    type: string
+                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
+      responses:
+        '200':
+          description: Skill updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill updated successfully"
+                  skill:
+                    type: object
+        '401':
+          description: Unauthorized
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill not found"
+        '500':
+          description: Server error
 
+  /api/v1/user/delete-skill/{skillId}:
+    delete:
+      tags:
+        - User Profile
+      summary: Delete skill
+      description: Deletes a skill from the user's profile
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the skill to delete
+      responses:
+        '200':
+          description: Skill deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill not found"
+        '500':
+          description: Server error
