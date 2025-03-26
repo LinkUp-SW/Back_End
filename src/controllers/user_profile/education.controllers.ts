@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
-import { processMediaArray } from "../../services/cloudinaryService.ts";
+import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinaryService.ts";
 
 const addEducation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -97,6 +97,10 @@ const deleteEducation = async (req: Request, res: Response, next: NextFunction):
         
         const educationSkills = user.education[educationIndex].skills || [];
         const school = user.education[educationIndex].school;
+        
+        const mediaObjects = user.liscence_certificates[educationIndex].media || [];
+        const mediaUrls = mediaObjects.map(media => media.media);
+        await deleteMediaFromCloud(mediaUrls);
         
         user.education.splice(educationIndex, 1);
         

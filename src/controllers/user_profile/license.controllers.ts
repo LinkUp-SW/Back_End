@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
-import { processMediaArray } from "../../services/cloudinaryService.ts";
+import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinaryService.ts";
 
 const addLicense = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -105,6 +105,11 @@ const deleteLicense = async (req: Request, res: Response, next: NextFunction): P
         
         const licenseSkills = user.liscence_certificates[licenseIndex].skills || [];
         const organization = user.liscence_certificates[licenseIndex].issuing_organization;
+        
+        const mediaObjects = user.liscence_certificates[licenseIndex].media || [];
+        const mediaUrls = mediaObjects.map(media => media.media);
+        
+        await deleteMediaFromCloud(mediaUrls);
         
         user.liscence_certificates.splice(licenseIndex, 1);
         
