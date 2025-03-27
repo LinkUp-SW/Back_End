@@ -612,7 +612,211 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
+  export const blockUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
   
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Ensure the viewer is not trying to block themselves
+      if ((viewerUser._id as mongoose.Types.ObjectId).toString() === targetUser._id.toString()) {
+        res.status(400).json({ message: "You cannot block yourself." });
+        return;
+      }
+  
+      // Check if the user is already blocked
+      const isAlreadyBlocked = viewerUser.blocked.some(
+        (blocked: any) => blocked._id.toString() === targetUser._id.toString()
+      );
+      if (isAlreadyBlocked) {
+        res.status(400).json({ message: "This user is already blocked." });
+        return;
+      }
+  
+      // Check if the user was recently unblocked (within 48 hours)
+      const recentlyUnblocked = viewerUser.unblocked_users?.find(
+        (unblocked: any) =>
+          unblocked._id.toString() === targetUser._id.toString() &&
+          new Date(unblocked.date).getTime() > Date.now() - 48 * 60 * 60 * 1000
+      );
+      if (recentlyUnblocked) {
+        res.status(400).json({
+          message: "You cannot reblock this user within 48 hours of unblocking.",
+        });
+        return;
+      }
+  
+      // Add the target user's `_id` and the current date to the viewer's blocked array
+      viewerUser.blocked.push({
+        _id: targetUser._id,
+        date: new Date(),
+      });
+  
+      // Remove the target user's `_id` from the viewer's connections, followers, following, sent_connections, and received_connections
+      viewerUser.connections = viewerUser.connections.filter(
+        (connection: any) => connection._id.toString() !== targetUser._id.toString()
+      );
+      viewerUser.followers = viewerUser.followers.filter(
+        (follower: any) => follower.toString() !== targetUser._id.toString()
+      );
+      viewerUser.following = viewerUser.following.filter(
+        (following: any) => following.toString() !== targetUser._id.toString()
+      );
+      viewerUser.sent_connections = viewerUser.sent_connections.filter(
+        (connection: any) => connection._id.toString() !== targetUser._id.toString()
+      );
+      viewerUser.received_connections = viewerUser.received_connections.filter(
+        (connection: any) => connection._id.toString() !== targetUser._id.toString()
+      );
+  
+      // Remove the viewer's `_id` from the target user's connections, followers, following, sent_connections, and received_connections
+      targetUser.connections = targetUser.connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+      targetUser.followers = targetUser.followers.filter(
+        (follower: any) => follower.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+      targetUser.following = targetUser.following.filter(
+        (following: any) => following.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+      targetUser.sent_connections = targetUser.sent_connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+      targetUser.received_connections = targetUser.received_connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+  
+      // Save the updated documents
+      await viewerUser.save();
+      await targetUser.save();
+  
+      res.status(200).json({ message: "User blocked successfully." });
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      res.status(500).json({ message: "Error blocking user", error });
+    }
+  };
+
+
+
+  export const unblockUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+  
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Ensure the viewer is not trying to unblock themselves
+      if ((viewerUser._id as mongoose.Types.ObjectId).toString() === targetUser._id.toString()) {
+        res.status(400).json({ message: "You cannot unblock yourself." });
+        return;
+      }
+  
+      // Check if the target user is actually blocked
+      const blockedIndex = viewerUser.blocked.findIndex(
+        (blocked: any) => blocked._id.toString() === targetUser._id.toString()
+      );
+      if (blockedIndex === -1) {
+        res.status(400).json({ message: "This user is not in your blocked list." });
+        return;
+      }
+  
+      // Validate the password provided in the request body
+      const { password } = req.body;
+      if (!password) {
+        res.status(400).json({ message: "Password is required to unblock a user." });
+        return;
+      }
+  
+      const isPasswordValid = await viewerUser.comparePassword(password);
+      if (!isPasswordValid) {
+        res.status(401).json({ message: "Invalid password." });
+        return;
+      }
+  
+      // Remove the target user's `_id` from the viewer's blocked array
+      viewerUser.blocked.splice(blockedIndex, 1);
+  
+      // Add the target user's `_id` to the unblocked_users array with the current date
+      if (!viewerUser.unblocked_users) viewerUser.unblocked_users = [];
+      viewerUser.unblocked_users.push({
+        _id: targetUser._id,
+        date: new Date(),
+      });
+  
+      // Save the updated document
+      await viewerUser.save();
+  
+      res.status(200).json({ message: "User unblocked successfully." });
+    } catch (error) {
+      console.error("Error unblocking user:", error);
+      res.status(500).json({ message: "Error unblocking user", error });
+    }
+  };
+
+  export const getBlockedList = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Extract the blocked user IDs and dates
+      const blockedUsers = viewerUser.blocked.map((blocked: any) => ({
+        _id: blocked._id.toString(), 
+        date: blocked.date,
+      }));
+  
+      console.log("Blocked Users:", blockedUsers);
+  
+      // Format the blocked list
+      const formattedBlockedList = await getFormattedUserList(
+        blockedUsers.map((blocked) => new mongoose.Types.ObjectId(blocked._id)),
+        res
+      );
+      if (!formattedBlockedList) return;
+  
+      console.log("Formatted Blocked List:", formattedBlockedList);
+  
+      // Add the block date to the formatted list
+      const blockedListWithDates = formattedBlockedList.map((user) => {
+
+        const blockEntry = blockedUsers.find(
+          (blocked) => blocked._id === user._id?.toString() 
+
+        );
+        console.log("Block Entry:", blockEntry);
+        return {
+          user_id: user.user_id, 
+          name: user.name,
+          headline: user.headline,
+          profilePicture: user.profilePicture,
+          date: blockEntry?.date || null, 
+        };
+      });
+  
+      // Return the formatted blocked list
+      res.status(200).json({ blocked_list: blockedListWithDates });
+    } catch (error) {
+      console.error("Error fetching blocked list:", error);
+      res.status(500).json({ message: "Error fetching blocked list", error });
+    }
+  };
+
   
 
 
