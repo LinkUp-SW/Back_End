@@ -13,21 +13,26 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import errorHandler from './src/middleware/errorHandler.ts'; 
 
-import authRoutes from './src/routes/auth.routes.ts';
-import otpRoutes from './src/routes/otp.routes.js';
-import signupRoutes from './src/routes/signup.routes.ts';
-import forgetRoutes from './src/routes/forgetPassword.routes.ts';
-import resetRoutes from './src/routes/resetPassword.routes.ts';
-import updateEmailRoutes from './src/routes/updateEmail.routes.ts';
-import deleteAccountRoutes from './src/routes/deleteAccount.routes.ts'
-import updatePassRoutes from './src/routes/updatePassword.routes.ts';
-import profilePictureRoutes from './src/routes/profilePicture.routes.ts';
-import coverPhotoRoutes from './src/routes/coverPhoto.routes.ts';
-import resumeRoutes from './src/routes/resume.routes.ts';
-import updateNameRoutes from './src/routes/updateUsername.routes.ts';
-import privacySettingsRoutes from './src/routes/privacy.settings.routes.ts';
-import viewUserProfileRoutes from './src/routes/view.user.profile.routes.ts';
-
+import authRoutes from './src/routes/authentication/auth.routes.ts';
+import otpRoutes from './src/routes/authentication/otp.routes.ts';
+import signupRoutes from './src/routes/authentication/signup.routes.ts';
+import forgetRoutes from './src/routes/authentication/forgetPassword.routes.ts';
+import resetRoutes from './src/routes/authentication/resetPassword.routes.ts';
+import updateEmailRoutes from './src/routes/authentication/updateEmail.routes.ts';
+import validateTokenRoutes from './src/routes/authentication/validateToken.routes.ts';
+import deleteAccountRoutes from './src/routes/user_profile/deleteAccount.routes.ts'
+import updatePassRoutes from './src/routes/authentication/updatePassword.routes.ts';
+import profilePictureRoutes from './src/routes/user_uploads/profilePicture.routes.ts';
+import coverPhotoRoutes from './src/routes/user_uploads/coverPhoto.routes.ts';
+import resumeRoutes from './src/routes/user_uploads/resume.routes.ts';
+import updateNameRoutes from './src/routes/authentication/updateUsername.routes.ts';
+import privacySettingsRoutes from './src/routes/user_profile/privacy.settings.routes.ts';
+import viewUserProfileRoutes from './src/routes/user_profile/view.user.profile.routes.ts';
+import experienceRoutes from './src/routes/user_profile/experience.routes.ts';
+import educationRoutes from './src/routes/user_profile/education.routes.ts'
+import licenseRoutes from './src/routes/user_profile/license.routes.ts'
+import updateUserRoutes from './src/routes/user_profile/update.user.profile.routes.ts';
+import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,9 +44,9 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 
 
-// Generate a token with a 1-hour expiration and user_id "Mahmoud-Amr-123"
+// Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Jane-Smith-123' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
   console.log('Generated Token:', token);
 };
 
@@ -51,6 +56,7 @@ connectToDatabase()
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
       generateStartupToken();
+      generateStartupToken();
     });
   })
   .catch(err => {
@@ -59,6 +65,9 @@ connectToDatabase()
 
 // Middleware
 app.use(express.json());
+app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
 app.use(express.urlencoded({ extended: true }));
 
@@ -83,12 +92,14 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 // Initialize Google OAuth strategy via Passport
+// Initialize Google OAuth strategy via Passport
 googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Authenticatio Routes
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
 
@@ -106,12 +117,19 @@ app.use('/api/v1/user',
     resumeRoutes,
     privacySettingsRoutes,
     viewUserProfileRoutes,
-    deleteAccountRoutes);
+    deleteAccountRoutes,
+    validateTokenRoutes,
+    experienceRoutes,
+    educationRoutes,
+    licenseRoutes,
+    updateUserRoutes,
+    skillsRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
+  res.send('<a href="/auth/google">Authenticate with Google</a>');
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
 

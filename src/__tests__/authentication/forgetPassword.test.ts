@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { connectToDatabase, disconnectFromDatabase } from '../../../config/database.ts';
-import forgetPasswordRoutes from '../../../src/routes/forgetPassword.routes.ts';
+import forgetPasswordRoutes from '../../routes/authentication/forgetPassword.routes.ts';
 import users from '../../../src/models/users.model.ts';
 
 const app = express();

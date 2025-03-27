@@ -1,10 +1,13 @@
 import { emailTransporter } from '../utils/helperFunctions.utils.ts';
-import asyncHandler from '../middleware/asyncHandler.ts';
 import twilio from 'twilio';
 
 export const generateOTPCode = (length = 6): number => {
   // Generate a random 6 digit OTP code
-  return Math.floor(Math.random() * (10 ** length));
+  let otp = ''; 
+  for (let i = 0; i < length; i++) {
+    otp += Math.floor(Math.random() * 10);
+  }
+  return parseInt(otp); 
 };
 
 
@@ -35,4 +38,5 @@ export const sendSmsOTP = async (phone: string, otp: number): Promise<void> => {
     to: phone,
   });
 };
+
 

@@ -4,9 +4,7 @@ import { conversationsInterface } from "./conversations.model.ts";
 import { postsInterface } from "./posts.model.ts";
 import { repostsInterface } from "./reposts.model.ts";
 import { commentsInterface } from "./comments.model.ts";
-import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
-import { reactsInterface } from "../models_to_delete/reactions.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
 
@@ -43,7 +41,7 @@ export interface usersInterface extends mongoose.Document{
     password: string;
     phone_number: number;
     country_code: string;
-    comparePassword: (password: string) => Promise<boolean>;
+    comparePassword: (password: string) => Promise<boolean>; // 
     bio: {
         first_name:string;
         last_name:string;
@@ -65,7 +63,8 @@ export interface usersInterface extends mongoose.Document{
         };
     };
     education: {
-        school: organizationsInterface | string;
+        _id: string;
+        school: organizationsInterface;
         degree: string;
         field_of_study: string;
         start_date: Date;
@@ -74,16 +73,17 @@ export interface usersInterface extends mongoose.Document{
         activites_and_socials: string;
         skills: string[];
         description: string;
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     }[];
     work_experience: {
+        _id : string
         title: string;
         employee_type: string;
-        organization: organizationsInterface | string;
+        organization: organizationsInterface;
         is_current: boolean;
         start_date: Date;
         end_date: Date; 
@@ -91,41 +91,38 @@ export interface usersInterface extends mongoose.Document{
         description: string;
         location_type: string;
         skills: string[];   
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     }[];
     organizations: organizationsInterface;
     skills: {
+        _id: string;
         name: string;
-        endorsments:usersInterface[];
-        used_where:[{
-            educations: string[], 
-            certificates: string[],
-            experience: string[] 
-        }];
+        endorsments: usersInterface[];
+        used_where: string[];
     }[];
     liscence_certificates: {
+        _id: string;
         name: string;
-        issuing_organization: organizationsInterface | string;
+        issuing_organization: organizationsInterface;
         issue_date: Date;
         expiration_date: Date;
         credintial_id: number;
         credintial_url: string;
         skills: string[];
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     }[];
     industry: string;
     profile_photo: string;
     cover_photo: string;
     resume: string;
-
 
     connections: string[];
     followers: usersInterface[];
@@ -141,11 +138,11 @@ export interface usersInterface extends mongoose.Document{
         reposted_posts: repostsInterface[];
         reacted_posts:postsInterface[];
         comments: commentsInterface[];
-        media: [{
+        media: {
             media: string,
             title: string,
             description: string
-        }];
+        }[];
     };
     status: statusEnum; 
     blocked: string[];
@@ -213,6 +210,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     education: [
         {
+            _id: { type: String },
             school: { type: Schema.Types.Mixed,
                 validate: {
                   validator: function (value) {
@@ -241,6 +239,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     ],
     work_experience: [
         {
+            _id: { type: String },
             title: { type: String },
             employee_type: { type: String },
             organization: { type: Schema.Types.Mixed,
@@ -270,16 +269,14 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     ],
     organizations: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
     skills: [{
+        _id: { type: String },
         name: { type: String },
         endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        used_where: [{
-            educations: [{ type: String }],
-            certificates: [{ type: String }],
-            experience: [{ type: String }],
-        },],
+        used_where: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
     },],
     liscence_certificates: [
         {
+            _id: { type: String},
             name: { type: String },
             issuing_organization: { type: Schema.Types.Mixed,
                 validate: {
