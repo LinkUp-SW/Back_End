@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { validateTokenAndUser, getFormattedUserList, formatConnectionData , getUserIdFromToken } from "../../utils/helper.ts";
+import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helper.ts";
+import { getFormattedUserList, formatConnectionData } from "../../repositories/user.repository.ts";
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
 
@@ -110,7 +111,84 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
+  export const getFollowingList = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
   
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Filter the following list to exclude users in the connections network
+      const nonConnectionFollowing = viewerUser.following.filter((followingId: any) => {
+        const followingIdStr = followingId.toString(); // Convert followingId to string
+        return !viewerUser.connections.some(
+          (connection: any) => connection._id.toString() === followingIdStr
+        );
+      });
+  
+      // Retrieve and format the filtered following list
+      const formattedFollowingList = await getFormattedUserList(
+        nonConnectionFollowing.map((id: mongoose.Types.ObjectId) => new mongoose.Types.ObjectId(id)),
+        res
+      );
+      if (!formattedFollowingList) return;
+  
+      // Exclude the `_id` field from the response
+      const followingWithoutId = formattedFollowingList.map((user) => ({
+        user_id: user.user_id,
+        name: user.name,
+        headline: user.headline,
+        profilePicture: user.profilePicture,
+      }));
+  
+      res.status(200).json({ following: followingWithoutId });
+    } catch (error) {
+      console.error("Error fetching following list:", error);
+      res.status(500).json({ message: "Error fetching following list", error });
+    }
+  };
+
+  export const getFollowersList = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Retrieve and format the followers list
+      const formattedFollowersList = await getFormattedUserList(
+        viewerUser.followers.map((id: mongoose.Types.ObjectId) => id),
+        res
+      );
+      if (!formattedFollowersList) return;
+  
+      // Add the `following` attribute to each user
+      const followersWithFollowingStatus = formattedFollowersList.map((user) => ({
+        user_id: user.user_id, // Use `user_id` from the formatted list
+        name: user.name,
+        headline: user.headline,
+        profilePicture: user.profilePicture,
+        following: viewerUser.following.some(
+          (followingId: mongoose.Types.ObjectId) => followingId.equals(user._id) // Use `equals` to compare ObjectId
+        ), // Check if the viewer follows this user
+      }));
+  
+      // Sort the followers list in descending order (most recent followers first)
+      const sortedFollowers = followersWithFollowingStatus.reverse();
+  
+      res.status(200).json({ followers: sortedFollowers });
+    } catch (error) {
+      console.error("Error fetching followers list:", error);
+      res.status(500).json({ message: "Error fetching followers list", error });
+    }
+  };
+ 
 
   
 
