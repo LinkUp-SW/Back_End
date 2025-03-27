@@ -19,7 +19,8 @@ export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const user = await findUserByUserId(decodedToken.userId, res);
     return user;
 };
-export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string, userId: string, user: any } | null> => {
+export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string,  targetUser: any } | null> => {
+  try{
   // Validate token and extract user ID from the token
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
@@ -36,11 +37,15 @@ export const validateTokenAndUser = async (req: Request, res: Response): Promise
   const userId = await validateUserIdFromRequest(req, res);
   if (!userId) return null;
 
-  // Retrieve the user document
-  const user = await findUserByUserId(userId, res);
-  if (!user) return null;
+  // Retrieve the target user document
+  const targetUser = await findUserByUserId(userId, res);
+  if (!targetUser) return null;
 
-  return { viewerId, userId, user };
+
+  return { viewerId, targetUser };
+} catch (error) {
+  throw error;
+}
 };
 
 export const getUserIdFromToken = async (req: Request, res: Response): Promise<string | null> => {
