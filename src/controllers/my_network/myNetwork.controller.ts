@@ -188,6 +188,126 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       res.status(500).json({ message: "Error fetching followers list", error });
     }
   };
+  export const sendConnectionRequest = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+  
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Check if the viewer is trying to send a connection request to themselves
+      if ((viewerUser._id as mongoose.Types.ObjectId).toString() === targetUser._id.toString()) {
+        res.status(400).json({ message: "You cannot send a connection request to yourself." });
+        return;
+      }
+
+      // Check if the viewer is blocked by the target user
+      const isBlocked = Array.isArray(targetUser.blocked) && targetUser.blocked.some(
+        (blocked: any) => blocked._id.toString() === (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+    
+      if (isBlocked) {
+        res.status(403).json({ message: "You are blocked from sending a connection request to this user." });
+        return;
+      }
+  
+      // Check if the viewer is already connected to the target user
+      const isAlreadyConnected = viewerUser.connections.some(
+        (connection: any) => connection._id.toString() === targetUser._id.toString()
+      );
+      if (isAlreadyConnected) {
+        res.status(400).json({ message: "You are already connected to this user." });
+        return;
+      }
+  
+      // Check if the target user exists in the viewer's withdrawn_connections and is within the 3-week restriction period
+      const threeWeeksAgo = new Date();
+      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
+  
+      const existingWithdrawal = viewerUser.withdrawn_connections.find(
+        (withdrawn: any) =>
+          withdrawn._id.toString() === targetUser._id.toString() &&
+          withdrawn.date > threeWeeksAgo
+      );
+  
+      if (existingWithdrawal) {
+        res.status(400).json({
+          message: "You cannot send another connection request to this user for 3 weeks.",
+        });
+        return;
+      }
+  
+      // Check the target user's privacy settings for "Who can send you invitations"
+      const whoCanSendInvitations = targetUser.privacy_settings?.flag_who_can_send_you_invitations;
+      if (whoCanSendInvitations === "email") {
+        const { email } = req.body;
+  
+        // Ensure the email is provided
+        if (!email) {
+          res.status(400).json({ message: "Email is required to send a connection request." });
+          return;
+        }
+  
+        // Check if the provided email matches the target user's email
+        if (email !== targetUser.email) {
+          res.status(400).json({ message: "The provided email does not match the user's email." });
+          return;
+        }
+      }
+  
+      // Check if the viewer is already in the target user's pending connections
+      const isAlreadyPending = targetUser.received_connections.some(
+        (pending: any) => pending._id.toString() === (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+      if (isAlreadyPending) {
+        res.status(400).json({ message: "You have already sent a connection request to this user." });
+        return;
+      }
+  
+      // Add the viewer to the target user's pending connections with the current date
+      targetUser.received_connections.push({
+        _id: viewerUser._id,
+        date: new Date(),
+      });
+      await targetUser.save();
+  
+      // Add the target user to the viewer's sent connections with the current date
+      viewerUser.sent_connections.push({
+        _id: targetUser._id,
+        date: new Date(),
+      });
+      await viewerUser.save();
+  
+      // Automatically follow the target user if their "Who_can_follow_you" setting is "Everyone"
+      const whoCanFollow = targetUser.privacy_settings?.Who_can_follow_you;
+      if (whoCanFollow === "Everyone") {
+        // Check if the viewer is already following the target user
+        const isAlreadyFollowing = targetUser.followers.some(
+          (follower: any) => follower.toString() === (viewerUser._id as mongoose.Types.ObjectId).toString()
+        );
+        if (!isAlreadyFollowing) {
+          // Add the viewer to the target user's followers
+          targetUser.followers.push(viewerUser._id);
+          await targetUser.save();
+  
+          // Add the target user to the viewer's following list
+          viewerUser.following.push(targetUser._id);
+          await viewerUser.save();
+        }
+      }
+  
+      res.status(200).json({ message: "Connection request sent successfully." });
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+      res.status(500).json({ message: "Error sending connection request", error });
+    }
+  };
+
  
 
   
