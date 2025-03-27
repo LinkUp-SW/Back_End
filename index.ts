@@ -56,6 +56,7 @@ connectToDatabase()
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
       generateStartupToken();
+      generateStartupToken();
     });
   })
   .catch(err => {
@@ -64,6 +65,9 @@ connectToDatabase()
 
 // Middleware
 app.use(express.json());
+app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
 app.use(express.urlencoded({ extended: true }));
 
@@ -88,12 +92,14 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 // Initialize Google OAuth strategy via Passport
+// Initialize Google OAuth strategy via Passport
 googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Authenticatio Routes
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
 
@@ -123,6 +129,7 @@ app.use('/api/v1/user',
 app.use('/api/v1/user', privacySettingsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
+  res.send('<a href="/auth/google">Authenticate with Google</a>');
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
 

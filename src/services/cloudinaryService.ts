@@ -1,5 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
 
+import { v2 as cloudinary } from 'cloudinary';
 /**
  * Extracts the publicId from a Cloudinary URL.
  * Decodes any percent-encoded characters so it matches

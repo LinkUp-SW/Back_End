@@ -167,6 +167,7 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
 };
 
+
 export const updateUserSkills = (user: usersInterface, skills: string[], organization: string) => {
   if (skills && skills.length > 0) {
       for (const skillName of skills) {

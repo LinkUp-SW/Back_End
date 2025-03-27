@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import tokenUtils from "../utils/token.utils.ts";
 import { validateUserIdFromRequest, findUserByUserId } from "../utils/database.helper.ts";
 
-
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization || "";
     const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
@@ -16,7 +15,6 @@ export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const user = await findUserByUserId(decodedToken.userId, res);
     return user;
 };
-
 export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string, userId: string, user: any } | null> => {
   // Validate token and extract user ID from the token
   const authHeader = req.headers.authorization || "";

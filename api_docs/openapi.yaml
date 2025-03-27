@@ -180,16 +180,31 @@ paths:
                     example: "OTP has been sent to your email"
         '400':
           description: Email is required.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email is required"
         '500':
-          description: Server error
-
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
   /api/v1/user/verify-otp:
     post:
       tags:
-        - OTP
-      summary: Verify OTP
+        - Auth
+      summary: Register a New User (Starter)
       description: >
-        Verifies the one-time password (OTP) provided by the user.
+        Verifies the one-time password (OTP) provided by the user. Requires email and OTP.
         If the OTP is valid and not expired, the session values are cleared and a success message is returned.
       requestBody:
         required: true
@@ -198,187 +213,15 @@ paths:
             schema:
               type: object
               required:
-                - otp
                 - email
+                - otp
               properties:
-                otp:
-                  type: string
-                  example: "123456"
                 email:
                   type: string
                   example: "test@example.com"
-      responses:
-        '200':
-          description: OTP verified successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "OTP verified successfully"
-        '400':
-          description: OTP is required.
-        '401':
-          description: Invalid OTP or OTP expired.
-        '500':
-          description: Server error
-
-  /api/v1/user/verify-email:
-    post:
-      tags:
-        - Auth
-      summary: Verify Email Availability
-      description: >
-        Checks if the provided email is available (i.e., not already in use).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
+                otp:
                   type: string
-                  example: "user@example.com"
-      responses:
-        '200':
-          description: Email is available.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email is available"
-        '400':
-          description: Email already exists.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Email already exists"
-        '500':
-          description: Server error
-
-  /api/v1/user/signup/starter:
-    post:
-      tags:
-        - Auth
-      summary: Register a New User (Starter)
-      description: >
-        Registers a new user by creating an account with the provided starter information.
-        Required fields include firstName, lastName, email, password, country, and city.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - firstName
-                - lastName
-                - email
-                - password
-                - country
-                - city
-              properties:
-                firstName:
-                  type: string
-                  example: "John"
-                lastName:
-                  type: string
-                  example: "Doe"
-                email:
-                  type: string
-                  example: "john.doe@example.com"
-                password:
-                  type: string
-                  example: "securepassword"
-                country:
-                  type: string
-                  example: "USA"
-                city:
-                  type: string
-                  example: "New York"
-                isStudent:
-                  type: boolean
-                  example: false
-                jobTitle:
-                  type: string
-                  example: "Software Engineer"
-                school:
-                  type: string
-                  example: "MIT"
-                schoolStartYear:
-                  type: number
-                  example: 2015
-                schoolEndYear:
-                  type: number
-                  example: 2019
-                is16OrAbove:
-                  type: boolean
-                  example: true
-                birthDate:
-                  type: string
-                  format: date
-                  example: "1990-01-01"
-                employmentType:
-                  type: string
-                  example: "Full-time"
-                recentCompany:
-                  type: string
-                  example: "Google"
-      responses:
-        '201':
-          description: Signup successful.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Signup successful"
-                  user:
-                    type: object
-                    properties:
-                      email:
-                        type: string
-                        example: "john.doe@example.com"
-        '400':
-          description: Required fields missing.
-        '409':
-          description: User already exists.
-        '500':
-          description: Server error
-
-  /api/v1/user/forget-password:
-    post:
-      tags:
-        - Auth
-      summary: Request password reset
-      description: >
-        Sends a password reset link to the user's email.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  example: "user@example.com"
+                  example: "123456"
       responses:
         '200':
           description: Password reset link sent.
@@ -426,7 +269,7 @@ paths:
                     type: string
                     example: "Password reset successful"
         '400':
-          description: Invalid request
+          description: Email and OTP are required.
           content:
             application/json:
               schema:
@@ -434,9 +277,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "New password is required"
+                    example: "Email and OTP are required"
         '401':
-          description: Invalid or expired token
+          description: Invalid OTP or OTP expired.
           content:
             application/json:
               schema:
@@ -444,105 +287,14 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Invalid or expired token"
-        '403':
-          description: Old password is incorrect
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Old password is incorrect"
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User not found"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
-  /api/v1/user/validate-token:
-    get:
+                    example: "Invalid OTP"
+  /api/v1/user/signup:
+    post:
       tags:
         - Auth
-      summary: Validate token and user
+      summary: Register a new user
       description: >
-        Validates the provided token and retrieves the user information.
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-            example: "Bearer jwt_token"
-      responses:
-        '200':
-          description: Validate token successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Validate token successful"
-                  success:
-                    type: boolean
-                    example: true
-        '401':
-          description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-                  success:
-                    type: boolean
-                    example: false
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
-                  success:
-                    type: boolean
-                    example: false
-  /api/v1/user/update-password:
-    patch:
-      tags:
-        - Auth
-      summary: Update password
-      description: >
-        Updates the user's password using the provided old password, new password, and token.
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-            example: "Bearer jwt_token"
+        Registers a new user by creating an account with the provided email, password, and optional name.
       requestBody:
         required: true
         content:
@@ -550,102 +302,29 @@ paths:
             schema:
               type: object
               required:
-                - old_password
-                - new_password
-              properties:
-                old_password:
-                  type: string
-                  example: "old_password"
-                new_password:
-                  type: string
-                  example: "new_password"
-      responses:
-        '200':
-          description: Password updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Password updated successfully"
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "passwords are required"
-        '401':
-          description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-        '403':
-          description: Old password is incorrect
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Old password is incorrect"
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User not found"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
-  /api/v1/user/update-email:
-    put:
-      tags:
-        - User
-      summary: Update user email
-      description: >
-        Updates the email address of an authenticated user. A valid token is required to verify the user's identity.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
+                - firstName
+                - lastName
                 - email
-                - token
+                - password
               properties:
+                firstName:
+                  type: string
+                  example: "John"
+                lastName:
+                  type: string
+                  example: "Doe"
                 email:
                   type: string
-                  example: "new.email@example.com"
-                token:
+                  example: "newuser@example.com"
+                password:
                   type: string
-                  example: "jwt_token"
+                  example: "securepassword"
+                name:
+                  type: string
+                  example: "John Doe"
       responses:
-        '200':
-          description: Email updated successfully.
+        '201':
+          description: Signup successful
           content:
             application/json:
               schema:
@@ -653,39 +332,15 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Email updated successfully"
-                  user_updated_email:
-                    type: string
-                    example: "new.email@example.com"
+                    example: "Signup successful"
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: "newuser@example.com"
         '400':
-          description: Email is required.
-        '401':
-          description: Email already exists or invalid token.
-        '500':
-          description: Server error.
-  /api/v1/user/delete-account:
-    delete:
-      tags:
-        - User
-      summary: Delete User Account
-      description: >
-        Deletes the authenticated user's account from the system.
-        A valid token is required to verify the user's identity.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - token
-              properties:
-                token:
-                  type: string
-                  example: "jwt_token"
-      responses:
-        '200':
-          description: Account deleted successfully.
+          description: Email or Username and password are required
           content:
             application/json:
               schema:
@@ -693,14 +348,21 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Account deleted successfully"
-        '400':
-          description: Invalid request.
-        '401':
-          description: Unauthorized or invalid token.
+                    example: "Email or Username and password are required"
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User already exists"
         '500':
           description: Server error
                     example: "Server error"
+
   /profile/profile-picture/{user_id}:
     post:
       tags:
@@ -1431,148 +1093,141 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-    delete:
-        tags:
-          - Resume
-        summary: Delete a resume
-        description: Deletes the user's resume.
-        parameters:
-          - name: user_id
-            in: path
-            required: true
-            schema:
-              type: string
-            description: The ID of the user
-        responses:
-          '200':
-            description: Resume deleted successfully.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "Resume deleted successfully"
-          '400':
-            description: No resume to delete.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "No resume to delete"
-          '401':
-            description: Unauthorized
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "Unauthorized"
-          '403':
-            description: You are not authorized to delete this resume.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "You are not authorized to delete this resume."
-          '500':
-            description: Error deleting resume
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "Error deleting resume"
-                    error:
-                      type: string
-                      example: "Cloudinary error"
+  delete:
+      tags:
+        - Resume
+      summary: Delete a resume
+      description: Deletes the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume deleted successfully"
+        '400':
+          description: No resume to delete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No resume to delete"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: You are not authorized to delete this resume.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not authorized to delete this resume."
+        '500':
+          description: Error deleting resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error deleting resume"
+                  error:
+                    type: string
+                    example: "Cloudinary error"
 
-    get:
-        tags:
-          - Resume
-        summary: Get a resume
-        description: Retrieves the user's resume.
-        parameters:
-          - name: user_id
-            in: path
-            required: true
-            schema:
-              type: string
-            description: The ID of the user
-        responses:
-          '200':
-            description: Resume retrieved successfully.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    resume:
-                      type: string
-                      example: "https://cloudinary.com/user/resume.pdf"
-          '404':
-            description: Resume not found.
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
+  get:
+      tags:
+        - Resume
+      summary: Get a resume
+      description: Retrieves the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/resume.pdf"
+        '404':
+          description: Resume not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
 
-                      example: "Resume not found"
-          '401':
-            description: Unauthorized
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "Unauthorized"
+                    example: "Resume not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
 
-          '403':
-            description: Access denied
+        '403':
+          description: Access denied
 
-          '500':
-            description: Error retrieving resume
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    message:
-                      type: string
-                      example: "Error retrieving resume"
-                    error:
-                      type: string
-                      example: "Database error"
+        '500':
+          description: Error retrieving resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving resume"
+                  error:
+                    type: string
+                    example: "Database error"
   /api/v1/user/update-username:
-    patch:
+    post:
       tags:
         - Auth
       summary: Update username
       description: >
         Updates the user's username using the provided token and new username.
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -1580,8 +1235,12 @@ paths:
             schema:
               type: object
               required:
+                - token
                 - new_username
               properties:
+                token:
+                  type: string
+                  example: "jwt_token"
                 new_username:
                   type: string
                   example: "new_username"
@@ -1595,7 +1254,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "User name updated successfully"
+                    example: "Username updated successfully"
         '400':
           description: Invalid request
           content:
@@ -1605,7 +1264,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "new username is required"
+                    example: "Token and new username are required"
         '401':
           description: Invalid or expired token
           content:
@@ -1625,7 +1284,9 @@ paths:
                 properties:
                   message:
                     type: string
+
                     example: "Username already in use"
+
         '404':
           description: User not found
           content:
@@ -1645,1126 +1306,5 @@ paths:
                 properties:
                   message:
                     type: string
+
                     example: "Server error"
-  /api/v1/privacy/profile-visibility/{user_id}:
-    get:
-      tags:
-        - Privacy Settings
-      summary: Get profile visibility
-      description: Retrieves the profile visibility setting for the specified user.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the user whose profile visibility is being retrieved.
-      responses:
-        '200':
-          description: Profile visibility retrieved successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  profileVisibility:
-                    type: string
-                    example: "Public"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '403':
-          description: User is not authorized to access this profile visibility.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User is not authorized to access this profile visibility."
-        '404':
-          description: User not found or privacy settings not available.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User does not have privacy settings."
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error retrieving privacy settings"
-                  error:
-                    type: string
-                    example: "Database error"
-
-    put:
-      tags:
-        - Privacy Settings
-      summary: Update profile visibility
-      description: Updates the profile visibility setting for the specified user.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the user whose profile visibility is being updated.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                profileVisibility:
-                  type: string
-                  description: The new profile visibility setting.
-                  enum:
-                    - Public
-                    - Private
-                  example: "Private"
-      responses:
-        '200':
-          description: Profile visibility updated successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Profile visibility updated successfully"
-                  profileVisibility:
-                    type: string
-                    example: "Private"
-        '400':
-          description: Invalid profile visibility setting.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid profile visibility setting"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '403':
-          description: User is not authorized to update this profile visibility.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User is not authorized to update this profile visibility."
-        '404':
-          description: User not found or privacy settings not available.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User does not have privacy settings."
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error updating privacy settings"
-                  error:
-                    type: string
-                    example: "Database error"
-  /api/v1/user/update-user-profile:
-    put:
-      tags:
-        - User Profile
-      summary: Update user profile
-      description: >
-        Updates the authenticated user's profile information such as bio, industry, 
-        profile photo, cover photo, resume and contact information.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                bio:
-                  type: string
-                  example: "Experienced software engineer specializing in web development"
-                industry:
-                  type: string
-                  example: "Technology"
-                profile_photo:
-                  type: string
-                  example: "https://example.com/profile_photo.jpg"
-                cover_photo:
-                  type: string
-                  example: "https://example.com/cover_photo.jpg"
-                resume:
-                  type: string
-                  example: "https://example.com/resume.pdf"
-                phone_number:
-                  type: string
-                  example: "1234567890"
-                country_code:
-                  type: string
-                  example: "+1"
-      responses:
-        '200':
-          description: User profile updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User profile updated successfully"
-                  user:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                        example: "60d0fe4f5311236168a109ca"
-                      bio:
-                        type: string
-                        example: "Experienced software engineer specializing in web development"
-                      industry:
-                        type: string
-                        example: "Technology"
-                      profile_photo:
-                        type: string
-                        example: "https://example.com/profile_photo.jpg"
-                      cover_photo:
-                        type: string
-                        example: "https://example.com/cover_photo.jpg"
-                      resume:
-                        type: string
-                        example: "https://example.com/resume.pdf"
-                      phone_number:
-                        type: string
-                        example: "1234567890"
-                      country_code:
-                        type: string
-                        example: "+1"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "User not found"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
-                  error:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Error updating user profile"
-                    
-  /api/v1/user/add-work-experience:
-    post:
-      tags:
-        - User Profile
-      summary: Add work experience
-      description: Adds a new work experience entry to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - title
-                - organization
-              properties:
-                title:
-                  type: string
-                  example: "Software Engineer"
-                employee_type:
-                  type: string
-                  example: "Full-time"
-                organization:
-                  type: string
-                  example: "60d0fe4f5311236168a109ca"
-                  description: "MongoDB ObjectId of the organization"
-                is_current:
-                  type: boolean
-                  example: true
-                start_date:
-                  type: string
-                  format: date
-                  example: "2020-01-15"
-                end_date:
-                  type: string
-                  format: date
-                  example: "2023-05-30"
-                location:
-                  type: string
-                  example: "San Francisco, CA"
-                description:
-                  type: string
-                  example: "Developed scalable web applications using React and Node.js"
-                location_type:
-                  type: string
-                  example: "Remote"
-                skills:
-                  type: array
-                  items:
-                    type: string
-                  example: ["JavaScript", "React", "Node.js"]
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      media:
-                        type: string
-                        example: "https://example.com/project-screenshot.jpg"
-                      title:
-                        type: string
-                        example: "Project Screenshot"
-                      description:
-                        type: string
-                        example: "Screenshot of the dashboard I developed"
-      responses:
-        '200':
-          description: Work experience added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Work experience added successfully"
-                  experience:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                        example: "60d0fe4f5311236168a109cb"
-                      title:
-                        type: string
-                        example: "Software Engineer"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error adding work experience"
-
-  /api/v1/user/update-work-experience/{experienceId}:
-    put:
-      tags:
-        - User Profile
-      summary: Update work experience
-      description: Updates an existing work experience entry in the user's profile
-      parameters:
-        - name: experienceId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the work experience to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  example: "Senior Software Engineer"
-                employee_type:
-                  type: string
-                  example: "Full-time"
-                organization:
-                  type: string
-                  example: "60d0fe4f5311236168a109ca"
-                  description: "MongoDB ObjectId of the organization"
-                is_current:
-                  type: boolean
-                  example: true
-                start_date:
-                  type: string
-                  format: date
-                  example: "2020-01-15"
-                end_date:
-                  type: string
-                  format: date
-                  example: "2023-05-30"
-                location:
-                  type: string
-                  example: "San Francisco, CA"
-                description:
-                  type: string
-                  example: "Developed scalable web applications using React and Node.js"
-                location_type:
-                  type: string
-                  example: "Remote"
-                skills:
-                  type: array
-                  items:
-                    type: string
-                  example: ["JavaScript", "React", "Node.js", "TypeScript"]
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      media:
-                        type: string
-                      title:
-                        type: string
-                      description:
-                        type: string
-      responses:
-        '200':
-          description: Work experience updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Work experience updated successfully"
-                  experience:
-                    type: object
-        '401':
-          description: Unauthorized
-        '404':
-          description: Experience not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Experience not found"
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-work-experience/{experienceId}:
-    delete:
-      tags:
-        - User Profile
-      summary: Delete work experience
-      description: Deletes a work experience entry from the user's profile
-      parameters:
-        - name: experienceId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the work experience to delete
-      responses:
-        '200':
-          description: Work experience deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Work experience deleted successfully"
-        '401':
-          description: Unauthorized
-        '404':
-          description: Work Experience not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Work Experience not found"
-        '500':
-          description: Server error
-  
-  /api/v1/user/add-education:
-    post:
-      tags:
-        - User Profile
-      summary: Add education entry
-      description: Adds a new education entry to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - school
-              properties:
-                school:
-                  type: string
-                  example: "60d0fe4f5311236168a109ca"
-                  description: "MongoDB ObjectId of the school or university"
-                degree:
-                  type: string
-                  example: "Bachelor of Science"
-                field_of_study:
-                  type: string
-                  example: "Computer Science"
-                start_date:
-                  type: string
-                  format: date
-                  example: "2018-09-01"
-                end_date:
-                  type: string
-                  format: date
-                  example: "2022-06-30"
-                grade:
-                  type: string
-                  example: "3.8 GPA"
-                activites_and_socials:
-                  type: string
-                  example: "Coding Club, Student Government"
-                skills:
-                  type: array
-                  items:
-                    type: string
-                  example: ["JavaScript", "Python", "Data Structures"]
-                description:
-                  type: string
-                  example: "Studied computer science with focus on software engineering."
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      media:
-                        type: string
-                        example: "https://example.com/diploma.jpg"
-                      title:
-                        type: string
-                        example: "Diploma"
-                      description:
-                        type: string
-                        example: "My university diploma"
-      responses:
-        '200':
-          description: Education entry added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Education entry added successfully"
-                  education:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                        example: "60d0fe4f5311236168a109cb"
-                      school:
-                        type: string
-                        example: "60d0fe4f5311236168a109ca"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error adding education entry"
-
-  /api/v1/user/update-education/{educationId}:
-    put:
-      tags:
-        - User Profile
-      summary: Update education entry
-      description: Updates an existing education entry in the user's profile
-      parameters:
-        - name: educationId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the education entry to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                school:
-                  type: string
-                  example: "60d0fe4f5311236168a109ca"
-                degree:
-                  type: string
-                  example: "Bachelor of Science"
-                field_of_study:
-                  type: string
-                  example: "Computer Engineering"
-                start_date:
-                  type: string
-                  format: date
-                  example: "2018-09-01"
-                end_date:
-                  type: string
-                  format: date
-                  example: "2022-06-30"
-                grade:
-                  type: string
-                  example: "4.0 GPA"
-                activites_and_socials:
-                  type: string
-                  example: "Robotics Club, Hackathons"
-                skills:
-                  type: array
-                  items:
-                    type: string
-                  example: ["JavaScript", "React", "Node.js", "TypeScript"]
-                description:
-                  type: string
-                  example: "Specialized in software architecture and web development."
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      media:
-                        type: string
-                        example: "https://example.com/updated-diploma.jpg"
-                      title:
-                        type: string
-                        example: "Updated Diploma"
-                      description:
-                        type: string
-                        example: "My updated university diploma"
-      responses:
-        '200':
-          description: Education entry updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Education entry updated successfully"
-                  education:
-                    type: object
-        '401':
-          description: Unauthorized
-        '404':
-          description: Education entry not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Education entry not found"
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-education/{educationId}:
-    delete:
-      tags:
-        - User Profile
-      summary: Delete education entry
-      description: Deletes an education entry from the user's profile
-      parameters:
-        - name: educationId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the education entry to delete
-      responses:
-        '200':
-          description: Education entry deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Education entry deleted successfully"
-        '401':
-          description: Unauthorized
-        '404':
-          description: Education entry not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Education entry not found"
-        '500':
-          description: Server error
-  /api/v1/user/add-license:
-    post:
-      tags:
-        - User Profile
-      summary: Add license or certification
-      description: Adds a new license or certification to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-                - issuing_organization
-              properties:
-                name:
-                  type: string
-                  example: "AWS Certified Solutions Architect"
-                issuing_organization:
-                  type: string
-                  example: "60d0fe4f5311236168a109cb"
-                  description: "MongoDB ObjectId of the issuing organization"
-                issue_date:
-                  type: string
-                  format: date
-                  example: "2023-01-15"
-                expiration_date:
-                  type: string
-                  format: date
-                  example: "2026-01-15"
-                credintial_id:
-                  type: integer
-                  example: 12345678
-                credintial_url:
-                  type: string
-                  example: "https://aws.amazon.com/verification/12345678"
-                skills:
-                  type: array
-                  items:
-                    type: string
-                  example: ["AWS", "Cloud Architecture"]
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      media:
-                        type: string
-                        example: "https://example.com/certification.pdf"
-                      title:
-                        type: string
-                        example: "AWS Certification"
-                      description:
-                        type: string
-                        example: "My AWS Solutions Architect certification"
-      responses:
-        '200':
-          description: License/Certificate added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "License/Certificate added successfully"
-                  license:
-                    type: object
-        '401':
-          description: Unauthorized
-        '500':
-          description: Server error
-
-  /api/v1/user/update-license/{licenseId}:
-    put:
-      tags:
-        - User Profile
-      summary: Update license or certification
-      description: Updates an existing license or certification in the user's profile
-      parameters:
-        - name: licenseId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the license or certification to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "AWS Certified Solutions Architect - Professional"
-                issuing_organization:
-                  type: string
-                  example: "60d0fe4f5311236168a109cb"
-                issue_date:
-                  type: string
-                  format: date
-                  example: "2023-01-15"
-                expiration_date:
-                  type: string
-                  format: date
-                  example: "2026-01-15"
-                credintial_id:
-                  type: integer
-                  example: 12345678
-                credintial_url:
-                  type: string
-                  example: "https://aws.amazon.com/verification/12345678"
-                skills:
-                  type: array
-                  items:
-                    type: string
-                  example: ["AWS", "Cloud Architecture", "DevOps"]
-                media:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      media:
-                        type: string
-                      title:
-                        type: string
-                      description:
-                        type: string
-      responses:
-        '200':
-          description: License/Certificate updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "License/Certificate updated successfully"
-                  license:
-                    type: object
-        '401':
-          description: Unauthorized
-        '404':
-          description: License/Certificate not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "License/Certificate not found"
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-license/{licenseId}:
-    delete:
-      tags:
-        - User Profile
-      summary: Delete license or certification
-      description: Deletes a license or certification from the user's profile
-      parameters:
-        - name: licenseId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the license or certification to delete
-      responses:
-        '200':
-          description: License/Certificate deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "License/Certificate deleted successfully"
-        '401':
-          description: Unauthorized
-        '404':
-          description: License/Certificate not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "License/Certificate not found"
-        '500':
-          description: Server error
-  /api/v1/user/hash-password:
-    get:
-      tags:
-        - Auth
-      summary: Generate a random hashed password
-      description: >
-        Generates a random password and returns its SHA-256 hash.
-        This can be used for testing or generating secure passwords.
-      responses:
-        '200':
-          description: Successfully generated hashed password
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  hashedPassword:
-                    type: string
-                    example: "7e2d58d8b5b08c252e7d93bbc873fe5ba56dba06ec5a03776e7b4b1cf5072574"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
-  /api/v1/user/add-skill:
-    post:
-      tags:
-        - User Profile
-      summary: Add skill
-      description: Adds a new skill to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - name
-              properties:
-                name:
-                  type: string
-                  example: "JavaScript"
-                used_where:
-                  type: array
-                  items:
-                    type: string
-                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
-                  description: "Array of organization IDs where this skill was used"
-      responses:
-        '200':
-          description: Skill added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Skill added successfully"
-                  skill:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                        example: "60d0fe4f5311236168a109cc"
-                      name:
-                        type: string
-                        example: "JavaScript"
-                      endorsments:
-                        type: array
-                        items:
-                          type: string
-                        example: []
-                      used_where:
-                        type: array
-                        items:
-                          type: string
-                        example: ["60d0fe4f5311236168a109ca"]
-        '401':
-          description: Unauthorized
-        '500':
-          description: Server error
-
-  /api/v1/user/update-skill/{skillId}:
-    put:
-      tags:
-        - User Profile
-      summary: Update skill
-      description: Updates an existing skill in the user's profile
-      parameters:
-        - name: skillId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the skill to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "JavaScript/TypeScript"
-                used_where:
-                  type: array
-                  items:
-                    type: string
-                  example: ["60d0fe4f5311236168a109ca", "60d0fe4f5311236168a109cb"]
-      responses:
-        '200':
-          description: Skill updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Skill updated successfully"
-                  skill:
-                    type: object
-        '401':
-          description: Unauthorized
-        '404':
-          description: Skill not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Skill not found"
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-skill/{skillId}:
-    delete:
-      tags:
-        - User Profile
-      summary: Delete skill
-      description: Deletes a skill from the user's profile
-      parameters:
-        - name: skillId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the skill to delete
-      responses:
-        '200':
-          description: Skill deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Skill deleted successfully"
-        '401':
-          description: Unauthorized
-        '404':
-          description: Skill not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Skill not found"
-        '500':
-          description: Server error

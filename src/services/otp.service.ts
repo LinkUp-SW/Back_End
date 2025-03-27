@@ -39,3 +39,4 @@ export const sendSmsOTP = async (phone: string, otp: number): Promise<void> => {
   });
 };
 
+
