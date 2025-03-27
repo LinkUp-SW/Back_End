@@ -448,7 +448,39 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
+  export const getAllConnections = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
   
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Format the connections list
+      const formattedConnections = await formatConnectionData(
+        viewerUser.connections.map((connection: any) => ({
+          _id: connection._id,
+          date: connection.date,
+        })),
+        viewerUser,
+        res,
+        false // Do not include mutual connections
+      );
+      if (!formattedConnections) return;
+  
+      // Sort the connections in descending order (most recent first)
+      const sortedConnections = formattedConnections.reverse();
+  
+      res.status(200).json({ connections: sortedConnections });
+    } catch (error) {
+      console.error("Error fetching connections:", error);
+      res.status(500).json({ message: "Error fetching connections", error });
+    }
+  };
+
+ 
 
   
 
