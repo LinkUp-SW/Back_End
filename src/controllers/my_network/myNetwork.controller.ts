@@ -308,6 +308,64 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
+  export const getReceivedConnections = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Format the received connections
+      const receivedConnections = await formatConnectionData(
+        viewerUser.received_connections.map((connection: any) => ({
+          _id: connection._id,
+          date: connection.date,
+        })),
+        viewerUser,
+        res,
+        true // Include mutual connections
+      );
+      if (!receivedConnections) return;
+  
+      res.status(200).json({ receivedConnections });
+    } catch (error) {
+      console.error("Error fetching received connections:", error);
+      res.status(500).json({ message: "Error fetching received connections", error });
+    }
+  };
+
+  export const getSentConnections = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Format the sent connections
+      const sentConnections = await formatConnectionData(
+        viewerUser.sent_connections.map((connection: any) => ({
+          _id: connection._id.toString(),
+          date: connection.date,
+        })),
+        viewerUser,
+        res,
+        false // Do not include mutual connections
+      );
+      if (!sentConnections) return;
+  
+      res.status(200).json({ sentConnections });
+    } catch (error) {
+      console.error("Error fetching sent connections:", error);
+      res.status(500).json({ message: "Error fetching sent connections", error });
+    }
+  };
+
  
 
   
