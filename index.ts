@@ -56,7 +56,6 @@ connectToDatabase()
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
       generateStartupToken();
-      generateStartupToken();
     });
   })
   .catch(err => {
@@ -68,8 +67,6 @@ app.use(express.json());
 app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
-app.use(express.urlencoded({ extended: true }));
 
 // Cookie Parser Middleware
 app.use(cookieParser());
@@ -129,7 +126,6 @@ app.use('/api/v1/user',
 app.use('/api/v1/user', privacySettingsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
-  res.send('<a href="/auth/google">Authenticate with Google</a>');
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
 
