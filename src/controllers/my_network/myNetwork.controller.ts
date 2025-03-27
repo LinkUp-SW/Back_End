@@ -366,7 +366,89 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
- 
+  export const acceptConnectionRequest = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+  
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Check if the target user's `_id` exists in the viewer's received_connections
+      const pendingConnectionIndex = viewerUser.received_connections.findIndex(
+        (connection: any) => connection._id.toString() === targetUser._id.toString()
+      );
+      if (pendingConnectionIndex === -1) {
+        res.status(400).json({ message: "No pending connection request from this user." });
+        return;
+      }
+  
+      // Save the connection date
+      const connectionDate = viewerUser.received_connections[pendingConnectionIndex].date;
+  
+      // Add the target user's `_id` and connection date to the viewer's connections array
+      viewerUser.connections.push({ _id: targetUser._id, date: connectionDate });
+  
+      // Add the viewer's `_id` and connection date to the target user's connections array
+      targetUser.connections.push({ _id: viewerUser._id, date: connectionDate });
+  
+      // Remove the target user's `_id` from the viewer's received_connections
+      viewerUser.received_connections.splice(pendingConnectionIndex, 1);
+  
+      // Remove the viewer's `_id` from the target user's sent_connections (if it exists)
+      targetUser.sent_connections = targetUser.sent_connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+  
+      // Remove the target user's `_id` from the viewer's sent_connections (if it exists)
+      viewerUser.sent_connections = viewerUser.sent_connections.filter(
+        (connection: any) => connection._id.toString() !== targetUser._id.toString()
+      );
+  
+      // Remove the viewer's `_id` from the target user's received_connections (if it exists)
+      targetUser.received_connections = targetUser.received_connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+  
+      // Add the target user's `_id` to the viewer's following list if not already present
+      if (!viewerUser.following.some((followingId: mongoose.Types.ObjectId) => followingId === targetUser._id.toString())) {
+        viewerUser.following.push(targetUser._id);
+      }
+  
+      // Add the viewer's `_id` to the target user's followers list if not already present
+      if (!targetUser.followers.some((followerId: mongoose.Types.ObjectId) => followerId.toString() === (viewerUser._id as mongoose.Types.ObjectId).toString())) {
+        targetUser.followers.push(viewerUser._id);
+      }
+  
+      // Add the viewer's `_id` to the target user's following list if not already present
+      if (!targetUser.following.some((followingId: mongoose.Types.ObjectId) => followingId.toString() === (viewerUser._id as mongoose.Types.ObjectId).toString())) {
+        targetUser.following.push(viewerUser._id);
+      }
+  
+      // Add the target user's `_id` to the viewer's followers list if not already present
+      if (!viewerUser.followers.some((followerId: any) => followerId.toString() === targetUser._id.toString())) {
+        viewerUser.followers.push(targetUser._id);
+      }
+  
+      // Save the updated documents
+      await viewerUser.save();
+      await targetUser.save();
+  
+      res.status(200).json({
+        message: "Connection request accepted successfully.",
+        connectionDate,
+      });
+    } catch (error) {
+      console.error("Error accepting connection request:", error);
+      res.status(500).json({ message: "Error accepting connection request", error });
+    }
+  };
+
+  
 
   
 
