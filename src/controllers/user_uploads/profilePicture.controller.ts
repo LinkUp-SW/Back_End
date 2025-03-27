@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser} from "../../utils/helper.ts";
+import { validateTokenAndUser} from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
 
 
