@@ -480,8 +480,139 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
- 
+  export const removeConnection = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+  
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Check if the target user's `_id` exists in the viewer's connections
+      const connectionExists = viewerUser.connections.some(
+        (connection: any) => connection._id.toString() === targetUser._id.toString()
+      );
+      if (!connectionExists) {
+        res.status(400).json({ message: "This user is not in your connections list." });
+        return;
+      }
+  
+      // Remove the target user's `_id` from the viewer's connections
+      viewerUser.connections = viewerUser.connections.filter(
+        (connection: any) => connection._id.toString() !== targetUser._id.toString()
+      );
+  
+      // Remove the viewer's `_id` from the target user's connections
+      targetUser.connections = targetUser.connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+  
+      // Save the updated documents
+      await viewerUser.save();
+      await targetUser.save();
+  
+      res.status(200).json({ message: "Connection removed successfully." });
+    } catch (error) {
+      console.error("Error removing connection:", error);
+      res.status(500).json({ message: "Error removing connection", error });
+    }
+  };
 
+  export const ignoreConnectionRequest = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+  
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Check if the target user's `_id` exists in the viewer's received_connections
+      const receivedConnectionIndex = viewerUser.received_connections.findIndex(
+        (connection: any) => connection._id.toString() === targetUser._id.toString()
+      );
+      if (receivedConnectionIndex === -1) {
+        res.status(400).json({ message: "No received connection request from this user." });
+        return;
+      }
+  
+      // Remove the target user's `_id` from the viewer's received_connections
+      viewerUser.received_connections.splice(receivedConnectionIndex, 1);
+  
+      // Save the updated viewer document
+      await viewerUser.save();
+  
+      res.status(200).json({ message: "Connection request ignored successfully." });
+    } catch (error) {
+      console.error("Error ignoring connection request:", error);
+      res.status(500).json({ message: "Error ignoring connection request", error });
+    }
+  };
+
+  export const withdrawConnectionRequest = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and target userId
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+  
+      const { viewerId, targetUser } = result;
+  
+      // Retrieve the viewer's user document
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+      // Check if the target user's `_id` exists in the viewer's sent_connections
+      const sentConnectionIndex = viewerUser.sent_connections.findIndex(
+        (connection: any) => connection._id.toString() === targetUser._id.toString()
+      );
+      if (sentConnectionIndex === -1) {
+        res.status(400).json({ message: "No sent connection request to this user." });
+        return;
+      }
+  
+      // Remove the target user's `_id` from the viewer's sent_connections
+      viewerUser.sent_connections.splice(sentConnectionIndex, 1);
+  
+      // Remove the viewer's `_id` from the target user's received_connections
+      targetUser.received_connections = targetUser.received_connections.filter(
+        (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
+      );
+  
+      // Check if the target user's `_id` already exists in the viewer's withdrawn_connections array
+      const withdrawnIndex = viewerUser.withdrawn_connections.findIndex(
+        (withdrawn: any) => withdrawn._id.toString() === targetUser._id.toString()
+      );
+  
+      if (withdrawnIndex !== -1) {
+        // Update the existing entry's date
+        viewerUser.withdrawn_connections[withdrawnIndex].date = new Date();
+      } else {
+        // Add a new entry to the withdrawn_connections array
+        viewerUser.withdrawn_connections.push({
+          _id: targetUser._id,
+          date: new Date(),
+        });
+      }
+  
+      // Save the updated documents
+      await viewerUser.save();
+      await targetUser.save();
+  
+      res.status(200).json({ message: "Connection request withdrawn successfully." });
+    } catch (error) {
+      console.error("Error withdrawing connection request:", error);
+      res.status(500).json({ message: "Error withdrawing connection request", error });
+    }
+  };
+
+  
   
 
 
