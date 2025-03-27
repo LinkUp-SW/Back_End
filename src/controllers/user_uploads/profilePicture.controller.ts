@@ -91,16 +91,16 @@ const deleteProfilePicture = async (req: Request, res: Response): Promise<void> 
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { viewerId, userId, user } = validation;
+    const { viewerId, targetUser } = validation;
 
     // Ensure the viewer is the same as the user (only the user can delete their own profile picture)
-    if (viewerId !== userId) {
+    if (viewerId !== targetUser.user_id) {
       res.status(403).json({ message: "You are not authorized to delete the profile picture for this user." });
       return;
     }
 
     // Retrieve the current profile picture URL from the user's document
-    const profilePictureUrl = user.profile_photo;
+    const profilePictureUrl = targetUser.profile_photo;
     if (!profilePictureUrl) {
       res.status(400).json({ message: "No profile picture to delete" });
       return;
@@ -121,8 +121,8 @@ const deleteProfilePicture = async (req: Request, res: Response): Promise<void> 
     }
 
     // Clear the profile_photo field in the user's document
-    user.profile_photo = "";
-    await user.save();
+    targetUser.profile_photo = "";
+    await targetUser.save();
 
     res.status(200).json({ message: "Profile picture deleted successfully" });
   } catch (error) {
@@ -137,16 +137,16 @@ const getProfilePicture = async (req: Request, res: Response): Promise<void> => 
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { user } = validation;
+    const { targetUser } = validation;
 
     // Check if a profile picture exists
-    if (!user.profile_photo) {
+    if (!targetUser.profile_photo) {
       res.status(404).json({ message: "Profile picture not found" });
       return;
     }
 
     // Return the profile picture URL
-    res.status(200).json({ profilePicture: user.profile_photo });
+    res.status(200).json({ profilePicture: targetUser.profile_photo });
   } catch (error) {
     console.error("Error retrieving profile picture:", error);
     res.status(500).json({ message: "Error retrieving profile picture", error });
