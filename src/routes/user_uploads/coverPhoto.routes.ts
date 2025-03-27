@@ -4,9 +4,9 @@ import {
   updateCoverPhoto,
   deleteCoverPhoto,
   getCoverPhoto,
-} from "../../controllers/user_uploads/coverPhotoController.ts";
+} from "../../controllers/user_uploads/coverPhoto.controller.ts";
 import { authorizeUpload } from "../../middleware/authMiddleware.ts";
-import { multerImageErrorHandler } from "../../middleware/multer.error.handler.ts";
+import { multerImageErrorHandler } from "../../middleware/multerErrorHandler.ts";
 
 const router = Router();
 

@@ -1308,3 +1308,836 @@ paths:
                     type: string
 
                     example: "Server error"
+  # Fix resume endpoints structure - remove standalone delete/get and put them under the path
+  /profile/resume/{user_id}:
+    # Your existing post and put operations remain the same
+    # ...
+    delete:
+      tags:
+        - Resume
+      summary: Delete a resume
+      description: Deletes the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Resume deleted successfully"
+        # Other response codes remain...
+        
+    get:
+      tags:
+        - Resume
+      summary: Get a resume
+      description: Retrieves the user's resume.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user
+      responses:
+        '200':
+          description: Resume retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  resume:
+                    type: string
+                    example: "https://cloudinary.com/user/resume.pdf"
+        # Other response codes remain...
+
+  # Add skills endpoints
+  /api/v1/user/add-skill:
+    post:
+      tags:
+        - Skills
+      summary: Add a new skill
+      description: Adds a new skill to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                name:
+                  type: string
+                  description: Name of the skill
+      responses:
+        '201':
+          description: Skill added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Skill added successfully"
+                  skill:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      name:
+                        type: string
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/user/update-skill/{skillId}:
+    put:
+      tags:
+        - Skills
+      summary: Update a skill
+      description: Updates an existing skill
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the skill to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Skill updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Skill not found
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-skill/{skillId}:
+    delete:
+      tags:
+        - Skills
+      summary: Delete a skill
+      description: Deletes a skill from the user's profile
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the skill to delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Skill deleted successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Skill not found
+        '500':
+          description: Server error
+
+  # Add validate-token endpoint
+  /api/v1/user/validate-token:
+    get:
+      tags:
+        - Auth
+      summary: Validate authentication token
+      description: Validates if the provided JWT token is valid and not expired
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: JWT token to validate
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: true
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+  # Email Update Endpoints
+  /api/v1/user/update-email:
+    put:
+      tags:
+        - User Profile
+      summary: Update user email
+      description: Updates the user's email address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                email:
+                  type: string
+                  description: New email address
+      responses:
+        '200':
+          description: Email updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Email updated successfully"
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '409':
+          description: Email already in use
+        '500':
+          description: Server error
+
+  # Delete Account Endpoints
+  /api/v1/user/delete-account:
+    delete:
+      tags:
+        - User Profile
+      summary: Delete user account
+      description: Permanently deletes user account and all associated data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+      responses:
+        '200':
+          description: Account deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Account deleted successfully"
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  # View User Profile Endpoint
+  /api/v1/user/profile/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user profile
+      description: Retrieves a user's profile information
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    # Additional user properties would be described here
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  # Work Experience Endpoints
+  /api/v1/user/add-work-experience:
+    post:
+      tags:
+        - Experience
+      summary: Add work experience
+      description: Adds a new work experience entry to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                title:
+                  type: string
+                  description: Job title
+                company:
+                  type: string
+                  description: Company name
+                location:
+                  type: string
+                  description: Job location
+                start_date:
+                  type: string
+                  format: date
+                  description: Start date
+                end_date:
+                  type: string
+                  format: date
+                  description: End date (null if current position)
+                description:
+                  type: string
+                  description: Job description
+      responses:
+        '201':
+          description: Work experience added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Work experience added successfully"
+                  experience:
+                    type: object
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/user/update-work-experience/{experienceId}:
+    put:
+      tags:
+        - Experience
+      summary: Update work experience
+      description: Updates an existing work experience entry
+      parameters:
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the experience entry to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                # Same fields as add-work-experience
+      responses:
+        '200':
+          description: Work experience updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Experience not found
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-work-experience/{experienceId}:
+    delete:
+      tags:
+        - Experience
+      summary: Delete work experience
+      description: Deletes a work experience entry
+      parameters:
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the experience entry to delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Work experience deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Experience not found
+        '500':
+          description: Server error
+
+  # Education Endpoints
+  /api/v1/user/add-education:
+    post:
+      tags:
+        - Education
+      summary: Add education
+      description: Adds a new education entry to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                institution:
+                  type: string
+                  description: Name of educational institution
+                degree:
+                  type: string
+                  description: Degree obtained
+                field_of_study:
+                  type: string
+                  description: Field of study
+                start_date:
+                  type: string
+                  format: date
+                  description: Start date
+                end_date:
+                  type: string
+                  format: date
+                  description: End date (null if current education)
+                description:
+                  type: string
+                  description: Additional details
+      responses:
+        '201':
+          description: Education added successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/user/update-education/{educationId}:
+    put:
+      tags:
+        - Education
+      summary: Update education
+      description: Updates an existing education entry
+      parameters:
+        - name: educationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the education entry to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                # Same fields as add-education
+      responses:
+        '200':
+          description: Education updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Education not found
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-education/{educationId}:
+    delete:
+      tags:
+        - Education
+      summary: Delete education
+      description: Deletes an education entry
+      parameters:
+        - name: educationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the education entry to delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Education deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Education not found
+        '500':
+          description: Server error
+
+  # License/Certificate Endpoints
+  /api/v1/user/add-license:
+    post:
+      tags:
+        - License
+      summary: Add license or certificate
+      description: Adds a new license or certificate to the user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                name:
+                  type: string
+                  description: License/certificate name
+                issuing_organization:
+                  type: string
+                  description: Organization that issued the license
+                issue_date:
+                  type: string
+                  format: date
+                  description: Date when the license was issued
+                expiration_date:
+                  type: string
+                  format: date
+                  description: Expiration date (if applicable)
+                credential_id:
+                  type: string
+                  description: Credential identifier
+      responses:
+        '201':
+          description: License added successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/user/update-license/{licenseId}:
+    put:
+      tags:
+        - License
+      summary: Update license or certificate
+      description: Updates an existing license or certificate
+      parameters:
+        - name: licenseId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the license to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                # Same fields as add-license
+      responses:
+        '200':
+          description: License updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: License not found
+        '500':
+          description: Server error
+
+  /api/v1/user/delete-license/{licenseId}:
+    delete:
+      tags:
+        - License
+      summary: Delete license or certificate
+      description: Deletes a license or certificate
+      parameters:
+        - name: licenseId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the license to delete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: License deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: License not found
+        '500':
+          description: Server error
+
+  # Update User Profile Endpoint
+  /api/v1/user/update-user-profile:
+    put:
+      tags:
+        - User Profile
+      summary: Update user profile
+      description: Updates general user profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                headline:
+                  type: string
+                location:
+                  type: string
+                about:
+                  type: string
+                # Additional fields can be added here
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+  
+  # Privacy Settings Endpoints
+  /api/v1/user/privacy-settings/profile-visibility/{user_id}:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get profile visibility settings
+      description: Retrieves the current profile visibility settings for a user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user
+      responses:
+        '200':
+          description: Privacy settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile_visibility:
+                    type: string
+                    example: "public"
+        '401':
+          description: Unauthorized
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+          
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update profile visibility settings
+      description: Updates the profile visibility settings for a user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Authentication token
+                profile_visibility:
+                  type: string
+                  enum: [public, connections, private]
+                  description: Profile visibility level
+      responses:
+        '200':
+          description: Privacy settings updated successfully
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Not authorized to modify these settings
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  # Email Verification Endpoints
+  /api/v1/user/verify-email:
+    post:
+      tags:
+        - Auth
+      summary: Verify email
+      description: Verifies if an email address is available for registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  example: "newuser@example.com"
+      responses:
+        '200':
+          description: Email is available
+        '409':
+          description: Email already in use
+        '500':
+          description: Server error
+          
+  /api/v1/user/forget-password:
+    post:
+      tags:
+        - Auth
+      summary: Request password reset
+      description: Initiates the password reset process by sending a reset link to the user's email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Password reset link sent
+        '400':
+          description: Invalid email format
+        '404':
+          description: Email not registered
+        '500':
+          description: Server error

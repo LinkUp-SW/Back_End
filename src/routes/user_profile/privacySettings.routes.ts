@@ -1,5 +1,5 @@
 import express from 'express';
-import * as privacySettings from "../../controllers/user_profile/privacy.settings.controller.ts";
+import * as privacySettings from "../../controllers/user_profile/privacySettings.controller.ts";
 
 const router = express.Router();
 

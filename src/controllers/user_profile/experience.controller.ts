@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
-import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinaryService.ts";
+import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
 
 const addWorkExperience = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

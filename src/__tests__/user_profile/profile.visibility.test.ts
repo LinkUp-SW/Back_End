@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import session from 'express-session';
 import mongoose from 'mongoose';
-import privacySettingsRoutes from '../../routes/user_profile/privacy.settings.routes.ts';
+import privacySettingsRoutes from '../../routes/user_profile/privacySettings.routes.ts';
 import users, { accountStatusEnum } from '../../models/users.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 

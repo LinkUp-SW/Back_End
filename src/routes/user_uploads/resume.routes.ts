@@ -4,9 +4,9 @@ import {
   updateResume,
   deleteResume,
   getResume,
-} from "../../controllers/user_uploads/resumeController.ts";
+} from "../../controllers/user_uploads/resume.controller.ts";
 import { authorizeUpload } from "../../middleware/authMiddleware.ts";
-import { multerPDFErrorHandler } from "../../middleware/multer.error.handler.ts";
+import { multerPDFErrorHandler } from "../../middleware/multerErrorHandler.ts";
 
 const router = Router();
 

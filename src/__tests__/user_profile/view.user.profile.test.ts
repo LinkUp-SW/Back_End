@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import session from 'express-session';
 import mongoose from 'mongoose';
-import userProfileRoutes from '../../routes/user_profile/view.user.profile.routes.ts';
+import userProfileRoutes from '../../routes/user_profile/viewUserProfile.routes.ts';
 import users, { accountStatusEnum } from '../../models/users.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 

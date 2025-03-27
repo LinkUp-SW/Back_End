@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
-import { extractPublicId } from "../../services/cloudinaryService.ts";
+import { extractPublicId } from "../../services/cloudinary.service.ts";
 import { validateTokenAndUser} from "../../utils/helper.ts";
 import { usersInterface } from "../../models/users.model.ts";
 

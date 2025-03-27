@@ -1,5 +1,5 @@
 import express from 'express';
-import * as licenseControllers from '../../controllers/user_profile/license.controllers.ts';
+import * as licenseControllers from '../../controllers/user_profile/license.controller.ts';
 
 const router = express.Router();
 

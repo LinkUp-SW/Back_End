@@ -26,12 +26,12 @@ import profilePictureRoutes from './src/routes/user_uploads/profilePicture.route
 import coverPhotoRoutes from './src/routes/user_uploads/coverPhoto.routes.ts';
 import resumeRoutes from './src/routes/user_uploads/resume.routes.ts';
 import updateNameRoutes from './src/routes/authentication/updateUsername.routes.ts';
-import privacySettingsRoutes from './src/routes/user_profile/privacy.settings.routes.ts';
-import viewUserProfileRoutes from './src/routes/user_profile/view.user.profile.routes.ts';
+import privacySettingsRoutes from './src/routes/user_profile/privacySettings.routes.ts';
+import viewUserProfileRoutes from './src/routes/user_profile/viewUserProfile.routes.ts';
 import experienceRoutes from './src/routes/user_profile/experience.routes.ts';
 import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
-import updateUserRoutes from './src/routes/user_profile/update.user.profile.routes.ts';
+import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 dotenv.config();
 

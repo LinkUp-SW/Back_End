@@ -4,9 +4,9 @@ import {
   updateProfilePicture,
   deleteProfilePicture,
   getProfilePicture,
-} from "../../controllers/user_uploads/profilePictureController.ts";
+} from "../../controllers/user_uploads/profilePicture.controller.ts";
 import { authorizeUpload } from "../../middleware/authMiddleware.ts";
-import {multerImageErrorHandler} from "../../middleware/multer.error.handler.ts";
+import {multerImageErrorHandler} from "../../middleware/multerErrorHandler.ts";
 
 const router = Router();
 
