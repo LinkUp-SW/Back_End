@@ -90,16 +90,16 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { viewerId, userId, user } = validation;
+    const { viewerId, targetUser } = validation;
 
     // Ensure the viewer is the same as the user (only the user can delete their own cover photo)
-    if (viewerId !== userId) {
+    if (viewerId !== targetUser.user_id) {
       res.status(403).json({ message: "You are not authorized to delete the cover photo for this user." });
       return;
     }
 
     // Retrieve the current cover photo URL from the user's document
-    const coverPhotoUrl = user.cover_photo;
+    const coverPhotoUrl = targetUser.cover_photo;
     if (!coverPhotoUrl) {
       res.status(400).json({ message: "No cover photo to delete" });
       return;
@@ -120,8 +120,8 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Clear the cover_photo field in the user's document
-    user.cover_photo = "";
-    await user.save();
+    targetUser.cover_photo = "";
+    await targetUser.save();
 
     res.status(200).json({ message: "Cover photo deleted successfully" });
   } catch (error) {
@@ -136,16 +136,16 @@ const getCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { user } = validation;
+    const { targetUser } = validation;
 
     // Check if a cover photo exists
-    if (!user.cover_photo) {
+    if (!targetUser.cover_photo) {
       res.status(404).json({ message: "Cover photo not found" });
       return;
     }
 
     // Return the cover photo URL
-    res.status(200).json({ coverPhoto: user.cover_photo });
+    res.status(200).json({ coverPhoto: targetUser.cover_photo });
   } catch (error) {
     console.error("Error retrieving cover photo:", error);
     res.status(500).json({ message: "Error retrieving cover photo", error });
