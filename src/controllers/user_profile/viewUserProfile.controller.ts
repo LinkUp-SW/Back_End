@@ -112,6 +112,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       const userBio = {
         is_me: true,
         bio: targetUser.bio,
+        email: targetUser.email,
         profile_photo: targetUser.profile_photo || null,
         cover_photo: targetUser.cover_photo || null,
         number_of_connections: targetUser.connections.length,
@@ -157,6 +158,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
     const userBio = {
       is_me: false,
       bio: targetUser.bio,
+      email: targetUser.email,
       profile_photo: targetUser.profile_photo || null,
       cover_photo: targetUser.cover_photo || null,
       number_of_connections: targetUser.connections.length,
