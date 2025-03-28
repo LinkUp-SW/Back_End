@@ -253,4 +253,44 @@ describe('Manage Connections', () => {
     });
   });
 
+  describe('POST /api/v1/connections/connect/:user_id', () => {
+    it('should not allow a non-subscribed user to send a connection request if total connections exceed 50', async () => {
+      // Set up 50 connections for the viewer user
+      const connections = Array.from({ length: 50 }, (_, i) => ({
+        _id: new mongoose.Types.ObjectId(),
+        date: new Date(),
+      }));
+  
+      await users.findByIdAndUpdate(viewer__id, {
+        $set: { connections, subscription: { subscribed: false } },
+      });
+  
+      const res = await request(app)
+        .post(`/api/v1/connections/connect/${targetUserId}`)
+        .set('Authorization', viewerToken);
+  
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('You have reached the maximum number of connections allowed for non-subscribed users.');
+    });
+  
+    it('should allow a subscribed user to send a connection request regardless of the number of connections', async () => {
+      // Set up 50 connections for the viewer user
+      const connections = Array.from({ length: 50 }, (_, i) => ({
+        _id: new mongoose.Types.ObjectId(),
+        date: new Date(),
+      }));
+  
+      await users.findByIdAndUpdate(viewer__id, {
+        $set: { connections, subscription: { subscribed: true } },
+      });
+  
+      const res = await request(app)
+        .post(`/api/v1/connections/connect/${targetUserId}`)
+        .set('Authorization', viewerToken);
+  
+      expect(res.status).toBe(200);
+      expect(res.body.message).toBe('Connection request sent successfully.');
+    });
+  });
+
 });

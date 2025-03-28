@@ -39,7 +39,12 @@ export const authorizeUpload = async (req: Request, res: Response, next: NextFun
     // If all checks pass, proceed to the next middleware
     next();
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Authorization error:", error);
     res.status(500).json({ message: "Authorization error", error });
   }
+}
 };
