@@ -33,7 +33,8 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
-import FilterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
+import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
+import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -47,7 +48,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Sam-1234' });
   console.log('Generated Token:', token);
 };
 
@@ -124,7 +125,9 @@ app.use('/api/v1/user',
     skillsRoutes);
 
 // Mount Jobs Routes
-app.use('/api/v1/jobs', FilterJobsRoutes);
+app.use('/api/v1/jobs', 
+    filterJobsRoutes, 
+    saveJobsRoutes,);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
