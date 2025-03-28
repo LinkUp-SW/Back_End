@@ -363,7 +363,7 @@ paths:
           description: Server error
                     example: "Server error"
 
-  /profile/profile-picture/{user_id}:
+  /profile/profile-picture:
     post:
       tags:
         - Profile Picture
@@ -588,6 +588,8 @@ paths:
                   error:
                     type: string
                     example: "Cloudinary error"
+    
+  /profile/profile-picture/{user_id}:
     get:
       tags:
         - Profile Picture
@@ -644,7 +646,7 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /profile/cover-photo/{user_id}:
+  /profile/cover-photo:
     post:
       tags:
         - Cover Photo
@@ -874,6 +876,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
+  /profile/cover-photo/{user_id}:
     get:
       tags:
         - Cover Photo
@@ -930,7 +933,7 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /profile/resume/{user_id}:
+  /profile/resume:
     post:
       tags:
         - Resume
@@ -1093,7 +1096,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-  delete:
+    delete:
       tags:
         - Resume
       summary: Delete a resume
@@ -1160,7 +1163,8 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-  get:
+  /profile/resume/{user_id}:
+    get:
       tags:
         - Resume
       summary: Get a resume
