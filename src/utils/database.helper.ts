@@ -70,6 +70,9 @@ export const checkProfileAccess = async (
   targetUserId: string
 ): Promise<{ accessGranted: boolean; reason?: string }> => {
   try {
+    if (currentUserId === targetUserId) {
+      return { accessGranted: true }; // Allow access to own profile
+    }
     // Find the target user by their user_id
     const targetUser = await Users.findOne({ user_id: targetUserId });
     if (!targetUser) {
