@@ -223,6 +223,13 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       // Retrieve the viewer's user document
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
+
+      // Check if the user is not subscribed and already has 50 connections (including pending and received)
+      const totalConnections = viewerUser.connections.length + viewerUser.received_connections.length + viewerUser.sent_connections.length;
+      if (!viewerUser.subscription.subscribed && totalConnections >= 50) {
+        res.status(400).json({ message: "You have reached the maximum number of connections allowed for non-subscribed users." });
+        return;
+      }
   
       // Check if the viewer is trying to send a connection request to themselves
       if ((viewerUser._id as mongoose.Types.ObjectId).toString() === targetUser._id.toString()) {
@@ -418,6 +425,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       // Retrieve the viewer's user document
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
+
+      // Check if the user is not subscribed and already has 50 connections
+      if (!viewerUser.subscription.subscribed && viewerUser.connections.length >= 50 
+        &&!targetUser.subscription.subscribed && targetUser.connections.length >= 50
+      ) {
+        res.status(400).json({ message: "You have reached the maximum number of connections allowed for non-subscribed users." });
+        return;
+      }
   
       // Check if the target user's `_id` exists in the viewer's received_connections
       const pendingConnectionIndex = viewerUser.received_connections.findIndex(
