@@ -12,7 +12,7 @@ const router = Router();
 
 // Route to upload a resume
 router.post(
-  "/profile/resume/:user_id",
+  "/profile/resume",
   authorizeUpload, // Validate token and user_id first
   multerPDFErrorHandler("resume"), // Upload resume & Handle Multer errors 
   uploadResume
@@ -20,14 +20,14 @@ router.post(
 
 // Route to update a resume
 router.put(
-  "/profile/resume/:user_id",
+  "/profile/resume",
   authorizeUpload, // Validate token and user_id first
   multerPDFErrorHandler("resume"), // Upload resume & Handle Multer errors 
   updateResume
 );
 
 // Route to delete a resume
-router.delete("/profile/resume/:user_id", deleteResume);
+router.delete("/profile/resume", deleteResume);
 
 // Get the resume
 router.get("/profile/resume/:user_id", getResume);
