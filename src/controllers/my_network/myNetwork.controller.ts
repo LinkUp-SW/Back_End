@@ -60,15 +60,21 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "You are now following this user." });
     } catch (error) {
-      console.error("Error following user:", error);
-      res.status(500).json({ message: "Error following user", error });
+        if (error instanceof Error && error.message === 'Invalid or expired token') {
+            res.status(401).json({ message: error.message,success:false });
     }
+        else{
+          console.error("Error following user:", error);
+          res.status(500).json({ message: "Error following user", error });
+    }
+  }
   };
 
   export const unfollowUser = async (req: Request, res: Response): Promise<void> => {
     try {
       // Validate token and retrieve viewerId and target userId
       const result = await validateTokenAndUser(req, res);
+      
       if (!result) return;
   
       const { viewerId, targetUser: targetUser } = result;
@@ -106,9 +112,15 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "You have unfollowed this user." });
     } catch (error) {
+          if (error instanceof Error && error.message === 'Invalid or expired token') {
+            res.status(401).json({ message: error.message,success:false });
+    }
+        else{
+
       console.error("Error unfollowing user:", error);
       res.status(500).json({ message: "Error unfollowing user", error });
     }
+  }
   };
 
   export const getFollowingList = async (req: Request, res: Response): Promise<void> => {
@@ -146,9 +158,15 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ following: followingWithoutId });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
+
       console.error("Error fetching following list:", error);
       res.status(500).json({ message: "Error fetching following list", error });
     }
+  }
   };
 
   export const getFollowersList = async (req: Request, res: Response): Promise<void> => {
@@ -184,9 +202,15 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ followers: sortedFollowers });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
+
       console.error("Error fetching followers list:", error);
       res.status(500).json({ message: "Error fetching followers list", error });
     }
+  }
   };
   export const sendConnectionRequest = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -303,9 +327,15 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "Connection request sent successfully." });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
+
       console.error("Error sending connection request:", error);
       res.status(500).json({ message: "Error sending connection request", error });
     }
+  }
   };
 
   export const getReceivedConnections = async (req: Request, res: Response): Promise<void> => {
@@ -332,9 +362,15 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ receivedConnections });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error fetching received connections:", error);
       res.status(500).json({ message: "Error fetching received connections", error });
     }
+    }
+
   };
 
   export const getSentConnections = async (req: Request, res: Response): Promise<void> => {
@@ -361,9 +397,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ sentConnections });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error fetching sent connections:", error);
       res.status(500).json({ message: "Error fetching sent connections", error });
     }
+  }
   };
 
   export const acceptConnectionRequest = async (req: Request, res: Response): Promise<void> => {
@@ -443,8 +484,13 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         connectionDate,
       });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error accepting connection request:", error);
       res.status(500).json({ message: "Error accepting connection request", error });
+    }
     }
   };
 
@@ -475,9 +521,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ connections: sortedConnections });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error fetching connections:", error);
       res.status(500).json({ message: "Error fetching connections", error });
     }
+  }
   };
 
   export const removeConnection = async (req: Request, res: Response): Promise<void> => {
@@ -517,9 +568,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "Connection removed successfully." });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error removing connection:", error);
       res.status(500).json({ message: "Error removing connection", error });
     }
+  }
   };
 
   export const ignoreConnectionRequest = async (req: Request, res: Response): Promise<void> => {
@@ -551,9 +607,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "Connection request ignored successfully." });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error ignoring connection request:", error);
       res.status(500).json({ message: "Error ignoring connection request", error });
     }
+  }
   };
 
   export const withdrawConnectionRequest = async (req: Request, res: Response): Promise<void> => {
@@ -607,9 +668,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "Connection request withdrawn successfully." });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error withdrawing connection request:", error);
       res.status(500).json({ message: "Error withdrawing connection request", error });
     }
+  }
   };
 
   export const blockUser = async (req: Request, res: Response): Promise<void> => {
@@ -698,9 +764,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "User blocked successfully." });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error blocking user:", error);
       res.status(500).json({ message: "Error blocking user", error });
     }
+  }
   };
 
 
@@ -760,9 +831,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   
       res.status(200).json({ message: "User unblocked successfully." });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error unblocking user:", error);
       res.status(500).json({ message: "Error unblocking user", error });
     }
+  }
   };
 
   export const getBlockedList = async (req: Request, res: Response): Promise<void> => {
@@ -781,16 +857,12 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         date: blocked.date,
       }));
   
-      console.log("Blocked Users:", blockedUsers);
-  
       // Format the blocked list
       const formattedBlockedList = await getFormattedUserList(
         blockedUsers.map((blocked) => new mongoose.Types.ObjectId(blocked._id)),
         res
       );
       if (!formattedBlockedList) return;
-  
-      console.log("Formatted Blocked List:", formattedBlockedList);
   
       // Add the block date to the formatted list
       const blockedListWithDates = formattedBlockedList.map((user) => {
@@ -799,7 +871,6 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
           (blocked) => blocked._id === user._id?.toString() 
 
         );
-        console.log("Block Entry:", blockEntry);
         return {
           user_id: user.user_id, 
           name: user.name,
@@ -812,9 +883,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       // Return the formatted blocked list
       res.status(200).json({ blocked_list: blockedListWithDates });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message,success:false });
+}
+    else{
       console.error("Error fetching blocked list:", error);
       res.status(500).json({ message: "Error fetching blocked list", error });
     }
+  }
   };
 
   
