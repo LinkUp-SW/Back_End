@@ -40,9 +40,14 @@ const uploadProfilePicture = async (req: Request, res: Response): Promise<void> 
       profilePicture: profilePictureUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error uploading profile picture:", error);
     res.status(500).json({ message: "Error uploading profile picture", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 // Update Profile Picture
@@ -79,9 +84,14 @@ const updateProfilePicture = async (req: Request, res: Response): Promise<void> 
       profilePicture: newProfilePictureUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error updating profile picture:", error);
     res.status(500).json({ message: "Error updating profile picture", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 
@@ -126,9 +136,14 @@ const deleteProfilePicture = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json({ message: "Profile picture deleted successfully" });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error deleting profile picture:", error);
     res.status(500).json({ message: "Error deleting profile picture", error });
   }
+}
 };
 
 // Get Profile Picture
@@ -148,9 +163,14 @@ const getProfilePicture = async (req: Request, res: Response): Promise<void> => 
     // Return the profile picture URL
     res.status(200).json({ profilePicture: targetUser.profile_photo });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error retrieving profile picture:", error);
     res.status(500).json({ message: "Error retrieving profile picture", error });
   }
+}
 };
 
 export { uploadProfilePicture, updateProfilePicture, deleteProfilePicture, getProfilePicture };

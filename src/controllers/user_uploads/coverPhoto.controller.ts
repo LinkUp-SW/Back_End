@@ -40,9 +40,14 @@ const uploadCoverPhoto = async (req: Request, res: Response): Promise<void> => {
       coverPhoto: coverPhotoUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error uploading cover photo:", error);
     res.status(500).json({ message: "Error uploading cover photo", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 // Update Cover Photo
@@ -79,9 +84,15 @@ const updateCoverPhoto = async (req: Request, res: Response): Promise<void> => {
       coverPhoto: newCoverPhotoUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
+
     console.error("Error updating cover photo:", error);
     res.status(500).json({ message: "Error updating cover photo", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 // Delete Cover Photo
@@ -125,9 +136,14 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ message: "Cover photo deleted successfully" });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error deleting cover photo:", error);
     res.status(500).json({ message: "Error deleting cover photo", error });
   }
+}
 };
 
 // Get Cover Photo
@@ -147,9 +163,14 @@ const getCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     // Return the cover photo URL
     res.status(200).json({ coverPhoto: targetUser.cover_photo });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error retrieving cover photo:", error);
     res.status(500).json({ message: "Error retrieving cover photo", error });
   }
+}
 };
 
 export { uploadCoverPhoto, updateCoverPhoto, deleteCoverPhoto, getCoverPhoto };
