@@ -2493,6 +2493,8 @@ paths:
                         value: "You have already sent a connection request to this user."
                       threeWeekRestriction:
                         value: "You cannot send another connection request to this user for 3 weeks."
+                      subscriptionLimit:
+                        value: "You have reached the maximum number of connections allowed for non-subscribed users."
         '403':
           description: Forbidden.
           content:
@@ -2691,7 +2693,7 @@ paths:
                     format: date-time
                     example: "2025-03-28T12:34:56.789Z"
         '400':
-          description: Bad request.
+          description: Bad request .
           content:
             application/json:
               schema:
@@ -2700,6 +2702,16 @@ paths:
                   message:
                     type: string
                     example: "No pending connection request from this user"
+        '400':
+          description: Bad request reached subscriptionLimit.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You have reached the maximum number of connections allowed for non-subscribed users."
         '401':
           description: Unauthorized.
           content:
