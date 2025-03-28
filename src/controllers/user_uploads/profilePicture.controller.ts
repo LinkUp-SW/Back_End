@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser} from "../../utils/helperFunctions.utils.ts";
+import { getUserIdFromToken, validateTokenAndUser, } from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
+import {findUserByUserId} from "../../utils/database.helper.ts";
 
 
 
@@ -88,17 +89,11 @@ const updateProfilePicture = async (req: Request, res: Response): Promise<void> 
 // Delete Profile Picture
 const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validation = await validateTokenAndUser(req, res);
-    if (!validation) return;
+    const viewerId = await getUserIdFromToken(req, res);
+    if (!viewerId) return;
 
-    const { viewerId, targetUser } = validation;
-
-    // Ensure the viewer is the same as the user (only the user can delete their own profile picture)
-    if (viewerId !== targetUser.user_id) {
-      res.status(403).json({ message: "You are not authorized to delete the profile picture for this user." });
-      return;
-    }
-
+    const targetUser = await findUserByUserId(viewerId, res);
+    if (!targetUser) return;
     // Retrieve the current profile picture URL from the user's document
     const profilePictureUrl = targetUser.profile_photo;
     if (!profilePictureUrl) {

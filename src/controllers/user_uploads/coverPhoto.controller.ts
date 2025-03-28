@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser } from "../../utils/helperFunctions.utils.ts";
+import { validateTokenAndUser , getUserIdFromToken} from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
-// Upload Cover Photo
-
+import {findUserByUserId} from "../../utils/database.helper.ts";
 
 // Upload Cover Photo
 const uploadCoverPhoto = async (req: Request, res: Response): Promise<void> => {
@@ -87,16 +86,11 @@ const updateCoverPhoto = async (req: Request, res: Response): Promise<void> => {
 // Delete Cover Photo
 const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validation = await validateTokenAndUser(req, res);
-    if (!validation) return;
+    const viewerId = await getUserIdFromToken(req, res);
+    if (!viewerId) return;
 
-    const { viewerId, targetUser } = validation;
-
-    // Ensure the viewer is the same as the user (only the user can delete their own cover photo)
-    if (viewerId !== targetUser.user_id) {
-      res.status(403).json({ message: "You are not authorized to delete the cover photo for this user." });
-      return;
-    }
+    const targetUser = await findUserByUserId(viewerId, res);
+    if (!targetUser) return;
 
     // Retrieve the current cover photo URL from the user's document
     const coverPhotoUrl = targetUser.cover_photo;
