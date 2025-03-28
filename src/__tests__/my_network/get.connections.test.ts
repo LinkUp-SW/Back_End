@@ -105,7 +105,7 @@ describe('Get Sent and Received Connection Requests', () => {
         .get('/api/v1/connections/my-network/invitation-manager/sent');
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -142,7 +142,7 @@ describe('Get Sent and Received Connection Requests', () => {
         .get('/api/v1/connections/my-network/invitation-manager/received');
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
 
 
@@ -181,7 +181,7 @@ describe('Get Sent and Received Connection Requests', () => {
             .get('/api/v1/connections/my-network/invite-connect/connections');
     
           expect(res.status).toBe(401);
-          expect(res.body.message).toBe('Unauthorized');
+          expect(res.body.message).toBe('Invalid or expired token');
         });
     
         it('should return connections sorted by the most recent first', async () => {

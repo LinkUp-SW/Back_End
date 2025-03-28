@@ -173,7 +173,7 @@ describe('Send Connection Request Controller', () => {
         .post(`/api/v1/connections/connect/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 });

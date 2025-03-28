@@ -130,7 +130,7 @@ describe('Unfollow User Controller', () => {
         .delete(`/api/v1/connections/unfollow/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 });

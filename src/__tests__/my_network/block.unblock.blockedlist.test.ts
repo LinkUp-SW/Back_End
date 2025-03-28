@@ -107,7 +107,7 @@ describe('Block, Unblock, and Get Blocked List', () => {
         .post(`/api/v1/connections/block/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -174,7 +174,7 @@ describe('Block, Unblock, and Get Blocked List', () => {
         .delete(`/api/v1/connections/manage-by-blocked-list/unblock/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -208,7 +208,7 @@ describe('Block, Unblock, and Get Blocked List', () => {
         .get('/api/v1/connections/manage-by-blocked-list/blocked');
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 });

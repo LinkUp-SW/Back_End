@@ -105,7 +105,7 @@ describe('Get Following and Followers List', () => {
         .get('/api/v1/connections/my-network/network-manager/following');
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -162,7 +162,7 @@ describe('Get Following and Followers List', () => {
         .get('/api/v1/connections/my-network/network-manager/followers');
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 });

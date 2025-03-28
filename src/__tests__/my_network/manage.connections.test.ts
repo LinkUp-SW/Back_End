@@ -104,7 +104,7 @@ describe('Manage Connections', () => {
         .post(`/api/v1/connections/accept/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -140,7 +140,7 @@ describe('Manage Connections', () => {
         .delete(`/api/v1/connections/my-network/invitation-manager/ignore/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -182,7 +182,7 @@ describe('Manage Connections', () => {
         .delete(`/api/v1/connections/my-network/connections/remove/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
@@ -249,7 +249,7 @@ describe('Manage Connections', () => {
         .delete(`/api/v1/connections/my-network/invitation-manager/withdraw/${targetUserId}`);
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Unauthorized');
+      expect(res.body.message).toBe('Invalid or expired token');
     });
   });
 
