@@ -1,5 +1,5 @@
 import express from 'express';
-import { forgetPassword } from '../../controllers/authentication/forgetPassword.controller.ts';
+import { forgetPassword } from '../../controllers/authentication/forgetPassword.Controller.ts';
 
 const router = express.Router();
 
