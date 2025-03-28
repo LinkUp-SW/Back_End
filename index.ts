@@ -33,6 +33,7 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,7 +56,7 @@ connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
-      generateStartupToken();
+      //generateStartupToken();
     });
   })
   .catch(err => {
@@ -120,10 +121,10 @@ app.use('/api/v1/user',
     educationRoutes,
     licenseRoutes,
     updateUserRoutes,
-    skillsRoutes);
+    skillsRoutes,
+    privacySettingsRoutes,
+    myNetwork);
 
-// Privacy Settings Routes
-app.use('/api/v1/user', privacySettingsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
