@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
 import { jobApplicationsInterface } from "./job_applications.model.ts";
-import { screeningQuestionsInterface } from "../models_to_delete/screening_questions.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 
 export enum jobTypeEnum{
@@ -24,9 +23,12 @@ export enum receiveApplicantsByEnum{
 }
 
 export enum experienceLevelEnum{
-    beginner = "Beginner",
-    intermediate = "Intermediate",
-    advanced = "Advacned"
+    Internship = "Internship",
+    Entry_Level = "Entry Level",
+    Associate = "Associate",
+    Mid_Senior = "Mid-Senior",
+    Director = "Director",
+    Executive = "Executive",
 }
 
 export enum howDidYouHearAboutUsEnum{

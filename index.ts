@@ -33,6 +33,7 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import FilterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -121,6 +122,9 @@ app.use('/api/v1/user',
     licenseRoutes,
     updateUserRoutes,
     skillsRoutes);
+
+// Mount Jobs Routes
+app.use('/api/v1/jobs', FilterJobsRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
