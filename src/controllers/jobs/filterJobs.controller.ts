@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jobs from "../../models/jobs.model.ts";
-import mongoose from "mongoose";
+import organizations from "../../models/organizations.model.ts";
+import mongoose, { model } from "mongoose";
 
 
 export const filterJobsByLocation = async (req: Request, res: Response, next: NextFunction) => {
@@ -9,7 +10,10 @@ export const filterJobsByLocation = async (req: Request, res: Response, next: Ne
     
     const filteredJobs = await jobs.find({ 
       location: { $regex: location, $options: 'i' } 
-    }).populate('organization_id');
+    }).populate({
+      model: organizations,
+      path: 'organization_id',
+    });
     
     if (filteredJobs.length === 0) {
       return res.status(404).json({ message: "No jobs found for this location" });
@@ -31,7 +35,10 @@ export const filterJobsByExperienceLevel = async (req: Request, res: Response, n
     const { level } = req.params;
     
     const filteredJobs = await jobs.find({ experience_level: level })
-      .populate('organization_id');
+      .populate({
+        model: organizations,
+        path: 'organization_id',
+      });
     
     if (filteredJobs.length === 0) {
       return res.status(404).json({ message: "No jobs found for this experience level" });
@@ -58,7 +65,10 @@ export const filterJobsByCompany = async (req: Request, res: Response, next: Nex
     
     const filteredJobs = await jobs.find({ 
       organization_id: companyId 
-    }).populate('organization_id');
+    }).populate({
+      model: organizations,
+      path: 'organization_id',
+    });
     
     if (filteredJobs.length === 0) {
       return res.status(404).json({ message: "No jobs found for this company" });
@@ -94,7 +104,10 @@ export const filterJobsBySalaryRange = async (req: Request, res: Response, next:
     
     const filteredJobs = await jobs.find({ 
       salary: { $gte: min, $lte: max } 
-    }).populate('organization_id');
+    }).populate({
+      model: organizations,
+      path: 'organization_id',
+    });
     
     if (filteredJobs.length === 0) {
       return res.status(404).json({ message: "No jobs found in this salary range" });
