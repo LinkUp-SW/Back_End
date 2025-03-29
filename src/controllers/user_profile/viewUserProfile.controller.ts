@@ -152,6 +152,10 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       (conn: any) => conn._id.toString() === targetUser._id.toString()
     );
 
+    const isAlreadyFollowing = targetUser.followers.some(
+      (follower: any) => follower._id.toString() === (viewerUser._id as string).toString()
+    );
+
     // Check if follow primary is enabled and get the number of followers if true
     const followPrimary = targetUser.privacy_settings?.make_follow_primary || false;
     const numberOfFollowers = followPrimary ? targetUser.followers.length : undefined;
@@ -172,7 +176,9 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       is_in_received_connections: isInReceivedConnections,
       is_in_sent_connections: isInSentConnections,
       isSubscribed: isSubscribed,
-      isInConnections: isInConnections
+      isInConnections: isInConnections,
+      isAlreadyFollowing: isAlreadyFollowing,
+      
     };
 
     res.status(200).json(userBio);
