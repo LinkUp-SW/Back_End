@@ -9,7 +9,7 @@ const userRepository = new UserRepository();
 
 declare module 'express-session' {
   interface SessionData {
-    otp: number;
+    otp: string;
     otpExpires: number;
     otpEmail: string;
   }
