@@ -27,6 +27,7 @@ import resumeRoutes from './src/routes/resume.routes.ts';
 import updateNameRoutes from './src/routes/updateUsername.routes.ts';
 import privacySettingsRoutes from './src/routes/privacy.settings.routes.ts';
 import viewUserProfileRoutes from './src/routes/view.user.profile.routes.ts';
+import validateTokenRoutes from './src/routes/validateToken.routes.ts';
 
 dotenv.config();
 
@@ -106,7 +107,8 @@ app.use('/api/v1/user',
     resumeRoutes,
     privacySettingsRoutes,
     viewUserProfileRoutes,
-    deleteAccountRoutes);
+    deleteAccountRoutes,
+    validateTokenRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
