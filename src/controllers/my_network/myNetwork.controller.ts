@@ -896,7 +896,7 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   }
   };
 
-export const getNumberOfConnections = async (req: Request, res: Response): Promise<void> => {
+export const getNumberOfConnectionsAndFollowers = async (req: Request, res: Response): Promise<void> => {
     try {
       // Validate token and retrieve viewerId and targetUser
       const viewerId = await getUserIdFromToken(req, res);
@@ -909,9 +909,13 @@ export const getNumberOfConnections = async (req: Request, res: Response): Promi
       // Return the number of connections
       const numberOfConnections = viewerUser.connections.length;
   
+      // Return th3 number of following
+      const numberOfFollowing = viewerUser.following.length;  
+
       res.status(200).json({
         user_id: viewerUser.user_id,
         number_of_connections: numberOfConnections,
+        number_of_following: numberOfFollowing,
       });
     } catch (error) {
       if (error instanceof Error && error.message === "Invalid or expired token") {

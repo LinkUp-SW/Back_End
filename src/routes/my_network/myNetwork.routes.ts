@@ -49,7 +49,7 @@ router.delete("/manage-by-blocked-list/unblock/:user_id", connections.unblockUse
 router.get("/manage-by-blocked-list/blocked", connections.getBlockedList);
 
 // Route to get the number of connections
-router.get("/my-network/connections/count", connections.getNumberOfConnections);
+router.get("/my-network/connections/count", connections.getNumberOfConnectionsAndFollowers);
 
 
 export default router;
