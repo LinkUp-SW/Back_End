@@ -4,6 +4,8 @@ import { extractPublicId } from "../../services/cloudinary.service.ts";
 import { validateTokenAndUser , getUserIdFromToken} from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
 import {findUserByUserId} from "../../utils/database.helper.ts";
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
+
 
 // Upload Cover Photo
 const uploadCoverPhoto = async (req: Request, res: Response): Promise<void> => {
@@ -114,7 +116,7 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Clear the cover_photo field in the user's document
-    targetUser.cover_photo = "";
+    targetUser.cover_photo = DEFAULT_IMAGE_URL;
     await targetUser.save();
 
     res.status(200).json({ message: "Cover photo deleted successfully" });

@@ -8,7 +8,6 @@ import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
 
-
 export enum sexEnum{
     male="Male",
     female="Female"
@@ -61,6 +60,7 @@ export interface ConnectionUserInterface {
     
   }
 
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
 
 export interface usersInterface extends mongoose.Document{
     user_id: string;
@@ -345,7 +345,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Profile photo must be a valid URL, an empty string, or null",
         },
-        default: null, // Allow null by default
+        default: DEFAULT_IMAGE_URL, 
       },
       cover_photo: {
         type: String,
@@ -355,7 +355,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Cover photo must be a valid URL, an empty string, or null",
         },
-        default: null,
+        default: DEFAULT_IMAGE_URL,
       },
       resume: {
         type: String,

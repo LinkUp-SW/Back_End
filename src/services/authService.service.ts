@@ -18,7 +18,7 @@ export class AuthService {
     }
     const token = tokenFunctionalities.createToken({
       time: "1h",
-      userID: user._id as string,
+      userID: user.user_id as string,
     });
     return { token, user };
   }
