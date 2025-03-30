@@ -48,4 +48,8 @@ router.delete("/manage-by-blocked-list/unblock/:user_id", connections.unblockUse
 // Route to get the blocked list
 router.get("/manage-by-blocked-list/blocked", connections.getBlockedList);
 
+// Route to get the number of connections
+router.get("/my-network/connections/count", connections.getNumberOfConnections);
+
+
 export default router;
