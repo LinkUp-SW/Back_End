@@ -3194,4 +3194,57 @@ paths:
                     type: string
                     example: "Error fetching blocked list"
 
+  /my-network/connections/count:
+    get:
+      tags:
+        - Connections
+      summary: Get the number of connections
+      description: Retrieves the total number of connections for the authenticated user.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the number of connections.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    example: "John-Doe-123"
+                    description: The ID of the authenticated user.
+                  number_of_connections:
+                    type: integer
+                    example: 150
+                    description: The total number of connections for the user.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching number of connections"
+                  error:
+                    type: string
+                    example: "Detailed error message" 
+
       
