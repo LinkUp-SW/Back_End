@@ -282,9 +282,7 @@ export const getFormattedUserList = async (
 
       // Include the `connections` field only if requested
       if (includeConnections) {
-        formattedUser.connections = user.connections
-          ? user.connections.map((connection: any) => new mongoose.Types.ObjectId(connection.user_id))
-          : [];
+        formattedUser.connections = (user.connections || []).map((connection: any) => connection._id) as mongoose.Types.ObjectId[];
       }
 
       return formattedUser;
