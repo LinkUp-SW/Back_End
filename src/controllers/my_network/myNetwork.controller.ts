@@ -893,6 +893,33 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   }
   };
 
+export const getNumberOfConnections = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and targetUser
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
+
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+    
+      // Return the number of connections
+      const numberOfConnections = viewerUser.connections.length;
+  
+      res.status(200).json({
+        user_id: viewerUser.user_id,
+        number_of_connections: numberOfConnections,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message});
+      } else {
+        console.error("Error fetching number of connections:", error);
+        res.status(500).json({ message: "Error fetching number of connections", error });
+      }
+    }
+  };
+
   
 
 
