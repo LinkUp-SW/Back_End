@@ -34,6 +34,7 @@ import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
+import searchRoutes from './src/routes/organization.route.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -124,6 +125,8 @@ app.use('/api/v1/user',
     skillsRoutes,
     privacySettingsRoutes,
     myNetwork);
+
+app.use('/api/v1/search', searchRoutes);
 
 
 app.get('/', (req: Request, res: Response) => {
