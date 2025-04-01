@@ -26,7 +26,12 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
     maxAge: 3600000, // 1 hour,
   });
 
-
+  res.cookie("linkup_user_id", user.user_id, {
+    maxAge: 3600000,
+    httpOnly: false,
+    sameSite: "lax",
+    secure: false,
+  });
   return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified }}); // 1 hour expiration
 });
 
