@@ -251,12 +251,12 @@ export const getUserExperience = async (req: Request, res: Response): Promise<vo
           organization: organizationDetails,
           is_current: experience.is_current,
           start_date: experience.start_date,
-          end_date: experience.end_date,
+          end_date: experience.end_date ,
           location: experience.location,
           description: experience.description,
           location_type: experience.location_type,
-          skills: experience.skills,
-          media: experience.media,
+          skills: experience.skills || [],
+          media: experience.media || [],
         };
       }),
     };
