@@ -3,6 +3,7 @@ import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
 import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
+import organizations from "../../models/organizations.model.ts";
 
 const addWorkExperience = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -17,7 +18,7 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
             _id: new ObjectId().toString(),
             title,
             employee_type,
-            organization,
+            organization: organization._id,
             is_current,
             start_date,
             end_date,
@@ -32,7 +33,7 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
         
         updateUserSkills(user, skills, organization);
         
-        await user.save();
+        await user.save();  
 
         res.status(200).json({ message: 'Work experience added successfully', experience: newExperience });
     } catch (error) {
@@ -62,7 +63,7 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
             _id: experienceId,
             title,
             employee_type,
-            organization,
+            organization: organization._id,
             is_current,
             start_date,
             end_date,
