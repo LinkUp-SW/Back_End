@@ -275,15 +275,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             _id: { type: String },
             title: { type: String },
             employee_type: { type: String },
-            organization: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "Company must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             is_current: { type: Boolean },
             start_date: { type: Date },
             end_date: { type: Date },
