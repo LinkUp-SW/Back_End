@@ -48,7 +48,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
   console.log('Generated Token:', token);
 };
 
@@ -57,7 +57,7 @@ connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
-      //generateStartupToken();
+      generateStartupToken();
     });
   })
   .catch(err => {
