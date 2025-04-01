@@ -3,13 +3,18 @@ import * as filterJobsControllers from '../../controllers/jobs/filterJobs.contro
 
 const router = express.Router();
 
+// Combined filter endpoint (takes parameters in body)
+router.get('/filter-jobs', (req, res, next) => {
+    filterJobsControllers.filterJobs(req, res, next);
+});
+
 // Filter Jobs By Location
 router.get('/filter-jobs/location/:location', (req, res, next) => {
     filterJobsControllers.filterJobsByLocation(req, res, next);
 });
 
-// Filter Jobs By Experience Level
-router.get('/filter-jobs/experience-level/:level', (req, res, next) => {
+// Filter Jobs By Experience Level (multiple levels as comma-separated values)
+router.get('/filter-jobs/experience-level/:levels', (req, res, next) => {
     filterJobsControllers.filterJobsByExperienceLevel(req, res, next);
 });
 

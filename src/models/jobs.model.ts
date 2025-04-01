@@ -47,7 +47,10 @@ export interface jobsInterface extends mongoose.Document{
     workplace_type: workplaceTypeEnum;
     organization_industry:[];
     experience_level: experienceLevelEnum;
-    job_description: string;
+    description: string;
+    qualifications: string[];
+    responsibilities: string[];
+    benefits: string[];
     targetted_skills: string[];
     receive_applicants_by: receiveApplicantsByEnum;
     receiving_method: string;
@@ -72,7 +75,10 @@ const jobsSchema = new Schema<jobsInterface>({
     workplace_type: { type: String, enum: Object.values(workplaceTypeEnum) },
     organization_industry: [{ type: String }],
     experience_level: { type: String, enum: Object.values(experienceLevelEnum) },
-    job_description: { type: String },
+    description: { type: String },
+    qualifications: [{ type: String }],
+    responsibilities: [{ type: String }],
+    benefits: [{ type: String }],
     targetted_skills: [{ type: String }],
     receive_applicants_by: { type: String, enum: Object.values(receiveApplicantsByEnum) },
     receiving_method: { type: String },
