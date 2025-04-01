@@ -1,0 +1,205 @@
+import { ObjectId } from "mongoose";
+import conversations, { MessageInterface } from "../models/conversations.model.ts";
+import { UserRepository } from "./user.repository.ts";
+import { CustomError } from "../utils/customError.utils.ts";
+
+const userRepo = new UserRepository();
+
+export class conversationRepository {
+  async findConversationByUsers(userId1: string, userId2: string) {
+    return conversations.findOne({
+      $or: [
+        { user1_id: userId1, user2_id: userId2 },
+        { user1_id: userId2, user2_id: userId1 }
+      ]
+    }).populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio');
+  }
+
+  async createConversation(userId1: string, userId2: string) {
+    return conversations.create({
+      user1_id: userId1,
+      user2_id: userId2,
+      user1_sent_messages: [],
+      user2_sent_messages: []
+    });
+  } 
+
+  async getConversation(conversationId: string) {
+    const conversation = await conversations.findById(conversationId)
+      .populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio');
+    
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    return conversation;
+  }
+
+  async findConversationById(conversationId: string) {
+    const conversation = await conversations.findOne({user1_id:conversationId}) 
+      .populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio')
+      .sort({ 'user1_sent_messages.timestamp': -1, 'user2_sent_messages.timestamp': -1 });
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    return conversation;
+  }
+
+
+  async addMessage(conversationId: string, senderId: string, receiverId: string, message: string, media: string[] = [], mediaTypes: string[] = []) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    const newMessage: MessageInterface = {
+      message,
+      media,
+      media_type: mediaTypes,
+      timestamp: new Date(),
+      reacted: false,
+      is_seen: false
+    };
+
+    // Determine if sender is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === senderId;
+    
+    // Update the appropriate message array
+    if (isUser1) {
+      conversation.user1_sent_messages.push(newMessage);
+      conversation.unread_count_user2 = (conversation.unread_count_user2 || 0) + 1;
+    } else {
+      conversation.user2_sent_messages.push(newMessage);
+      conversation.unread_count_user1 = (conversation.unread_count_user1 || 0) + 1;
+    }
+
+    // Update last message info
+    conversation.last_message_time = new Date();
+    conversation.last_message_text = message;
+
+    await conversation.save();
+    return conversation;
+  }
+
+  async getUserConversations(userId: string) {
+    return conversations.find({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    })
+    .sort({ last_message_time: -1 })
+    .populate('user1_id', 'user_id profile_photo bio')
+    .populate('user2_id', 'user_id profile_photo bio');
+  }
+
+  async markConversationAsRead(conversationId: string, userId: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if reader is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Mark messages as read and reset unread count
+    if (isUser1) {
+      conversation.unread_count_user1 = 0;
+      conversation.user2_sent_messages.forEach(msg => msg.is_seen = true);
+    } else {
+      conversation.unread_count_user2 = 0;
+      conversation.user1_sent_messages.forEach(msg => msg.is_seen = true);
+    }
+
+    await conversation.save();
+    return conversation;
+  }
+
+  // async blockUser(userId: string, blockedUserId: string) {
+  //   const conversation = await this.findConversationByUsers(userId, blockedUserId);
+  //   const blockedUser = await userRepo.findByUserId(blockedUserId);
+  //   const user = await userRepo.findByUserId(userId);
+    
+  //   if (!conversation) {
+  //     throw new CustomError('Conversation not found', 404);
+  //   }
+
+  //   if (!blockedUser) {
+  //     throw new CustomError('User to block not found', 404);
+  //   }
+    
+  //   if (!user) {
+  //     throw new CustomError('User not found', 404);
+  //   }
+
+  //   if (!user.blocked) {
+  //     user.blocked = [];
+  //   }
+
+  //   if (user.blocked.includes(blockedUserId)) {
+  //     throw new CustomError('User already blocked', 400);
+  //   }
+
+  //   if (user.blocked.length >= 100) {
+  //     throw new CustomError('User block limit reached', 400);
+  //   }
+  //   // Add to blocked list
+  //   user.blockUser(blockedUserId);
+  //   await user.save();
+
+  //   // Determine if blocker is user1 or user2
+  //   const isUser1 = conversation.user1_id.toString() === userId;
+    
+  //   if (isUser1) {
+  //     conversation.is_blocked_by_user1 = true;
+  //   } else {
+  //     conversation.is_blocked_by_user2 = true;
+  //   }
+
+  //   await conversation.save();
+  //   return conversation;
+  // }
+
+  // async unblockUser(userId: string, blockedUserId: string) {
+  //   const conversation = await this.findConversationByUsers(userId, blockedUserId);
+    
+  //   if (!conversation) {
+  //     throw new CustomError('Conversation not found', 404);
+  //   }
+
+  //   // Determine if unblocker is user1 or user2
+  //   const isUser1 = conversation.user1_id.toString() === userId;
+    
+  //   if (isUser1) {
+  //     conversation.is_blocked_by_user1 = false;
+  //   } else {
+  //     conversation.is_blocked_by_user2 = false;
+  //   }
+
+  //   await conversation.save();
+  //   return conversation;
+  // }
+
+  async getTotalUnreadCount(userId: string) {
+    const userConversations = await conversations.find({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    });
+
+    let totalUnread = 0;
+    
+    userConversations.forEach(conv => {
+      if (conv.user1_id.toString() === userId) {
+        totalUnread += conv.unread_count_user1 || 0;
+      } else {
+        totalUnread += conv.unread_count_user2 || 0;
+      }
+    });
+
+    return totalUnread;
+  }
+}

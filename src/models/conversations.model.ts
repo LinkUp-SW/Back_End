@@ -1,51 +1,63 @@
 import mongoose, { Schema } from "mongoose";
-import { messagesInterface } from "../models_to_delete/messages.model.ts";
 import { usersInterface } from "./users.model.ts";
 
-
-export interface conversationsInterface extends mongoose.Document{
-    user1_id: usersInterface;
-    user2_id: usersInterface;
-    user1_sent_messages: {
-        message: string;
-        media: string[]; 
-        timestamp: Date;
-        reacted: boolean;
-        is_seen: boolean;
-    }[];
-    user2_sent_messages:{
-        message: string;
-        media: string[]; 
-        timestamp: Date;
-        reacted: boolean;
-        is_seen: boolean;
-    }[];
+export interface MessageInterface {
+    _id?: string;
+    message: string;
+    media: string[]; 
+    timestamp: Date;
+    reacted: boolean;
+    is_seen: boolean;
+    media_type?: string[]; // For identifying type of media (image, video, document)
+    typing?: boolean;
 }
 
+export enum conversationType {
+    jobs = "Jobs",
+    myConnections = "My Connections",
+    inMail = "InMail",
+    starred = "Starred",
+    unRead = "Unread",
+}
+
+export interface conversationsInterface extends mongoose.Document {
+    _id: string;
+    user1_id: string;
+    user2_id: string;
+    user1_sent_messages: MessageInterface[];
+    user2_sent_messages: MessageInterface[];
+    last_message_time: Date;
+    last_message_text: string;
+    unread_count_user1: number;
+    unread_count_user2: number;
+    is_blocked_by_user1: boolean;
+    is_blocked_by_user2: boolean;
+    type: string;
+}
+
+const MessageSchema = new Schema({
+    message: { type: String },
+    media: [{ type: String }],
+    media_type: [{ type: String }],
+    timestamp: { type: Date, default: Date.now },
+    reacted: { type: Boolean, default: false },
+    is_seen: { type: Boolean, default: false },
+});
+
 const conversationsSchema = new Schema<conversationsInterface>({
-    user1_id: { type: Schema.Types.ObjectId, ref: "users" },
-    user2_id: { type: Schema.Types.ObjectId, ref: "users" },
-    user1_sent_messages: [
-        {
-            message: { type: String },
-            media: [{ type: String }],
-            timestamp: { type: Date, default: Date.now },
-            reacted: { type: Boolean, default: false },
-            is_seen: { type: Boolean, default: false },
-        },
-    ],
-    user2_sent_messages: [
-        {
-            message: { type: String },
-            media: [{ type: String }],
-            timestamp: { type: Date, default: Date.now },
-            reacted: { type: Boolean, default: false },
-            is_seen: { type: Boolean, default: false },
-        },
-    ],
+    user1_id: { type: String },
+    user2_id: { type: String },
+    user1_sent_messages: [MessageSchema],
+    user2_sent_messages: [MessageSchema],
+    last_message_time: { type: Date, default: Date.now },
+    last_message_text: { type: String, default: "" },
+    unread_count_user1: { type: Number, default: 0 },
+    unread_count_user2: { type: Number, default: 0 },
+    is_blocked_by_user1: { type: Boolean, default: false },
+    is_blocked_by_user2: { type: Boolean, default: false },
+    type : { type: String, enum: Object.values(conversationType), default: conversationType.unRead },
 });
 
 const conversations = mongoose.model<conversationsInterface>('conversations', conversationsSchema);
 
 export default conversations;
-

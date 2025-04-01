@@ -1,6 +1,6 @@
 // src/index.ts
 import express, { Request, Response } from 'express';
-import { connectToDatabase } from './config/database.ts';
+import { connectToTestDatabase,connectToDatabase } from './config/database.ts';
 import YAML from 'yamljs';
 import path from 'path';
 import cors from 'cors';
@@ -8,8 +8,10 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import tokenUtils from './src/utils/token.utils.ts';
+import { WebSocketService } from './src/services/webSockets.service.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
+import http from 'http';
 import { fileURLToPath } from 'url';
 import errorHandler from './src/middleware/errorHandler.ts'; 
 
@@ -33,6 +35,7 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import messageRoutes from './src/routes/messaging/messaging.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -46,12 +49,12 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'testUserId' });
   console.log('Generated Token:', token);
 };
 
 
-connectToDatabase()
+connectToTestDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
@@ -85,16 +88,21 @@ app.use(
   })
 );
 
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize WebSocket service
+const webSocketService = new WebSocketService(server);
+
 // Passport Initialization
 app.use(passport.initialize());
 app.use(passport.session());
-// Initialize Google OAuth strategy via Passport
 // Initialize Google OAuth strategy via Passport
 googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Authenticatio Routes
 // Authenticatio Routes
@@ -122,10 +130,11 @@ app.use('/api/v1/user',
     updateUserRoutes,
     skillsRoutes);
 
-// Privacy Settings Routes
-app.use('/api/v1/user', privacySettingsRoutes);
 
-app.get('/', (req: Request, res: Response) => {
+// Messaging Routes
+app.use('/api/v1', messageRoutes);
+
+app.get('/google-auth', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
 

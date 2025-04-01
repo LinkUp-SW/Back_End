@@ -43,3 +43,29 @@ export const authorizeUpload = async (req: Request, res: Response, next: NextFun
     res.status(500).json({ message: "Authorization error", error });
   }
 };
+
+// auth middleware function for messaging routes
+export const authorizeMessaging = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // Validate token and extract user ID from the token
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
+
+    if (!decodedToken || !decodedToken.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    // Attach the user ID to the request for use in controllers
+    req.user = decodedToken.userId;
+    req.params = req.params || {};
+
+    // Proceed to the next middleware or route handler
+    next();
+  } catch (error) {
+    console.error("Authorization error:", error);
+    res.status(500).json({ message: "Authorization error", error });
+  }
+}
+// export default authorizeUpload
