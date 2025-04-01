@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose";
+import mongoose from "mongoose";
 import conversations, { MessageInterface } from "../models/conversations.model.ts";
 import { UserRepository } from "./user.repository.ts";
 import { CustomError } from "../utils/customError.utils.ts";
@@ -55,11 +55,13 @@ export class conversationRepository {
     }
 
     const newMessage: MessageInterface = {
+      sender_id: senderId,
+      messageId: new mongoose.Types.ObjectId().toString(), // Generate a new message ID
       message,
       media,
       media_type: mediaTypes,
       timestamp: new Date(),
-      reacted: false,
+      reacted: '',
       is_seen: false
     };
 
@@ -199,7 +201,29 @@ export class conversationRepository {
         totalUnread += conv.unread_count_user2 || 0;
       }
     });
-
     return totalUnread;
+  }
+
+  async reactToMessage(conversationId: string, messageId: string, userId: string, reaction: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if user is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Find the message in the appropriate array
+    const messageArray = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
+    const message = messageArray.find(msg => msg.messageId.toString() === messageId);
+    
+    if (!message) {
+      throw new CustomError('Message not found', 404);
+    }
+
+    message.reacted = reaction;
+
+    await conversation.save();
+    return conversation;
   }
 }

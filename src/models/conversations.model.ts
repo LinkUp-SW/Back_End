@@ -2,11 +2,12 @@ import mongoose, { Schema } from "mongoose";
 import { usersInterface } from "./users.model.ts";
 
 export interface MessageInterface {
-    _id?: string;
+    sender_id: string;
+    messageId: string;
     message: string;
     media: string[]; 
     timestamp: Date;
-    reacted: boolean;
+    reacted: string;
     is_seen: boolean;
     media_type?: string[]; // For identifying type of media (image, video, document)
     typing?: boolean;
@@ -36,11 +37,13 @@ export interface conversationsInterface extends mongoose.Document {
 }
 
 const MessageSchema = new Schema({
+    sender_id: { type: String },
+    messageId: { type: String },
     message: { type: String },
     media: [{ type: String }],
     media_type: [{ type: String }],
     timestamp: { type: Date, default: Date.now },
-    reacted: { type: Boolean, default: false },
+    reacted: { type: String, default: false },
     is_seen: { type: Boolean, default: false },
 });
 

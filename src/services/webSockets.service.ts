@@ -55,6 +55,30 @@ export class WebSocketService {
         }
       });
 
+      // Online status
+      socket.on("online", async (data: { userId: string }) => {
+        await this.registerUserSocket(data.userId, socket.id);
+        socket.broadcast.emit("user_online", { userId: data.userId });
+      });
+
+      socket.on("offline", async (data: { userId: string }) => {
+        await this.handleDisconnect(socket.id);
+        socket.broadcast.emit("user_offline", { userId: data.userId });
+      });
+
+      // Handle message reactions
+      socket.on("react_to_message", async (data: {conversationId:string; messageId: string; reaction: string }) => {
+        const userId = await this.getUserIdFromSocket(socket.id);
+        if (!userId) return;
+
+        const updated = await this.conversationRepo.reactToMessage(data.conversationId,data.messageId, userId, data.reaction);
+        if (updated) {
+          socket.broadcast.emit("message_reacted", { messageId: data.messageId, reaction: data.reaction });
+        } else {
+          socket.emit("reaction_error", { message: "Failed to react to message" });
+        }
+      });
+
       // Handle private messages
       socket.on(
         "private_message",

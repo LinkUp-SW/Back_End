@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import users from "../models/users.model.ts";
 import conversations from "../models/conversations.model.ts";
-import {connectToTestDatabase,disconnectFromDatabase} from "../../config/database.ts";
+import { connectToTestDatabase, disconnectFromDatabase } from "../../config/database.ts";
 import { accountStatusEnum, invitationsEnum, statusEnum } from "../models/users.model.ts";
 import bcrypt from "bcrypt";
 
@@ -109,16 +109,25 @@ const populateConversations = async () => {
 
             // Add sample messages to the conversation
             for (let j = 0; j < 5; j++) {
+                // Determine if user1 or user2 is sending this message
+                const isUser1Sending = j % 2 === 0;
+                const senderId = isUser1Sending ? user.user_id : otherUser.user_id;
+                
                 await conversations.updateOne(
                     { _id: conversation._id },
                     {
                         $push: {
-                            [`user${(j % 2) + 1}_sent_messages`]: {
-                                message: `Sample message ${j} from ${j % 2 === 0 ? user.user_id : otherUser.user_id}`,
+                            [`user${isUser1Sending ? 1 : 2}_sent_messages`]: {
+                                // Added required fields from MessageInterface
+                                sender_id: senderId,
+                                messageId: new mongoose.Types.ObjectId().toString(), // Generate a unique ID
+                                message: `Sample message ${j} from ${senderId}`,
                                 media: [],
+                                media_type: [], // Optional array for media types
                                 timestamp: new Date(),
-                                reacted: false,
-                                is_seen: false,
+                                reacted: "", // Changed from boolean to string
+                                is_seen: false
+                                // typing is optional and not needed for sample data
                             },
                         },
                     }
