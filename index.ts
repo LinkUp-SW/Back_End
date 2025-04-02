@@ -34,6 +34,9 @@ import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
+import createPost from './src/routes/posts/createPosts.routes.ts';
+import deletePost from './src/routes/posts/deletePosts.routes.ts';
+import editPost from './src/routes/posts/editPosts.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,12 +45,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
-
+app.use(express.json({limit:"50mb"}));
 
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin39' });
   console.log('Generated Token:', token);
 };
 
@@ -125,7 +128,11 @@ app.use('/api/v1/user',
     privacySettingsRoutes,
     myNetwork);
 
-
+  app.use('/api/v1/post',
+    createPost,
+    deletePost,
+    editPost
+  );
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
