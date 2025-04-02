@@ -392,3 +392,52 @@ export const formatConnectionData = async (
     return null;
   }
 };
+
+/**
+ * Fetches paginated connections using cursor-based pagination.
+ * @param userId - The ID of the user whose connections are being fetched.
+ * @param limit - The maximum number of connections to return.
+ * @param cursor - The cursor for pagination (optional).
+ * @param connectionType - The type of connections to fetch (e.g., "followers", "following").
+ * @returns An object containing the paginated connections and the next cursor.
+ */
+export const getPaginatedConnectionsFollowers = async (
+  userId: mongoose.Types.ObjectId,
+  limit: number,
+  cursor?: string,
+  connectionType: "connections" | "sent_connections" | "received_connections" | "followers" | "following" = "connections"
+): Promise<{ connections: any[]; nextCursor: string | null }> => {
+  try {
+    // Find the user by ID and retrieve the specified connection type
+    const user = await Users.findById(userId, { [connectionType]: 1 }).lean();
+    if (!user || !user[connectionType]) {
+      return { connections: [], nextCursor: null };
+    }
+
+    // Sort connections by date in descending order
+    const sortedConnections = user[connectionType].sort((a: any, b: any) => b.date - a.date);
+
+    // If a cursor is provided, find the index of the cursor in the sorted connections
+    let startIndex = 0;
+    if (cursor) {
+      const cursorIndex = sortedConnections.findIndex(
+        (connection: any) => connection._id.toString() === cursor
+      );
+      startIndex = cursorIndex >= 0 ? cursorIndex + 1 : 0; // Start after the cursor
+    }
+
+    // Slice the connections array to get the paginated results
+    const paginatedConnections = sortedConnections.slice(startIndex, startIndex + limit);
+
+    // Determine the next cursor
+    const nextCursor =
+      paginatedConnections.length === limit
+        ? paginatedConnections[paginatedConnections.length - 1]._id.toString()
+        : null;
+
+    return { connections: paginatedConnections, nextCursor };
+  } catch (error) {
+    console.error("Error fetching paginated connections:", error);
+    throw new Error("Error fetching paginated connections");
+  }
+};
