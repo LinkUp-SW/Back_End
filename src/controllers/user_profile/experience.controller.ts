@@ -101,7 +101,7 @@ const deleteWorkExperience = async (req: Request, res: Response, next: NextFunct
         const experienceSkills = user.work_experience[experienceIndex].skills || [];
         const organization = user.work_experience[experienceIndex].organization;
         
-        const mediaObjects = user.liscence_certificates[experienceIndex].media || [];
+        const mediaObjects = user.work_experience[experienceIndex].media || [];
         const mediaUrls = mediaObjects.map(media => media.media);await deleteMediaFromCloud(mediaUrls);
         
         user.work_experience.splice(experienceIndex, 1);

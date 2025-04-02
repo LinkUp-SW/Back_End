@@ -244,15 +244,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     education: [
         {
             _id: { type: String },
-            school: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "School must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            school: { type: Schema.Types.ObjectId, ref: "organizations" },
             degree: { type: String },
             field_of_study: { type: String },
             start_date: { type: Date },
@@ -303,15 +295,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         {
             _id: { type: String},
             name: { type: String },
-            issuing_organization: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "Company must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             issue_date: { type: Date },
             expiration_date: { type: Date },
             credintial_id: { type: Number },

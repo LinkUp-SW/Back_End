@@ -98,7 +98,7 @@ const deleteEducation = async (req: Request, res: Response, next: NextFunction):
         const educationSkills = user.education[educationIndex].skills || [];
         const school = user.education[educationIndex].school;
         
-        const mediaObjects = user.liscence_certificates[educationIndex].media || [];
+        const mediaObjects = user.education[educationIndex].media || [];
         const mediaUrls = mediaObjects.map(media => media.media);
         await deleteMediaFromCloud(mediaUrls);
         
