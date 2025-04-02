@@ -3202,4 +3202,149 @@ paths:
                     type: string
                     example: "Error fetching blocked list"
 
-      
+  /api/v1/posts/create-post:
+    post:
+      tags:
+        - Posts
+      summary: Create a new post
+      description: Creates a new post for a user and associates it with their activity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: ID of the user creating the post.
+                content:
+                  type: string
+                  description: Content of the post.
+                mediaType:
+                  type: string
+                  description: Type of media (e.g., image, video).
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs.
+                commentsDisabled:
+                  type: string
+                  description: Who can comment on the post.
+                publicPost:
+                  type: boolean
+                  description: Whether the post is public.
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs tagged in the post.
+              required:
+                - userId
+                - content
+                - commentsDisabled
+                - publicPost
+                - taggedUsers
+      responses:
+        '200':
+          description: Post successfully created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.
+
+  /api/v1/posts/edit-post:
+    patch:
+      tags:
+        - Posts
+      summary: Edit an existing post
+      description: Updates the content, media, or tagged users of an existing post.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to edit.
+                content:
+                  type: string
+                  description: Updated content of the post.
+                mediaType:
+                  type: string
+                  description: Updated type of media (e.g., image, video).
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of media URLs.
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of user IDs tagged in the post.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Post does not exist or required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.
+
+  /api/v1/posts/delete-post:
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post
+      description: Deletes a post and removes it from the user's activity.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to delete.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Post does not exist or required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.    
