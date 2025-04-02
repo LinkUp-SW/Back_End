@@ -145,7 +145,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       (conn: any) => conn._id.toString() === targetUser._id.toString()
     );
     const isInSentConnections = viewerUser.sent_connections.some(
-      (conn: any) => conn._id.toString() === targetUser._id
+      (conn: any) => conn._id.toString() === targetUser._id.toString()
     );
 
     const isInConnections = viewerUser.connections.some(
