@@ -183,7 +183,7 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
 };
 
 
-export const updateUserSkills = (user: usersInterface, skills: string[], organization: string) => {
+export const updateUserSkills = (user: usersInterface, skills: string[], organization: organizationsInterface) => {
   if (skills && skills.length > 0) {
       for (const skillName of skills) {
           const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
