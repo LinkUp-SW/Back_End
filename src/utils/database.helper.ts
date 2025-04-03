@@ -107,7 +107,7 @@ export const checkProfileAccess = async (
 
     // Allow access if the current user is connected to the target user
     const isConnected = targetUser.connections.some(
-      (connection: any) => connection.user_id === currentUserId
+      (connection: any) => connection._id === (currentUser._id as ObjectId).toString()
     );
     if (isConnected) {
       return { accessGranted: true };
