@@ -10,11 +10,15 @@ servers:
     description: Development server
 paths:
   /auth/login:
+  /auth/login:
     post:
       tags:
         - Auth
       summary: Logs in a user (Local)
+      summary: Logs in a user (Local)
       description: >
+        Authenticates a user using email and password. On successful authentication, a JWT token is generated,
+        set as an HTTP-only cookie, and user details are returned.
         Authenticates a user using email and password. On successful authentication, a JWT token is generated,
         set as an HTTP-only cookie, and user details are returned.
       requestBody:
@@ -53,6 +57,15 @@ paths:
                       email:
                         type: string
                         example: "user@example.com"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "unique_user_id"
+                      email:
+                        type: string
+                        example: "user@example.com"
         '400':
           description: Email and password are required
         '401':
@@ -61,9 +74,14 @@ paths:
           description: Server error
 
   /auth/logout:
+        '500':
+          description: Server error
+
+  /auth/logout:
     get:
       tags:
         - Auth
+      summary: Logs out a user (Local)
       summary: Logs out a user (Local)
       description: >
         Clears the JWT cookie to log out the user.
@@ -147,12 +165,82 @@ paths:
         '500':
           description: Server error
 
+
+  /auth/google:
+    get:
+      tags:
+        - Google Auth
+      summary: Initiates Google authentication
+      description: >
+        Redirects the user to Google to initiate OAuth2 authentication.
+      responses:
+        '302':
+          description: Redirects to Google for authentication.
+
+  /auth/google/callback:
+    get:
+      tags:
+        - Google Auth
+      summary: Google OAuth callback
+      description: >
+        Handles the callback from Google OAuth. On successful authentication, a JWT token is issued,
+        set as an HTTP-only cookie, and user details are returned.
+      responses:
+        '200':
+          description: Google authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google authentication successful"
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        example: "unique_user_id"
+                      email:
+                        type: string
+                        example: "user@example.com"
+                  tokens:
+                    type: object
+                    description: Google tokens stored in session (if applicable)
+        '401':
+          description: Google authentication failed
+        '500':
+          description: Server error
+
+  /auth/google/logout:
+    get:
+      tags:
+        - Google Auth
+      summary: Logs out a Google authenticated user
+      description: >
+        Revokes the Google access token (if applicable), destroys the session, and clears the JWT cookie.
+      responses:
+        '200':
+          description: Google logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Google logout successful"
+        '500':
+          description: Server error
+
   /api/v1/user/send-otp:
     post:
       tags:
         - OTP
       summary: Generate and send OTP
       description: >
+        Generates a one-time password (OTP) and sends it to the user's email.
         Generates a one-time password (OTP) and sends it to the user's email.
         The OTP is stored in the session and expires in 10 minutes.
       requestBody:
@@ -186,8 +274,8 @@ paths:
   /api/v1/user/verify-otp:
     post:
       tags:
-        - OTP
-      summary: Verify OTP
+        - Auth
+      summary: Register a New User (Starter)
       description: >
         Verifies the one-time password (OTP) provided by the user.
         If the OTP is valid and not expired, the session values are cleared and a success message is returned.
@@ -217,7 +305,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "OTP verified successfully"
+                    example: "Password reset successful"
         '400':
           description: OTP is required.
         '401':
@@ -285,11 +373,19 @@ paths:
               required:
                 - firstName
                 - lastName
+                - firstName
+                - lastName
                 - email
                 - password
                 - country
                 - city
               properties:
+                firstName:
+                  type: string
+                  example: "John"
+                lastName:
+                  type: string
+                  example: "Doe"
                 firstName:
                   type: string
                   example: "John"

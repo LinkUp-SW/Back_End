@@ -45,7 +45,7 @@ export class AuthService {
     if (user) {
       const token = tokenFunctionalities.createToken({
         time: "1h",
-        userID: user.user_id
+        userID: await generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name), // TODO: Change it to username.
       });
       user.is_verified = true;
       await user.save();
@@ -83,12 +83,14 @@ export class AuthService {
     });
 
     res.clearCookie(JWT_CONFIG.COOKIE_NAME);
+    res.clearCookie('linkup_user_id');
     return res.status(200).json({ message: 'Google logout successful' });
   }
 
   // Regular logout: simply clears the authentication cookie.
   async logout(req: Request, res: Response) {
     res.clearCookie(JWT_CONFIG.COOKIE_NAME);
+    res.clearCookie('linkup_user_id');
     return res.status(200).json({ message: 'Logout successful' });
   }
 }

@@ -1,5 +1,5 @@
 import httpMocks from 'node-mocks-http';
-import { login, googleCallback, googleLogout, logout } from '../../controllers/auth.controller.ts';
+import { login, googleCallback, googleLogout, logout } from '../../controllers/authentication/auth.controller.ts';
 import { AuthService } from '../../services/authService.service.ts';
 import { JWT_CONFIG } from '../../../config/jwt.config.ts';
 import { CustomError } from '../../utils/customError.utils.ts';

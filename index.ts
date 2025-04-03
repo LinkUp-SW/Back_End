@@ -13,22 +13,28 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import errorHandler from './src/middleware/errorHandler.ts'; 
 
-import authRoutes from './src/routes/auth.routes.ts';
-import otpRoutes from './src/routes/otp.routes.js';
-import signupRoutes from './src/routes/signup.routes.ts';
-import forgetRoutes from './src/routes/forgetPassword.routes.ts';
-import resetRoutes from './src/routes/resetPassword.routes.ts';
-import updateEmailRoutes from './src/routes/updateEmail.routes.ts';
-import deleteAccountRoutes from './src/routes/deleteAccount.routes.ts'
-import updatePassRoutes from './src/routes/updatePassword.routes.ts';
-import profilePictureRoutes from './src/routes/profilePicture.routes.ts';
-import coverPhotoRoutes from './src/routes/coverPhoto.routes.ts';
-import resumeRoutes from './src/routes/resume.routes.ts';
-import updateNameRoutes from './src/routes/updateUsername.routes.ts';
-import privacySettingsRoutes from './src/routes/privacy.settings.routes.ts';
-import viewUserProfileRoutes from './src/routes/view.user.profile.routes.ts';
-import validateTokenRoutes from './src/routes/validateToken.routes.ts';
-
+import authRoutes from './src/routes/authentication/auth.routes.ts';
+import otpRoutes from './src/routes/authentication/otp.routes.ts';
+import signupRoutes from './src/routes/authentication/signup.routes.ts';
+import forgetRoutes from './src/routes/authentication/forgetPassword.routes.ts';
+import resetRoutes from './src/routes/authentication/resetPassword.routes.ts';
+import updateEmailRoutes from './src/routes/authentication/updateEmail.routes.ts';
+import validateTokenRoutes from './src/routes/authentication/validateToken.routes.ts';
+import deleteAccountRoutes from './src/routes/user_profile/deleteAccount.routes.ts'
+import updatePassRoutes from './src/routes/authentication/updatePassword.routes.ts';
+import profilePictureRoutes from './src/routes/user_uploads/profilePicture.routes.ts';
+import coverPhotoRoutes from './src/routes/user_uploads/coverPhoto.routes.ts';
+import resumeRoutes from './src/routes/user_uploads/resume.routes.ts';
+import updateNameRoutes from './src/routes/authentication/updateUsername.routes.ts';
+import privacySettingsRoutes from './src/routes/user_profile/privacySettings.routes.ts';
+import viewUserProfileRoutes from './src/routes/user_profile/viewUserProfile.routes.ts';
+import experienceRoutes from './src/routes/user_profile/experience.routes.ts';
+import educationRoutes from './src/routes/user_profile/education.routes.ts'
+import licenseRoutes from './src/routes/user_profile/license.routes.ts'
+import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
+import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
+import searchRoutes from './src/routes/organization.route.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -108,7 +114,16 @@ app.use('/api/v1/user',
     privacySettingsRoutes,
     viewUserProfileRoutes,
     deleteAccountRoutes,
-    validateTokenRoutes);
+    validateTokenRoutes,
+    experienceRoutes,
+    educationRoutes,
+    licenseRoutes,
+    updateUserRoutes,
+    skillsRoutes,
+    privacySettingsRoutes,
+    myNetwork);
+
+app.use('/api/v1/search', searchRoutes);
 
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);

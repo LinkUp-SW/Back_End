@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-
-//import mongoose from "mongoose";
 import Users from "../models/users.model.ts";
-//import { usersInterface } from "../models/users.model.ts"; // Ensure this path is correct
+import { usersInterface } from "../models/users.model.ts";
+import { organizationsInterface } from "../models/organizations.model.ts";
+import { ObjectId } from "mongodb";
 import  "../models/posts.model.ts";
 import  "../models/comments.model.ts";
 
@@ -64,47 +64,62 @@ export const findUserByUserId = async (user_id: string, res: Response) => {
 
 /**
  * Checks if the current user has access to view the target user's profile.
- * This function can be extended based on your application's business rules.
  */
 export const checkProfileAccess = async (
-    currentUserId: string,
-    targetUserId: string
-  ): Promise<boolean> => {
-    try {
-      // Find the target user by their user_id
-      const targetUser = await Users.findOne({ user_id: targetUserId });
-      if (!targetUser) {
-        return false; // Target user does not exist
-      }
-  
-      // Allow access if the profile is public
-      if (
-        targetUser.privacy_settings &&
-        targetUser.privacy_settings.flag_account_status === "Public"
-      ) {
-        return true;
-      }
-  
-      // Deny access if the current user is blocked by the target user
-      if (targetUser.blocked && targetUser.blocked.includes(currentUserId)) {
-        return false;
-      }
-  
-      // Allow access if the current user is connected to the target user
-      if (
-        targetUser.connections &&
-        targetUser.connections.includes(currentUserId)
-      ) {
-        return true;
-      }
-  
-      // Deny access if none of the conditions are met
-      return false;
-    } catch (error) {
-      console.error("Error checking profile access:", error);
-      return false;
+  currentUserId: string,
+  targetUserId: string
+): Promise<{ accessGranted: boolean; reason?: string }> => {
+  try {
+    if (currentUserId === targetUserId) {
+      return { accessGranted: true }; // Allow access to own profile
     }
-  };
+    // Find the target user by their user_id
+    const targetUser = await Users.findOne({ user_id: targetUserId });
+    if (!targetUser) {
+      return { accessGranted: false, reason: "User not found" }; // Target user does not exist
+    }
+    const currentUser = await Users.findOne({ user_id: currentUserId }) as usersInterface;
+    if (!currentUser) {
+        return { accessGranted: false, reason: "Current user not found" };
+    }
+    
+    const isBlocking = currentUser.blocked.some(
+      (blocked: any) => blocked._id.toString() === (targetUser._id as ObjectId).toString()
+    );
+    if (isBlocking) {
+      return { accessGranted: false, reason: "blocking" };
+    } 
+
+    const isBlocked = targetUser.blocked.some(
+      (blocked: any) => blocked._id.toString() === (currentUser._id as ObjectId).toString()
+    );
+    if (isBlocked) {
+      return { accessGranted: false, reason: "blocked" };
+    }
+
+    // Allow access if the profile is public
+    if (
+      targetUser.privacy_settings &&
+      targetUser.privacy_settings.flag_account_status === "Public"
+    ) {
+      return { accessGranted: true };
+    }
+
+    // Allow access if the current user is connected to the target user
+    const isConnected = targetUser.connections.some(
+      (connection: any) => connection._id === (currentUser._id as ObjectId).toString()
+    );
+    if (isConnected) {
+      return { accessGranted: true };
+    }
+
+    // Deny access if the profile is private
+    return { accessGranted: false, reason: "private" };
+  } catch (error) {
+    console.error("Error checking profile access:", error);
+    return { accessGranted: false, reason: "error" };
+  }
+};
 
 
 /**
@@ -168,8 +183,55 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
 };
 
 
+export const updateUserSkills = (user: usersInterface, skills: string[], organization: string) => {
+  if (skills && skills.length > 0) {
+      for (const skillName of skills) {
+          const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+          
+          if (skillIndex !== -1) {
+              const experienceExists = user.skills[skillIndex].used_where.includes(organization);
+              
+              if (!experienceExists) {
+                  user.skills[skillIndex].used_where.push(organization);  
+              }
+          } else {
+              
+              user.skills.push({
+                  _id: new ObjectId().toString(),
+                  name: skillName,
+                  endorsments: [],
+                  used_where: [organization]
+              });
+          }
+      }
+  }
+};
 
 
+export const handleRemovedSkills = (user: usersInterface, oldSkills: string[], newSkills: string[], organization: string) => {
+  const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
+  for (const skillName of removedSkills) {
+      const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+      if (skillIndex !== -1) {
+          user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
+              org => org.toString() !== organization.toString()
+          );
+      }
+  }
+};
 
 
-
+export const handleDeletedExperienceSkills = (user: usersInterface, experienceSkills: string[], organization: organizationsInterface): void => {
+  const organizationStillUsed = user.work_experience.some(exp => 
+    exp.organization === organization
+  );
+  
+  for (const skillName of experienceSkills) {
+    const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+    if (skillIndex !== -1 && !organizationStillUsed) {
+      user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
+        org => org.toString() !== organization.toString()
+      );
+    }
+  }
+};
