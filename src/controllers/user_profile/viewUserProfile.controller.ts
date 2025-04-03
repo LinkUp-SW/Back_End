@@ -145,7 +145,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       (conn: any) => conn._id.toString() === targetUser._id.toString()
     );
     const isInSentConnections = viewerUser.sent_connections.some(
-      (conn: any) => conn._id.toString() === targetUser._id
+      (conn: any) => conn._id.toString() === targetUser._id.toString()
     );
 
     const isInConnections = viewerUser.connections.some(
@@ -160,6 +160,9 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
     const followPrimary = targetUser.privacy_settings?.make_follow_primary || false;
     const numberOfFollowers = followPrimary ? targetUser.followers.length : undefined;
 
+    // Check if the user privacy settings allows invitations by email
+    const isConnectByEmail = targetUser.privacy_settings?.flag_who_can_send_you_invitations === "email";
+     
     // Check if the user is premium
     const isSubscribed = targetUser.subscription?.subscribed || false;
 
@@ -178,6 +181,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       isSubscribed: isSubscribed,
       isInConnections: isInConnections,
       isAlreadyFollowing: isAlreadyFollowing,
+      isConnectByEmail: isConnectByEmail,
       
     };
 

@@ -229,7 +229,12 @@ export const handleProfileAccess = async (
   if (!accessInfo.accessGranted) {
     if (accessInfo.reason === "blocked") {
       res.status(403).json({ message: "You are blocked from viewing this profile." });
-    } else if (accessInfo.reason === "private") {
+    } 
+    else if (accessInfo.reason === "blocking") {
+      res.status(403).json({ message: "You are blocking this user." });
+    }
+    
+    else if (accessInfo.reason === "private") {
       res.status(403).json({ message: "This profile is private." });
     } else {
       res.status(500).json({ message: "An error occurred while checking profile access." });

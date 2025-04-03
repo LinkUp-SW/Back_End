@@ -78,10 +78,20 @@ export const checkProfileAccess = async (
     if (!targetUser) {
       return { accessGranted: false, reason: "User not found" }; // Target user does not exist
     }
+    const currentUser = await Users.findOne({ user_id: currentUserId }) as usersInterface;
+    if (!currentUser) {
+        return { accessGranted: false, reason: "Current user not found" };
+    }
+    
+    const isBlocking = currentUser.blocked.some(
+      (blocked: any) => blocked._id.toString() === (targetUser._id as ObjectId).toString()
+    );
+    if (isBlocking) {
+      return { accessGranted: false, reason: "blocking" };
+    } 
 
-    // Deny access if the current user is blocked by the target user
     const isBlocked = targetUser.blocked.some(
-      (blocked: any) => blocked.user_id === currentUserId
+      (blocked: any) => blocked._id.toString() === (currentUser._id as ObjectId).toString()
     );
     if (isBlocked) {
       return { accessGranted: false, reason: "blocked" };
@@ -97,7 +107,7 @@ export const checkProfileAccess = async (
 
     // Allow access if the current user is connected to the target user
     const isConnected = targetUser.connections.some(
-      (connection: any) => connection.user_id === currentUserId
+      (connection: any) => connection._id === (currentUser._id as ObjectId).toString()
     );
     if (isConnected) {
       return { accessGranted: true };

@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
+
 import { getFormattedUserList, formatConnectionData, getPaginatedConnectionsFollowers, handleProfileAccess } from "../../repositories/user.repository.ts";
+
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
 
