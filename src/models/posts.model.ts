@@ -10,7 +10,15 @@ export enum commentsEnum{
     connections_only = "Connections only",
     noone = "No one"
 }
-
+export enum mediaTypeEnum{
+    image = "image",
+    images = "images",
+    video = "video",
+    pdf = "pdf",
+    post = "post",
+    link = "link",
+    none = "none"
+}
 export interface postsInterface extends mongoose.Document{
     user_id: string;
     content: string;

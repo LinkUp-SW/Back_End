@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { getUserIdFromToken } from '../../utils/helper.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { findUserByUserId } from '../../utils/database.helper.ts';
-import { CustomError } from '../../utils/customError.utils.ts';
-import { processMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
 
 
@@ -19,6 +17,10 @@ const deletePost = async (req: Request, res: Response): Promise<Response | void>
         const {
             postId
         } =req.body;
+        const userId = await getUserIdFromToken(req,res);
+        if (!userId) return;
+        const user = await findUserByUserId(userId,res);
+        if (!user) return;
         if (!postId){
             return res.status(400).json({message:'Required fields missing' })
         }
@@ -26,10 +28,6 @@ const deletePost = async (req: Request, res: Response): Promise<Response | void>
         const post = await postRepository.findByPostId(postId);
         if (!post){
             return res.status(400).json({message:'Post does not exist ' })
-        }
-        const user = await findUserByUserId(post.user_id, res);
-        if (!user) {
-            throw new CustomError('User not found', 404);
         }
         // remove post from the user
         user.activity.posts = user.activity.posts.filter((userPost) => userPost.toString() !== postId);

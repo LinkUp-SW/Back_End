@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { findUserByUserId } from '../../utils/database.helper.ts';
-import { CustomError } from '../../utils/customError.utils.ts';
-import { processMediaArray, processPostMediaArray } from '../../services/cloudinary.service.ts';
+import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 
 
 /**
@@ -16,7 +16,6 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
     try {
 
         const {
-            userId,
             content,
             mediaType,
             media,
@@ -24,17 +23,21 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
             publicPost,
             taggedUsers
         } =req.body;
-        if (!userId || !content || !commentsDisabled || publicPost == null || publicPost === undefined || !taggedUsers){
+        const userId = await getUserIdFromToken(req,res);
+        if (!userId) return;
+        const user = await findUserByUserId(userId,res);
+        if (!user) return;
+        if ( !content || !commentsDisabled || publicPost == null || publicPost === undefined || !taggedUsers){
             return res.status(400).json({message:'Required fields missing' })
         }
         let processedMedia: string[] | null = null;
-        if (media){
-            const mediaArray = await processPostMediaArray(media);
-            processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
-        }
-        const user= await findUserByUserId(userId,res);
-        if (!user){
-            throw new CustomError('User not found',404);
+        if (mediaType == "none")  processedMedia = null;
+        else{
+            if (media){
+                const mediaArray = await processPostMediaArray(media);
+                processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
+            }
+
         }
         const postRepository = new PostRepository;
         const newPost = await postRepository.create(

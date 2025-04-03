@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { findUserByUserId } from '../../utils/database.helper.ts';
-import { CustomError } from '../../utils/customError.utils.ts';
-import { processMediaArray, processPostMediaArray } from '../../services/cloudinary.service.ts';
+import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 
 
 const editPost = async (req: Request, res: Response): Promise<Response | void> =>{
@@ -15,6 +15,10 @@ const editPost = async (req: Request, res: Response): Promise<Response | void> =
             media,
             taggedUsers
         } =req.body;
+        const userId = await getUserIdFromToken(req,res);
+        if (!userId) return;
+        const user = await findUserByUserId(userId,res);
+        if (!user) return;
         if (!postId){
             return res.status(400).json({message:'postId is required ' })
         }
