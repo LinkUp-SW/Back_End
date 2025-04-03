@@ -130,7 +130,7 @@ export interface usersInterface extends mongoose.Document{
         _id: string;
         name: string;
         endorsments: usersInterface[];
-        used_where: string[];
+        used_where: organizationsInterface[];
     }[];
     liscence_certificates: {
         _id: string;
