@@ -97,8 +97,8 @@ const populateConversations = async () => {
 
             // Now create the conversation
             const conversation = await conversations.create({
-                user1_id: user._id, // Use the ObjectId instead of user_id string
-                user2_id: otherUser._id, // Use the ObjectId instead of user_id string
+                user1_id: user.user_id, // Use the ObjectId instead of user_id string
+                user2_id: otherUser.user_id, // Use the ObjectId instead of user_id string
                 last_message_time: new Date(),
                 last_message_text: `Sample message ${i}`,
                 unread_count_user1: 0,

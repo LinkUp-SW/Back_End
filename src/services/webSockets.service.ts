@@ -1,8 +1,9 @@
-import { Server as SocketIOServer } from "socket.io";
+import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server } from "http";
 import { UserRepository } from "../repositories/user.repository.ts";
 import { conversationRepository } from "../repositories/conversation.repository.ts";
 import tokenUtils from "../utils/token.utils.ts";
+import { CustomError } from "../utils/customError.utils.ts";
 
 export class WebSocketService {
   private io: SocketIOServer;
@@ -21,6 +22,10 @@ export class WebSocketService {
         origin: process.env.FRONTEND_REDIRECT_URL,
         credentials: true,
       },
+      connectionStateRecovery: {
+        maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
+        skipMiddlewares: true,
+      }
     });
     this.userRepo = userRepo;
     this.conversationRepo = conversationRepo;
@@ -29,108 +34,330 @@ export class WebSocketService {
   }
 
   private setupSocketListeners(): void {
-    this.io.on("connection", (socket) => {
+    this.io.on("connection", (socket: Socket) => {
       console.log(`New socket connection: ${socket.id}`);
+      
+      // Middleware for authentication
+      socket.use(([event, ...args], next) => {
+        if (event === "authenticate") return next();
+        if (!this.getUserIdFromSocket(socket.id)) {
+          return next(new Error("Unauthorized"));
+        }
+        next();
+      });
 
-      // Authenticate user via token
       socket.on("authenticate", async (data: { token: string }) => {
         try {
           const decoded = tokenUtils.validateToken(data.token) as { userId: string };
-          if (!decoded || !decoded.userId) {
-            socket.emit("authentication_error", { message: "Invalid token" });
-            return;
+          if (!decoded?.userId) {
+            throw new CustomError("Invalid token", 401);
           }
 
-          const userId = decoded.userId;
-          await this.registerUserSocket(userId, socket.id);
-          socket.emit("authenticated");
-
-          // Send unread messages count immediately after authentication
-          const unreadCount = await this.getUnseenMessagesCount(userId);
-          socket.emit("unread_messages_count", { count: unreadCount });
+          await this.handleAuthentication(socket, decoded.userId);
         } catch (error) {
+          console.error("Authentication error:", error);
           socket.emit("authentication_error", {
-            message: "Authentication failed",
+            message: error instanceof CustomError ? error.message : "Authentication failed"
           });
         }
       });
 
-      // Online status
-      socket.on("online", async (data: { userId: string }) => {
-        await this.registerUserSocket(data.userId, socket.id);
-        socket.broadcast.emit("user_online", { userId: data.userId });
-      });
-
-      socket.on("offline", async (data: { userId: string }) => {
-        await this.handleDisconnect(socket.id);
-        socket.broadcast.emit("user_offline", { userId: data.userId });
-      });
-
-      // Handle message reactions
-      socket.on("react_to_message", async (data: {conversationId:string; messageId: string; reaction: string }) => {
-        const userId = await this.getUserIdFromSocket(socket.id);
-        if (!userId) return;
-
-        const updated = await this.conversationRepo.reactToMessage(data.conversationId,data.messageId, userId, data.reaction);
-        if (updated) {
-          socket.broadcast.emit("message_reacted", { messageId: data.messageId, reaction: data.reaction });
-        } else {
-          socket.emit("reaction_error", { message: "Failed to react to message" });
-        }
-      });
-
-      // Handle private messages
-      socket.on(
-        "private_message",
-        async (data: { to: string; message: string; media?: string[] }) => {
-          await this.handlePrivateMessage(socket.id, data);
-        }
-      );
-
-      // Handle typing indicators
-      socket.on("typing", async (data: { conversationId: string }) => {
-        await this.handleTypingIndicator(socket.id, data.conversationId);
-      });
-
-      // Handle stop typing
-      socket.on("stop_typing", async (data: { conversationId: string }) => {
-        await this.handleStopTypingIndicator(socket.id, data.conversationId);
-      });
-
-      // Mark conversation as read
-      socket.on("mark_as_read", async (data: { conversationId: string }) => {
-        await this.markConversationAsRead(socket.id, data.conversationId);
-      });
-
-      // Disconnect
-      socket.on("disconnect", () => {
-        this.handleDisconnect(socket.id);
-      });
+      // Message handlers
+      socket.on("private_message", this.handlePrivateMessage.bind(this, socket));
+      socket.on("react_to_message", this.handleMessageReaction.bind(this, socket));
+      
+      // Typing indicators
+      socket.on("typing", this.handleTypingIndicator.bind(this, socket));
+      socket.on("stop_typing", this.handleStopTypingIndicator.bind(this, socket));
+      
+      // Read receipts
+      socket.on("mark_as_read", this.markConversationAsRead.bind(this, socket));
+      
+      // Presence
+      socket.on("disconnect", () => this.handleDisconnect(socket));
+      socket.on("online", () => this.handleOnlineStatus(socket, true));
+      socket.on("offline", () => this.handleOnlineStatus(socket, false));
     });
   }
-  
-  private async registerUserSocket(
-    userId: string,
-    socketId: string
-  ): Promise<void> {
-    this.userSockets.set(userId, socketId);
-    console.log(`User ${userId} registered with socket ${socketId}`);
+
+  private async handleAuthentication(socket: Socket, userId: string): Promise<void> {
+    await this.registerUserSocket(userId, socket.id);
+    
+    const user = await this.userRepo.findByUserId(userId);
+    if (!user) {
+      throw new CustomError("User not found", 404);
+    }
+
+    // Update online status
+    user.online_status = true;
+    await user.save();
+
+    // Notify user's connections
+    this.notifyPresenceChange(userId, true);
+
+    // Send initial data
+    const [unreadCount, unreadConversations] = await Promise.all([
+      this.getUnseenMessagesCount(userId),
+      this.conversationRepo.getUnreadConversations(userId)
+    ]);
+
+    socket.emit("authenticated", { userId });
+    socket.emit("unread_messages_count", { count: unreadCount });
+    socket.emit("unread_conversations", { conversations: unreadConversations });
   }
 
-  private async handleDisconnect(socketId: string): Promise<void> {
-    // Find and remove the user from userSockets
-    let disconnectedUserId: string | undefined;
-    for (const [userId, storedSocketId] of this.userSockets.entries()) {
-      if (storedSocketId === socketId) {
-        disconnectedUserId = userId;
-        break;
-      }
-    }
+  private async handlePrivateMessage(socket: Socket, data: { to: string; message: string; media?: string[] }) {
+    try {
+      const senderId = await this.getUserIdFromSocket(socket.id);
+      if (!senderId) throw new CustomError("Sender not authenticated", 401);
 
-    if (disconnectedUserId) {
-      this.userSockets.delete(disconnectedUserId);
-      console.log(`User ${disconnectedUserId} disconnected`);
+      const { to: receiverId, message, media = [] } = data;
+
+      // Validate receiver
+      const receiver = await this.userRepo.findByUserId(receiverId);
+      if (!receiver) throw new CustomError("Recipient not found", 404);
+      if (receiver.blocked?.includes(senderId)) {
+        throw new CustomError("You can't send messages to this user", 403);
+      }
+
+      // Find or create conversation
+      let conversation = await this.conversationRepo.findConversationByUsers(senderId, receiverId);
+      if (!conversation) {
+        conversation = await this.conversationRepo.createConversation(senderId, receiverId);
+      }
+
+      // Add message
+      await this.conversationRepo.addMessage(
+        conversation._id.toString(),
+        senderId,
+        message,
+        media
+      );
+
+      // Prepare message object for real-time delivery
+      const messageObj = {
+        conversationId: conversation._id,
+        senderId,
+        message: {
+          message,
+          media,
+          timestamp: new Date(),
+          is_seen: false
+        }
+      };
+
+      // Deliver to recipient if online
+      const receiverSocketId = this.userSockets.get(receiverId);
+      if (receiverSocketId) {
+        this.io.to(receiverSocketId).emit("new_message", messageObj);
+        
+        // Update unread count
+        const unreadCount = await this.getUnseenMessagesCount(receiverId);
+        this.io.to(receiverSocketId).emit("unread_messages_count", { count: unreadCount });
+      }
+
+      // Confirm to sender
+      socket.emit("message_sent", {
+        ...messageObj,
+        recipientId: receiverId
+      });
+
+    } catch (error) {
+      console.error("Message send error:", error);
+      socket.emit("message_error", {
+        message: error instanceof CustomError ? error.message : "Failed to send message"
+      });
     }
+  }
+
+  private async handleMessageReaction(socket: Socket, data: { conversationId: string; messageId: string; reaction: string }) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) throw new CustomError("Unauthorized", 401);
+
+      const { conversationId, messageId, reaction } = data;
+
+      const updated = await this.conversationRepo.reactToMessage(
+        conversationId,
+        messageId, 
+        userId, 
+        reaction
+      );
+
+      if (updated) {
+        // Broadcast to all participants
+        const conversation = await this.conversationRepo.getConversation(conversationId);
+        const participants = [conversation.user1_id, conversation.user2_id];
+        
+        participants.forEach(participantId => {
+          const participantSocketId = this.userSockets.get(participantId.toString());
+          if (participantSocketId) {
+            this.io.to(participantSocketId).emit("message_reacted", { 
+              messageId, 
+              reaction,
+              reactedBy: userId
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Reaction error:", error);
+      socket.emit("reaction_error", {
+        message: error instanceof CustomError ? error.message : "Failed to react to message"
+      });
+    }
+  }
+
+  private async handleTypingIndicator(socket: Socket, data: { conversationId: string }) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) return;
+
+      const { conversationId } = data;
+      const conversation = await this.conversationRepo.getConversation(conversationId);
+      if (!conversation) return;
+
+      const recipientId = conversation.user1_id.toString() === userId 
+        ? conversation.user2_id.toString() 
+        : conversation.user1_id.toString();
+
+      const typingKey = `${conversationId}_${userId}`;
+
+      // Clear existing timeout
+      if (this.typingUsers.has(typingKey)) {
+        clearTimeout(this.typingUsers.get(typingKey));
+      }
+
+      // Set new timeout
+      const timeout = setTimeout(() => {
+        this.handleStopTypingIndicator(socket, { conversationId });
+      }, 3000);
+
+      this.typingUsers.set(typingKey, timeout);
+
+      // Notify recipient
+      const recipientSocketId = this.userSockets.get(recipientId);
+      if (recipientSocketId) {
+        this.io.to(recipientSocketId).emit("user_typing", {
+          conversationId,
+          userId
+        });
+      }
+    } catch (error) {
+      console.error("Typing indicator error:", error);
+    }
+  }
+
+  private async handleStopTypingIndicator(socket: Socket, data: { conversationId: string }) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) return;
+
+      const { conversationId } = data;
+      const conversation = await this.conversationRepo.getConversation(conversationId);
+      if (!conversation) return;
+
+      const recipientId = conversation.user1_id.toString() === userId 
+        ? conversation.user2_id.toString() 
+        : conversation.user1_id.toString();
+
+      const typingKey = `${conversationId}_${userId}`;
+
+      // Clear timeout
+      if (this.typingUsers.has(typingKey)) {
+        clearTimeout(this.typingUsers.get(typingKey));
+        this.typingUsers.delete(typingKey);
+      }
+
+      // Notify recipient
+      const recipientSocketId = this.userSockets.get(recipientId);
+      if (recipientSocketId) {
+        this.io.to(recipientSocketId).emit("user_stop_typing", {
+          conversationId,
+          userId
+        });
+      }
+    } catch (error) {
+      console.error("Stop typing error:", error);
+    }
+  }
+
+  private async markConversationAsRead(socket: Socket, data: { conversationId: string }) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) throw new CustomError("Unauthorized", 401);
+
+      const { conversationId } = data;
+      const updated = await this.conversationRepo.markConversationAsRead(conversationId, userId);
+      
+      if (updated) {
+        const conversation = await this.conversationRepo.getConversation(conversationId);
+        const otherUserId = conversation.user1_id.toString() === userId 
+          ? conversation.user2_id.toString() 
+          : conversation.user1_id.toString();
+
+        // Notify other user
+        const otherUserSocketId = this.userSockets.get(otherUserId);
+        if (otherUserSocketId) {
+          this.io.to(otherUserSocketId).emit("messages_read", {
+            conversationId,
+            readBy: userId
+          });
+        }
+
+        // Update unread count for current user
+        const unreadCount = await this.getUnseenMessagesCount(userId);
+        socket.emit("unread_messages_count", { count: unreadCount });
+      }
+    } catch (error) {
+      console.error("Mark as read error:", error);
+      socket.emit("read_error", {
+        message: error instanceof CustomError ? error.message : "Failed to mark as read"
+      });
+    }
+  }
+
+  private async handleOnlineStatus(socket: Socket, isOnline: boolean) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) return;
+
+      const user = await this.userRepo.findByUserId(userId);
+      if (!user) return;
+
+      user.online_status = isOnline;
+      await user.save();
+
+      this.notifyPresenceChange(userId, isOnline);
+    } catch (error) {
+      console.error("Online status error:", error);
+    }
+  }
+
+  private notifyPresenceChange(userId: string, isOnline: boolean) {
+    // Notify all connections about presence change
+    this.io.emit(isOnline ? "user_online" : "user_offline", { userId });
+  }
+
+  private async handleDisconnect(socket: Socket) {
+    const userId = await this.getUserIdFromSocket(socket.id);
+    if (!userId) return;
+
+    this.userSockets.delete(userId);
+    console.log(`User ${userId} disconnected`);
+
+    // Update online status
+    const user = await this.userRepo.findByUserId(userId);
+    if (user) {
+      user.online_status = false;
+      await user.save();
+      this.notifyPresenceChange(userId, false);
+    }
+  }
+
+  private async registerUserSocket(userId: string, socketId: string): Promise<void> {
+    this.userSockets.set(userId, socketId);
+    console.log(`User ${userId} registered with socket ${socketId}`);
   }
 
   private async getUserIdFromSocket(socketId: string): Promise<string | null> {
@@ -142,211 +369,8 @@ export class WebSocketService {
     return null;
   }
 
-  private async handlePrivateMessage(
-    senderSocketId: string,
-    data: { to: string; message: string; media?: string[] }
-  ): Promise<void> {
-    try {
-      const senderId = await this.getUserIdFromSocket(senderSocketId);
-      if (!senderId) {
-        throw new Error("Sender not authenticated");
-      }
-
-      // Check if receiver has blocked the sender
-      const receiver = await this.userRepo.findByUserId(data.to);
-      if (!receiver) {
-        throw new Error("Recipient not found");
-      }
-
-      if (receiver.blocked && receiver.blocked.includes(senderId)) {
-        this.io.to(senderSocketId).emit("message_error", {
-          message: "You can't send messages to this user",
-        });
-        return;
-      }
-
-      // Find or create conversation
-      let conversation = await this.conversationRepo.findConversationByUsers(senderId, data.to);
-      
-      if (!conversation) {
-        conversation = await this.conversationRepo.createConversation(senderId, data.to);
-      }
-
-      // Create the message object
-      const messageObj = {
-        message: data.message,
-        media: data.media || [],
-        timestamp: new Date(),
-        reacted: false,
-        is_seen: false,
-      };
-
-      // Add message to the conversation
-      await this.conversationRepo.addMessage(
-        conversation._id.toString(),
-        senderId,
-        data.to,
-        data.message,
-        data.media || []
-      );
-
-      // Send message to recipient if online
-      const receiverSocketId = this.userSockets.get(data.to);
-      if (receiverSocketId) {
-        this.io.to(receiverSocketId).emit("new_message", {
-          conversationId: conversation._id,
-          senderId: senderId,
-          message: messageObj,
-        });
-
-        // Update unread count for receiver
-        const unreadCount = await this.getUnseenMessagesCount(data.to);
-        this.io
-          .to(receiverSocketId)
-          .emit("unread_messages_count", { count: unreadCount });
-      }
-
-      // Confirm message sent to sender
-      this.io.to(senderSocketId).emit("message_sent", {
-        conversationId: conversation._id,
-        recipientId: data.to,
-        message: messageObj,
-      });
-    } catch (error) {
-      console.error("Error sending private message:", error);
-      this.io.to(senderSocketId).emit("message_error", {
-        message: "Failed to send message",
-      });
-    }
-  }
-
-  private async handleTypingIndicator(
-    socketId: string,
-    conversationId: string
-  ): Promise<void> {
-    try {
-      const userId = await this.getUserIdFromSocket(socketId);
-      if (!userId) return;
-
-      const conversation = await this.conversationRepo.getConversation(conversationId);
-      if (!conversation) return;
-
-      // Determine the recipient
-      const recipientId =
-        conversation.user1_id.toString() === userId
-          ? conversation.user2_id.toString()
-          : conversation.user1_id.toString();
-
-      const typingKey = `${conversationId}_${userId}`;
-
-      // Clear existing timeout if it exists
-      if (this.typingUsers.has(typingKey)) {
-        clearTimeout(this.typingUsers.get(typingKey));
-      }
-
-      // Set new timeout to automatically stop typing indicator after 3 seconds
-      const timeout = setTimeout(() => {
-        this.handleStopTypingIndicator(socketId, conversationId);
-      }, 3000);
-
-      this.typingUsers.set(typingKey, timeout);
-
-      // Send typing indicator to recipient
-      const recipientSocketId = this.userSockets.get(recipientId);
-      if (recipientSocketId) {
-        this.io.to(recipientSocketId).emit("user_typing", {
-          conversationId,
-          userId,
-        });
-      }
-    } catch (error) {
-      console.error("Error handling typing indicator:", error);
-    }
-  }
-
-  private async handleStopTypingIndicator(
-    socketId: string,
-    conversationId: string
-  ): Promise<void> {
-    try {
-      const userId = await this.getUserIdFromSocket(socketId);
-      if (!userId) return;
-
-      const conversation = await this.conversationRepo.getConversation(conversationId);
-      if (!conversation) return;
-
-      // Determine the recipient
-      const recipientId =
-        conversation.user1_id.toString() === userId
-          ? conversation.user2_id.toString()
-          : conversation.user1_id.toString();
-
-      const typingKey = `${conversationId}_${userId}`;
-
-      // Clear the timeout and remove from map
-      if (this.typingUsers.has(typingKey)) {
-        clearTimeout(this.typingUsers.get(typingKey));
-        this.typingUsers.delete(typingKey);
-      }
-
-      // Send stop typing indicator to recipient
-      const recipientSocketId = this.userSockets.get(recipientId);
-      if (recipientSocketId) {
-        this.io.to(recipientSocketId).emit("user_stop_typing", {
-          conversationId,
-          userId,
-        });
-      }
-    } catch (error) {
-      console.error("Error handling stop typing indicator:", error);
-    }
-  }
-
-  private async markConversationAsRead(
-    socketId: string,
-    conversationId: string
-  ): Promise<void> {
-    try {
-      const userId = await this.getUserIdFromSocket(socketId);
-      if (!userId) return;
-
-      const updated = await this.conversationRepo.markConversationAsRead(
-        conversationId, 
-        userId
-      );
-      
-      if (updated) {
-        const conversation = await this.conversationRepo.getConversation(conversationId);
-        
-        // Notify the other user about read receipts
-        const otherUserId =
-          conversation.user1_id.toString() === userId
-            ? conversation.user2_id.toString()
-            : conversation.user1_id.toString();
-
-        const otherUserSocketId = this.userSockets.get(otherUserId);
-
-        if (otherUserSocketId) {
-          this.io.to(otherUserSocketId).emit("messages_read", {
-            conversationId,
-            readBy: userId,
-          });
-        }
-
-        // Update unread count for the current user
-        const unreadCount = await this.getUnseenMessagesCount(userId);
-        this.io
-          .to(socketId)
-          .emit("unread_messages_count", { count: unreadCount });
-      }
-    } catch (error) {
-      console.error("Error marking conversation as read:", error);
-    }
-  }
-
   private async getUnseenMessagesCount(userId: string): Promise<number> {
     try {
-      // Use repository to get total unread count
       return await this.conversationRepo.getTotalUnreadCount(userId);
     } catch (error) {
       console.error("Error getting unseen messages count:", error);

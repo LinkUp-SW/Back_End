@@ -36,19 +36,32 @@ export class conversationRepository {
     return conversation;
   }
 
-  async findConversationById(conversationId: string) {
-    const conversation = await conversations.findOne({user1_id:conversationId}) 
-      .populate('user1_id', 'user_id profile_photo bio')
-      .populate('user2_id', 'user_id profile_photo bio')
-      .sort({ 'user1_sent_messages.timestamp': -1, 'user2_sent_messages.timestamp': -1 });
-    if (!conversation) {
-      throw new CustomError('Conversation not found', 404);
-    }
-    return conversation;
+
+  async getUnseenCountForEachConversationBelongingToUser(userId: string) {
+    const conversationsList = await conversations.find({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    });
+
+    const unseenCounts = conversationsList.map(conv => {
+      if (conv.user1_id.toString() === userId) {
+        return conv.unread_count_user1 || 0;
+      } else {
+        return conv.unread_count_user2 || 0;
+      }
+    });
+
+    // Return an array of unseen counts for each conversation with conversationId
+    return unseenCounts.map((count, index) => ({
+      conversationId: conversationsList[index]._id,
+      unseenCount: count
+    })); 
   }
 
 
-  async addMessage(conversationId: string, senderId: string, receiverId: string, message: string, media: string[] = [], mediaTypes: string[] = []) {
+  async addMessage(conversationId: string, senderId: string, message: string, media: string[] = [], mediaTypes: string[] = []) {
     const conversation = await conversations.findById(conversationId);
     if (!conversation) {
       throw new CustomError('Conversation not found', 404);
@@ -119,6 +132,197 @@ export class conversationRepository {
     return conversation;
   }
 
+  async markMessagesAsSeen(conversationId: string, userId: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if reader is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Mark messages as seen
+    if (isUser1) {
+      conversation.user2_sent_messages.forEach(msg => msg.is_seen = true);
+    } else {
+      conversation.user1_sent_messages.forEach(msg => msg.is_seen = true);
+    }
+
+    await conversation.save();
+    return conversation; 
+  }
+
+
+  async getUnseenMessagesCount(userId: string) {
+    const conversationsList = await conversations.find({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    });
+
+    let unseenCount = 0;
+    
+    conversationsList.forEach(conv => {
+      if (conv.user1_id.toString() === userId) {
+        unseenCount += conv.unread_count_user1 || 0;
+      } else {
+        unseenCount += conv.unread_count_user2 || 0;
+      }
+    });
+    return unseenCount;
+  }
+  async getConversationByUserId(userId: string) {
+    const conversation = await conversations.findOne({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    }).populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio');
+    
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    return conversation;
+  }
+
+  async getUnreadConversations(userId: string) {
+    const conversationsList = await conversations.find({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    }).populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio');
+    
+    const unreadConversations = conversationsList.filter(conv => {
+      if (conv.user1_id.toString() === userId) {
+        return conv.unread_count_user1 > 0;
+      } else {
+        return conv.unread_count_user2 > 0;
+      }
+    });
+    
+    return unreadConversations;
+  }
+
+  async getAllConversations() {
+    return conversations.find({}).populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio');
+  }
+
+  async getConversationsByUserId(userId: string) {
+    return conversations.find({ user1_id: userId }).populate('user1_id', 'user_id profile_photo bio')
+      .populate('user2_id', 'user_id profile_photo bio');
+  }
+
+  async deleteConversationById(conversationId: string) {
+    const conversation = await conversations.findByIdAndDelete(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    return conversation;
+  }
+
+  async getTotalUnreadCount(userId: string) {
+    const userConversations = await conversations.find({
+      $or: [
+        { user1_id: userId },
+        { user2_id: userId }
+      ]
+    });
+
+    let totalUnread = 0;
+    
+    userConversations.forEach(conv => {
+      if (conv.user1_id.toString() === userId) {
+        totalUnread += conv.unread_count_user1 || 0;
+      } else {
+        totalUnread += conv.unread_count_user2 || 0;
+      }
+    });
+    return totalUnread;
+  }
+
+  async reactToMessage(conversationId: string, messageId: string, userId: string, reaction: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if user is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Find the message in the appropriate array
+    const messageArray = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
+    const message = messageArray.find(msg => msg.messageId.toString() === messageId);
+    
+    if (!message) {
+      throw new CustomError('Message not found', 404);
+    }
+
+    message.reacted = reaction;
+
+    await conversation.save();
+    return conversation;
+  }
+
+  async deleteConversation(conversationId: string) {
+    const conversation = await conversations.findByIdAndDelete(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    return conversation;
+  }
+  
+  async deleteMessage(conversationId: string, messageId: string, userId: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if user is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Find and remove the message from the appropriate array
+    const messageArray = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
+    const messageIndex = messageArray.findIndex(msg => msg.messageId.toString() === messageId);
+    
+    if (messageIndex === -1) {
+      throw new CustomError('Message not found', 404);
+    }
+
+    messageArray.splice(messageIndex, 1);
+    
+    await conversation.save();
+    return conversation;
+  }
+
+  async editMessage(conversationId: string, messageId: string, userId: string, newMessage: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if user is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Find the message in the appropriate array
+    const messageArray = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
+    const message = messageArray.find(msg => msg.messageId.toString() === messageId);
+    
+    if (!message) {
+      throw new CustomError('Message not found', 404);
+    }
+
+    message.message = newMessage;
+
+    await conversation.save();
+    return conversation;
+  }
+
+
   // async blockUser(userId: string, blockedUserId: string) {
   //   const conversation = await this.findConversationByUsers(userId, blockedUserId);
   //   const blockedUser = await userRepo.findByUserId(blockedUserId);
@@ -184,46 +388,4 @@ export class conversationRepository {
   //   return conversation;
   // }
 
-  async getTotalUnreadCount(userId: string) {
-    const userConversations = await conversations.find({
-      $or: [
-        { user1_id: userId },
-        { user2_id: userId }
-      ]
-    });
-
-    let totalUnread = 0;
-    
-    userConversations.forEach(conv => {
-      if (conv.user1_id.toString() === userId) {
-        totalUnread += conv.unread_count_user1 || 0;
-      } else {
-        totalUnread += conv.unread_count_user2 || 0;
-      }
-    });
-    return totalUnread;
-  }
-
-  async reactToMessage(conversationId: string, messageId: string, userId: string, reaction: string) {
-    const conversation = await conversations.findById(conversationId);
-    if (!conversation) {
-      throw new CustomError('Conversation not found', 404);
-    }
-
-    // Determine if user is user1 or user2
-    const isUser1 = conversation.user1_id.toString() === userId;
-    
-    // Find the message in the appropriate array
-    const messageArray = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
-    const message = messageArray.find(msg => msg.messageId.toString() === messageId);
-    
-    if (!message) {
-      throw new CustomError('Message not found', 404);
-    }
-
-    message.reacted = reaction;
-
-    await conversation.save();
-    return conversation;
-  }
 }

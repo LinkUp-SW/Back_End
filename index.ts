@@ -49,14 +49,14 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'testUserId' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'otherUserId' });
   console.log('Generated Token:', token);
 };
 
 
 connectToTestDatabase()
   .then(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
       generateStartupToken();
     });
@@ -102,7 +102,7 @@ googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
-app.use('/', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Authenticatio Routes
 // Authenticatio Routes

@@ -114,11 +114,11 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
       message: string;
       timestamp: Date | string;
       is_seen: boolean;
-      reacted?: boolean;
+      reacted?: string;
       media?: any[];
     }
     
-    const unreadCount: number = receivedMessages.filter((msg: Message) => !msg.is_seen).length;
+    const unreadCount: number = receivedMessages.filter((msg) => !msg.is_seen).length;
     // otherUser = userRepo.findByUserId(userId as string);
     return {
       conversationId: conversation._id,
@@ -336,6 +336,137 @@ const getUnseenMessagesCount = asyncHandler(async (req: Request, res: Response, 
 });
 
 /**
+ * Get count of unseen messages for each conversation and return the conversation IDs/otheruser fname and lname + profile photo + last message
+ * 
+ * @route GET /api/v1/messages/unseen-count/conversations
+ * @access Private - Requires authentication
+ * @param {Request} req - Express request object
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @param {string} userId - ID of the user
+ * 
+ * @returns {Promise<Response>} JSON with unseenCount and conversation details
+ * @throws {CustomError} 401 - If user is not authenticated
+ * @throws {CustomError} 400 - If userId is invalid
+ * @throws {CustomError} 404 - If user is not found
+ * * @throws {CustomError} 500 - If fetching unseen count fails
+ * * @description Fetches the count of unseen messages for each conversation and returns the conversation IDs, other user details, and last message.
+ * 
+ */
+
+export  interface  UnseenCountByConversation {
+  conversationId: string;
+  otherUser: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    profilePhoto: string;
+  };
+  lastMessage: {
+    message: string;
+    timestamp: Date | string;
+    isOwnMessage: boolean;
+  } | null;
+  unreadCount: number;
+}
+
+/**
+ * Get unseen messages count for each conversation of user
+ * 
+ * * @route GET /api/v1/messages/unseen-count/conversations
+ * * @access Private - Requires authentication
+ * * @param {Request} req - Express request object
+ * * @param {Response} res - Express response object
+ * * @param {NextFunction} next - Express next middleware function
+ * * * @returns {Promise<Response>} JSON with unseenCount and conversation details
+ * * * @throws {CustomError} 401 - If user is not authenticated
+ * * * @throws {CustomError} 400 - If userId is invalid
+ * * * @throws {CustomError} 404 - If user is not found
+ * * * @throws {CustomError} 500 - If fetching unseen count fails
+ * * * @description Fetches the count of unseen messages for each conversation and returns the conversation IDs, other user details, and last message.
+ */
+
+const getUnseenMessagesCountByConversation = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  // Use repository method to get unseen count by conversation
+  const unseenCountByConversation = await conversationRepo.getUnseenCountForEachConversationBelongingToUser(userId as string);
+  
+  // Create an array of promises for each conversation
+  const conversationPromises = unseenCountByConversation.map(async (conversation) => {
+    // Find conversation details
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    // Get conversation from conversationid
+    const convo = await conversationRepo.getConversation(conversation.conversationId);
+    if (!convo) {
+      throw new CustomError('Conversation not found', 404);
+    }
+    // Determine if the user is user1 or user2
+    const isUser1 = convo.user1_id.toString() === userId.toString();
+    const otherUserId = isUser1 ? convo.user2_id : convo.user1_id;
+    const otherUser = await userRepo.findByUserId(otherUserId as string);
+    if (!otherUser) {
+      throw new CustomError('User not found', 404);
+    }
+    // Get last message and unread count
+    const sentMessages = isUser1 ? convo.unread_count_user1 : convo.unread_count_user2;
+    const receivedMessages = isUser1 ? convo.user2_sent_messages : convo.user1_sent_messages;
+    
+    return {
+      conversationId: convo._id,
+      otherUser: {
+        userId: otherUserId,
+        firstName: otherUser.bio.first_name || '',
+        lastName: otherUser.bio.last_name || '',
+        profilePhoto: otherUser.profile_photo || ''
+      },
+      lastMessage: convo.last_message_text ? {
+        message: convo.last_message_text,
+        timestamp: convo.last_message_time,
+        isOwnMessage: isUser1
+      } : null,
+      unreadCount: sentMessages
+    };
+  });
+  
+  // Wait for all promises to resolve
+  const formattedUnseenCountByConversation = await Promise.all(conversationPromises);
+  
+  return res.status(200).json({ formattedUnseenCountByConversation });
+});
+
+
+/**
+ * Mark a conversation as read
+ * 
+ * @route PUT /api/v1/messages/conversations/:conversationId/read
+ * @access Private - Requires authentication
+ * @param {Request} req - Express request object with conversationId in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @param {string} conversationId - ID of the conversation to mark as read
+ * @param {string} userId - ID of the user marking the conversation as read
+ * * @returns {Promise<Response>} JSON success message
+ * @throws {CustomError} 401 - If user is not authenticated
+ * @throws {CustomError} 400 - If conversation ID is invalid
+ * @throws {CustomError} 404 - If conversation is not found
+ * @throws {CustomError} 403 - If user does not have access to the conversation
+ * @throws {CustomError} 500 - If marking as read fails
+ * @description Marks a conversation as read for the logged-in user.
+ */
+const markConversationAsRead = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId } = req.params;
+});
+
+
+/**
  * Mark all messages in a conversation as read
  * 
  * @route PUT /api/v1/messages/conversations/:conversationId/read
@@ -349,7 +480,7 @@ const getUnseenMessagesCount = asyncHandler(async (req: Request, res: Response, 
  * @throws {CustomError} 404 - If conversation is not found
  * @throws {CustomError} 403 - If user does not have access to the conversation
  */
-const markConversationAsRead = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+const markMessagesInConversationAsRead = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const userId = req.user
   const { conversationId } = req.params;
   
@@ -367,6 +498,267 @@ const markConversationAsRead = asyncHandler(async (req: Request, res: Response, 
   return res.status(200).json({ message: 'Conversation marked as read' });
 });
 
+/**
+ * Send a message in a conversation
+ * 
+ * @route POST /api/v1/messages/conversations/:conversationId/send-message
+ * @access Private - Requires authentication
+ * @param {Request} req - Express request object with message details in body
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @param {string} conversationId - ID of the conversation to send the message in
+ * @param {string} message - The message content to send
+ * @returns {Promise<Response>} JSON response with messageId and other details  
+ * @throws {CustomError} 401 - If user is not authenticated
+ * @throws {CustomError} 400 - If conversation ID is invalid or message is missing
+ * @throws {CustomError} 404 - If conversation is not found
+ * @throws {CustomError} 403 - If user does not have access to the conversation
+ * @throws {CustomError} 500 - If message sending fails
+ */
+const sendMessage = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId } = req.params;
+  const { message, media, mediaTypes } = req.body;
+
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  if (!message) {
+    throw new CustomError('Message is required', 400);
+  }
+
+  // Use repository method to send message
+  const newConversation = await conversationRepo.addMessage(conversationId, userId as string, message, media, mediaTypes);
+  if (!newConversation) {
+    throw new CustomError('Failed to send message', 500); 
+  }
+  // Format the response to include messageId and other details
+  const isUser1 = newConversation.user1_id.toString() === userId.toString();
+  const otherUser = isUser1 ? newConversation.user2_id : newConversation.user1_id;
+  const otherUserDetails = await userRepo.findByUserId(otherUser as string);
+  if (!otherUserDetails) {
+    throw new CustomError('Other user not found', 404);
+  }
+  const sentMessage = isUser1 ? newConversation.user1_sent_messages : newConversation.user2_sent_messages;
+  const messageDetails = sentMessage.find((msg) => msg.message === message && msg.timestamp.getSeconds === newConversation.last_message_time.getSeconds); //  
+  if (!messageDetails) {
+    throw new CustomError('Message details not found', 404);
+  }
+  const formattedMessage = {
+    senderId: isUser1 ? newConversation.user1_id : newConversation.user2_id,
+    senderName: `${otherUserDetails.bio?.first_name || ''} ${otherUserDetails.bio?.last_name || ''}`,
+    message: messageDetails.message,
+    media: messageDetails.media || [],
+    timestamp: messageDetails.timestamp,
+    reacted: messageDetails.reacted,
+    isSeen: messageDetails.is_seen,
+    isOwnMessage: isUser1
+  };
+  return res.status(200).json({ message: formattedMessage });
+}
+);
+
+/** 
+  * Mark messages as seen in a conversation
+  *@route PUT /api/v1/messages/conversations/:conversationId/mark-seen
+  * @access Private - Requires authentication
+  * @param {Request} req - Express request object with conversationId in params
+  * @param {Response} res - Express response object
+  * @param {NextFunction} next - Express next middleware function
+  * @returns {Promise<Response>} JSON success message
+  * @throws {CustomError} 401 - If user is not authenticated
+  * @throws {CustomError} 400 - If conversation ID is invalid
+  * @throws {CustomError} 404 - If conversation is not found
+  * @throws {CustomError} 403 - If user does not have access to the conversation
+  * @throws {CustomError} 500 - If marking as seen fails
+  * @description Marks all messages in a conversation as seen for the logged-in user.
+**/
+const markMessagesAsSeen = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId } = req.params;
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  // Use repository method to mark messages as seen
+  await conversationRepo.markMessagesAsSeen(conversationId, userId as string);
+  
+  return res.status(200).json({ message: 'Messages marked as seen' });
+});
+
+/** 
+  * Delete a message
+  * 
+  * @route DELETE /api/v1/messages/conversations/:conversationId/message/:messageId
+  * @access Private - Requires authentication
+  * @param {Request} req - Express request object with conversationId and messageId in params
+  * @param {Response} res - Express response object
+  * @param {NextFunction} next - Express next middleware function
+  * @param {string} conversationId - ID of the conversation
+  * @param {string} messageId - ID of the message to delete
+  * @returns {Promise<Response>} JSON success message
+  * @throws {CustomError} 401 - If user is not authenticated
+  * @throws {CustomError} 400 - If conversation ID or message ID is invalid
+  * @throws {CustomError} 404 - If conversation or message is not found
+  * @throws {CustomError} 403 - If user does not have access to the conversation
+  * @throws {CustomError} 500 - If message deletion fails
+  * @description Deletes a message from a conversation.
+**/
+const deleteMessage = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId, messageId } = req.params;
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    throw new CustomError('Invalid message ID', 400);
+  }
+  
+  // Use repository method to delete message
+  await conversationRepo.deleteMessage(conversationId, messageId, userId as string);
+  
+  return res.status(200).json({ message: 'Message deleted successfully' });
+});
+
+/**
+ * Delete a conversation
+ * 
+ * @route DELETE /api/v1/messages/conversations/:conversationId
+ * @access Private - Requires authentication
+ * @param {Request} req - Express request object with conversationId in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @param {string} conversationId - ID of the conversation to delete
+ * * @returns {Promise<Response>} JSON success message
+ * @throws {CustomError} 401 - If user is not authenticated
+ * @throws {CustomError} 400 - If conversation ID is invalid
+ * @throws {CustomError} 404 - If conversation is not found
+ * @throws {CustomError} 403 - If user does not have access to the conversation
+ * @throws {CustomError} 500 - If conversation deletion fails
+ * @description Deletes a conversation for the logged-in user.
+ * */
+const deleteConversation = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId } = req.params;
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  // Use repository method to delete conversation
+  await conversationRepo.deleteConversation(conversationId);
+  
+  return res.status(200).json({ message: 'Conversation deleted successfully' });
+}
+);
+
+/** 
+  * Edit a message in a conversation
+  * 
+  * @route PUT /api/v1/messages/conversations/:conversationId/message/:messageId/edit
+  * @access Private - Requires authentication
+  * @param {Request} req - Express request object with conversationId and messageId in params
+  * @param {Response} res - Express response object
+  * @param {NextFunction} next - Express next middleware function
+  * @param {string} conversationId - ID of the conversation
+  * @param {string} messageId - ID of the message to edit
+  * @body {string} message - New message content  
+  * @returns {Promise<Response>} JSON success message
+  * @throws {CustomError} 401 - If user is not authenticated
+  * @throws {CustomError} 400 - If conversation ID or message ID is invalid
+  * @throws {CustomError} 404 - If conversation or message is not found
+  * @throws {CustomError} 403 - If user does not have access to the conversation
+  * @throws {CustomError} 500 - If message editing fails
+*/
+
+const editMessage = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId, messageId } = req.params;
+  const { message } = req.body;
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    throw new CustomError('Invalid message ID', 400);
+  }
+  
+  // Use repository method to edit message
+  await conversationRepo.editMessage(conversationId, messageId, message, userId as string);
+  
+  return res.status(200).json({ message: 'Message edited successfully' });
+}
+);
+
+/**
+ * React to a message in a conversation
+ * 
+ * @route POST /api/v1/messages/conversations/:conversationId/message/:messageId/react
+ * @access Private - Requires authentication
+ * @param {Request} req - Express request object with conversationId and messageId in params
+ * @param {Response} res - Express response object
+ * @param {NextFunction} next - Express next middleware function
+ * @param {string} conversationId - ID of the conversation
+ * @param {string} messageId - ID of the message to react to
+ * @body {string} reaction - Reaction type (e.g., "like", "love")
+ * * @returns {Promise<Response>} JSON success message
+ * @throws {CustomError} 401 - If user is not authenticated
+ * @throws {CustomError} 400 - If conversation ID or message ID is invalid
+ * @throws {CustomError} 404 - If conversation or message is not found
+ * @throws {CustomError} 403 - If user does not have access to the conversation
+ * @throws {CustomError} 500 - If reaction fails
+ */
+
+const reactToMessage = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const userId = req.user
+  const { conversationId, messageId } = req.params;
+  const { reaction } = req.body;
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(messageId)) {
+    throw new CustomError('Invalid message ID', 400);
+  }
+  
+  // Use repository method to react to message
+  await conversationRepo.reactToMessage(conversationId, messageId, reaction, userId as string);
+  
+  return res.status(200).json({ message: 'Reaction added successfully' });
+}
+);
+
+
 export {
   startConversation,
   getConversations,
@@ -374,5 +766,12 @@ export {
   // blockUser,
   // unblockUser,
   getUnseenMessagesCount,
-  markConversationAsRead
+  markMessagesInConversationAsRead,
+  getUnseenMessagesCountByConversation,
+  sendMessage,
+  markMessagesAsSeen,
+  deleteMessage,
+  deleteConversation,
+  editMessage,
+  reactToMessage
 };
