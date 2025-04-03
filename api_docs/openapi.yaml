@@ -3004,7 +3004,7 @@ paths:
                     type: string
                     example: "Error withdrawing connection request" 
 
-  /api/v1/user/my-network/block/{user_id}:
+  /api/v1/user/block/{user_id}:
     post:
       tags:
         - Block/Unblock
