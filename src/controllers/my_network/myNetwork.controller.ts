@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
-import { getFormattedUserList, formatConnectionData, getPaginatedConnectionsFollowers } from "../../repositories/user.repository.ts";
+import { getFormattedUserList, formatConnectionData, getPaginatedConnectionsFollowers, handleProfileAccess } from "../../repositories/user.repository.ts";
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
 
@@ -538,20 +538,37 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
 
   export const getAllConnections = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Validate token and retrieve viewerId
-      const viewerId = await getUserIdFromToken(req, res);
-      if (!viewerId) return;
-  
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+        
+      const { viewerId, targetUser: targetUser } = result;
+        
       // Retrieve the viewer's user document
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
-  
+    
+      // check if the target profile is public or private and if the viewer is connected to the target user
+      const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
+      if (!hasAccess) return;
+
+
+      // check if the target user is not a connection of the viewer
+      if (viewerId !== targetUser.user_id.toString()) {
+        const isConnection = viewerUser.connections.some(
+          (connection: any) => connection._id.toString() === targetUser._id.toString()
+        );
+        if (!isConnection) {
+          res.status(403).json({ message: "You can't view this users' connections." });
+          return;
+        }
+      }
+
       // Get pagination parameters from the query
       const { limit = 10, cursor } = req.query;
   
       // Fetch paginated connections using the helper function
       const { connections, nextCursor } = await getPaginatedConnectionsFollowers(
-        viewerUser._id as mongoose.Types.ObjectId,
+        targetUser._id as mongoose.Types.ObjectId,
         parseInt(limit as string, 10),
         cursor as string
       );
@@ -562,7 +579,7 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
           _id: connection._id,
           date: connection.date,
         })),
-        viewerUser,
+        targetUser,
         res,
         false // Do not include mutual connections
       );
