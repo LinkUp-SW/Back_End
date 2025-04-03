@@ -2347,6 +2347,9 @@ paths:
                         profilePicture:
                           type: string
                           example: "https://example.com/profile-picture.jpg"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
         '401':
           description: Unauthorized.
           content:
@@ -2411,6 +2414,10 @@ paths:
                         following:
                           type: boolean
                           example: true
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                  
         '401':
           description: Unauthorized.
           content:
@@ -2571,6 +2578,12 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
+
+                        
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                  
         '401':
           description: Unauthorized.
           content:
@@ -2636,7 +2649,16 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
-                       
+                        numberOfMutualConnections:
+                          type: integer
+                          example: 5
+                        nameOfOneMutualConnection:
+                          type: string
+                          example: "Jane Smith"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                         
         '401':
           description: Unauthorized.
           content:
@@ -2725,7 +2747,7 @@ paths:
                     type: string
                     example: "Error accepting connection request"
 
-  /api/v1/user/my-network/invite-connect/connections:
+  /api/v1/user/my-network/invite-connect/connections/{user_id}:
     get:
       tags:
         - Connections
@@ -2769,8 +2791,11 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
         '401':
-          description: Unauthorized.
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2979,7 +3004,7 @@ paths:
                     type: string
                     example: "Error withdrawing connection request" 
 
-  /api/v1/my-network/block/{user_id}:
+  /api/v1/user/my-network/block/{user_id}:
     post:
       tags:
         - Block/Unblock
@@ -3049,7 +3074,7 @@ paths:
                     type: string
                     example: "Error blocking user"
 
-  /api/v1/manage-by-blocked-list/unblock/{user_id}:
+  /api/v1/user/manage-by-blocked-list/unblock/{user_id}:
     delete:
       tags:
         - Block/Unblock
@@ -3129,7 +3154,7 @@ paths:
                     type: string
                     example: "Error unblocking user"
 
-  /api/v1/manage-by-blocked-list/blocked:
+  /api/v1/user/manage-by-blocked-list/blocked:
     get:
       tags:
         - Block/Unblock
@@ -3223,6 +3248,10 @@ paths:
                     type: integer
                     example: 150
                     description: The total number of connections for the user.
+                  number_of_following:
+                    type: integer
+                    example: 200
+                    description: The total number of users the authenticated user is following.
         '401':
           description: Unauthorized
           content:
