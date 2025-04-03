@@ -3,7 +3,7 @@ import * as getJobsControllers from '../../controllers/jobs/getJobs.controller.t
 
 const router = express.Router();
 
-router.get('/get-personalized-jobs', (req, res, next) => {
+router.get('/get-top-jobs', (req, res, next) => {
     getJobsControllers.getPersonalizedJobRecommendations(req, res, next);
 });
 

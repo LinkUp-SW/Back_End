@@ -4,13 +4,14 @@ import jobs, { jobsInterface } from "../../models/jobs.model.ts";
 import mongoose from 'mongoose';
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import organizations from "../../models/organizations.model.ts";
+import { paginatedJobQuery } from "../../utils/database.helper.ts";
 
 /**
  * Get personalized job recommendations for the user
  * Algorithm:
  * - Match user skills with job required skills
- * - Consider user's experience level
  * - Exclude jobs user has already applied to
+ * - Exclude jobs from user's current organization
  * - Consider industries matching user's experience
  * - Return ranked job recommendations
  */
@@ -18,10 +19,129 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
     try {
         const user = await validateTokenAndGetUser(req, res);
         if (!user) return;
+        
+        // Handle pagination
+        const cursor = req.query.cursor as string || null;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+        
+        const userSkills = new Set<string>();
+        
+        // Skills from the skills array
+        if (user.skills && user.skills.length > 0) {
+            user.skills.forEach(skill => {
+                if (skill.name) userSkills.add(skill.name.toLowerCase());
+            });
+        }
+        
+        // Get user's current organization IDs
+        const userOrgIds: mongoose.Types.ObjectId[] = [];
+        if (user.work_experience && user.work_experience.length > 0) {
+            user.work_experience.forEach(exp => {
+                if (exp.is_current && exp.organization) {
+                    userOrgIds.push(new mongoose.Types.ObjectId(exp.organization.toString()));
+                }
+            });
+        }
+        
+        // Get user's industry for matching
+        const userIndustry = user.industry || '';
+        
+        // Get user's applied job IDs to exclude them
+        const appliedJobIds = (user.applied_jobs || []).map(jobId => 
+            new mongoose.Types.ObjectId(jobId.toString())
+        );
+        
+        // Build base query
+        const baseQuery: any = {};
+        
+        // Exclude jobs from user's current organization
+        if (userOrgIds.length > 0) {
+            baseQuery.organization_id = { $nin: userOrgIds };
+        }
+        
+        // Exclude jobs user has already applied to
+        if (appliedJobIds.length > 0) {
+            baseQuery._id = { $nin: appliedJobIds };
+        }
+        
+        // Additional aggregation stages for personalized recommendations
+        const extraStages = [
+            {
+                $addFields: {
+                    skillMatchCount: {
+                        $size: {
+                            $filter: {
+                                input: '$targetted_skills',
+                                as: 'skill',
+                                cond: {
+                                    $in: [{ $toLower: '$$skill' }, Array.from(userSkills)]
+                                }
+                            }
+                        }
+                    },
+                    totalSkills: { $size: '$targetted_skills' },
+                    industryMatch: {
+                        $cond: [
+                            { $in: [userIndustry, '$organization_industry'] },
+                            1,
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    matchScore: {
+                        $cond: [
+                            { $eq: ['$totalSkills', 0] },
+                            0,
+                            {
+                                $add: [
+                                    { $divide: ['$skillMatchCount', { $max: [1, '$totalSkills'] }] },
+                                    '$industryMatch'
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    title: '$job_title',
+                    location: 1,
+                    workplace_type: 1,
+                    'organization_id.name': '$organization.organization_name',
+                    'organization_id.logo': '$organization.logo',
+                    applications_count: { $size: '$applications' },
+                    matchScore: 1,
+                    skillMatchCount: 1,
+                    totalSkills: 1,
+                    targetted_skills: 1
+                }
+            }
+        ];
+        
+        // Use the helper function for paginated query with custom sorting by match score
+        const result = await paginatedJobQuery(
+            baseQuery,
+            cursor,
+            limit,
+            { matchScore: -1, _id: -1 },
+            extraStages
+        );
+        
+        return res.status(200).json({
+            message: "Personalized job recommendations retrieved successfully",
+            count: result.count,
+            total: result.total,
+            data: result.data,
+            nextCursor: result.nextCursor
+        });
     }
     catch (error) {
-        console.error("Error validating token:", error);
-        return res.status(401).json({ message: "Unauthorized" });
+        console.error("Error getting personalized job recommendations:", error);
+        return res.status(500).json({ message: "Failed to retrieve job recommendations" });
     }
 };
 
@@ -30,35 +150,8 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
         const cursor = req.query.cursor as string || null;
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
         
-        const query: any = {};
-        
-        // If a cursor is provided, fetch jobs after the cursor (using _id for cursor)
-        if (cursor && mongoose.Types.ObjectId.isValid(cursor)) {
-            query._id = { $lt: new mongoose.Types.ObjectId(cursor) };
-        }
-        
-        // Use aggregation to get jobs with only required fields and application count
-        const jobsData = await jobs.aggregate([
-            { $match: query },
-            { $sort: { _id: -1 } },
-            { $limit: limit + 1 },
-            {
-                $lookup: {
-                    from: 'organizations',
-                    localField: 'organization_id',
-                    foreignField: '_id',
-                    as: 'organization'
-                }
-            },
-            { $unwind: '$organization' },
-            {
-                $lookup: {
-                    from: 'applications',
-                    localField: '_id',
-                    foreignField: 'job_id',
-                    as: 'applications'
-                }
-            },
+        // Use the helper function with standard projection
+        const extraStages = [
             {
                 $project: {
                     _id: 1,
@@ -70,23 +163,16 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
                     applications_count: { $size: '$applications' }
                 }
             }
-        ]);
+        ];
         
-        // Determine if there's a next page and calculate the next cursor
-        const hasNextPage = jobsData.length > limit;
-        const nextCursor = hasNextPage ? jobsData[limit - 1]._id : null;
-        
-        // Return only the requested number of jobs 
-        const jobsToReturn = hasNextPage ? jobsData.slice(0, limit) : jobsData;
-        
-        const totalJobs = await jobs.countDocuments();
+        const result = await paginatedJobQuery({}, cursor, limit, { _id: -1 }, extraStages);
         
         return res.status(200).json({
             message: "Jobs retrieved successfully",
-            count: jobsToReturn.length,
-            total: totalJobs,
-            data: jobsToReturn,
-            nextCursor: nextCursor
+            count: result.count,
+            total: result.total,
+            data: result.data,
+            nextCursor: result.nextCursor
         });
     } catch (error) {
         console.error("Error retrieving jobs:", error);
