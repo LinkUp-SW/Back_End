@@ -2322,6 +2322,19 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the following list.
@@ -2386,6 +2399,20 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the followers list.
@@ -2549,6 +2576,19 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the sent connection requests.
@@ -2620,6 +2660,20 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the received connection requests.
@@ -2756,12 +2810,32 @@ paths:
         Retrieves the list of all connections for the authenticated user. 
         The response includes user details and the date the connection was established.
       parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose connections are to be viewed 
         - name: Authorization
           in: header
           required: true
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
+        
       responses:
         '200':
           description: Successfully retrieved the connections list.
