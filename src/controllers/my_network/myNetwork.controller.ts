@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
-import { getFormattedUserList, formatConnectionData } from "../../repositories/user.repository.ts";
+import { getFormattedUserList, formatConnectionData , getPaginatedConnectionsFollowers, handleProfileAccess} from "../../repositories/user.repository.ts";
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
 
@@ -499,39 +499,66 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
 
   export const getAllConnections = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Validate token and retrieve viewerId
-      const viewerId = await getUserIdFromToken(req, res);
-      if (!viewerId) return;
-  
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+        
+      const { viewerId, targetUser: targetUser } = result;
+        
       // Retrieve the viewer's user document
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
+    
+      // check if the target profile is public or private and if the viewer is connected to the target user
+      const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
+      if (!hasAccess) return;
+
+
+      // check if the target user is not a connection of the viewer
+      if (viewerId !== targetUser.user_id.toString()) {
+        const isConnection = viewerUser.connections.some(
+          (connection: any) => connection._id.toString() === targetUser._id.toString()
+        );
+        if (!isConnection) {
+          res.status(403).json({ message: "You can't view this users' connections." });
+          return;
+        }
+      }
+
+      // Get pagination parameters from the query
+      const { limit = 10, cursor } = req.query;
   
-      // Format the connections list
+      // Fetch paginated connections using the helper function
+      const { connections, nextCursor } = await getPaginatedConnectionsFollowers(
+        targetUser._id as mongoose.Types.ObjectId,
+        parseInt(limit as string, 10),
+        cursor as string
+      );
+  
+      // Format the connections
       const formattedConnections = await formatConnectionData(
-        viewerUser.connections.map((connection: any) => ({
+        connections.map((connection: any) => ({
           _id: connection._id,
           date: connection.date,
         })),
-        viewerUser,
+        targetUser,
         res,
         false // Do not include mutual connections
       );
       if (!formattedConnections) return;
   
-      // Sort the connections in descending order (most recent first)
-      const sortedConnections = formattedConnections.reverse();
-  
-      res.status(200).json({ connections: sortedConnections });
+      // Return the paginated connections and the next cursor
+      res.status(200).json({
+        connections: formattedConnections,
+        nextCursor,
+      });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid or expired token') {
-        res.status(401).json({ message: error.message,success:false });
-}
-    else{
-      console.error("Error fetching connections:", error);
-      res.status(500).json({ message: "Error fetching connections", error });
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
+        console.error("Error fetching connections:", error);
+        res.status(500).json({ message: "Error fetching connections", error });
+      }
     }
-  }
   };
 
   export const removeConnection = async (req: Request, res: Response): Promise<void> => {

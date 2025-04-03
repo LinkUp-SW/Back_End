@@ -28,7 +28,7 @@ router.get("/my-network/invitation-manager/received", connections.getReceivedCon
 router.post("/accept/:user_id", connections.acceptConnectionRequest);
 
 // Route to get connections list
-router.get("/my-network/invite-connect/connections", connections.getAllConnections);
+router.get("/my-network/invite-connect/connections/:user_id", connections.getAllConnections);
 
 // Route to remove a connection
 router.delete("/my-network/connections/remove/:user_id", connections.removeConnection);
