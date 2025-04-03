@@ -3208,6 +3208,13 @@ paths:
         - Posts
       summary: Create a new post
       description: Creates a new post for a user and associates it with their activity.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -3215,9 +3222,6 @@ paths:
             schema:
               type: object
               properties:
-                userId:
-                  type: string
-                  description: ID of the user creating the post.
                 content:
                   type: string
                   description: Content of the post.
@@ -3241,7 +3245,6 @@ paths:
                     type: string
                   description: Array of user IDs tagged in the post.
               required:
-                - userId
                 - content
                 - commentsDisabled
                 - publicPost
@@ -3269,6 +3272,13 @@ paths:
         - Posts
       summary: Edit an existing post
       description: Updates the content, media, or tagged users of an existing post.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -3320,6 +3330,13 @@ paths:
         - Posts
       summary: Delete a post
       description: Deletes a post and removes it from the user's activity.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
