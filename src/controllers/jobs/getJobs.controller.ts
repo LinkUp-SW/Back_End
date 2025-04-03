@@ -108,7 +108,7 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
             {
                 $project: {
                     _id: 1,
-                    title: '$job_title',
+                    job_title: '$job_title',
                     location: 1,
                     workplace_type: 1,
                     'organization_id.name': '$organization.organization_name',
@@ -155,7 +155,7 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
             {
                 $project: {
                     _id: 1,
-                    title: 1,
+                    job_title: 1,
                     location: 1,
                     workplace_type: 1,
                     'organization_id.name': '$organization.organization_name',
