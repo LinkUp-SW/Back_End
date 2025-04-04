@@ -138,7 +138,7 @@ export interface usersInterface extends mongoose.Document{
         issuing_organization: organizationsInterface;
         issue_date: Date;
         expiration_date: Date;
-        credintial_id: number;
+        credintial_id: string;
         credintial_url: string;
         skills: string[];
         media: {
@@ -298,7 +298,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             issue_date: { type: Date },
             expiration_date: { type: Date },
-            credintial_id: { type: Number },
+            credintial_id: { type: String },
             credintial_url: { type: String },
             skills: [{ type: String }],
             media: [
