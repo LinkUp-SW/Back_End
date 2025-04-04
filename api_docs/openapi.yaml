@@ -2322,6 +2322,19 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the following list.
@@ -2347,6 +2360,9 @@ paths:
                         profilePicture:
                           type: string
                           example: "https://example.com/profile-picture.jpg"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
         '401':
           description: Unauthorized.
           content:
@@ -2383,6 +2399,20 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the followers list.
@@ -2411,6 +2441,10 @@ paths:
                         following:
                           type: boolean
                           example: true
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                  
         '401':
           description: Unauthorized.
           content:
@@ -2542,6 +2576,19 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the sent connection requests.
@@ -2571,6 +2618,12 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
+
+                        
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                  
         '401':
           description: Unauthorized.
           content:
@@ -2607,6 +2660,20 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the received connection requests.
@@ -2636,7 +2703,16 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
-                       
+                        numberOfMutualConnections:
+                          type: integer
+                          example: 5
+                        nameOfOneMutualConnection:
+                          type: string
+                          example: "Jane Smith"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                         
         '401':
           description: Unauthorized.
           content:
@@ -2725,7 +2801,7 @@ paths:
                     type: string
                     example: "Error accepting connection request"
 
-  /api/v1/user/my-network/invite-connect/connections:
+  /api/v1/user/my-network/invite-connect/connections/{user_id}:
     get:
       tags:
         - Connections
@@ -2734,12 +2810,32 @@ paths:
         Retrieves the list of all connections for the authenticated user. 
         The response includes user details and the date the connection was established.
       parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose connections are to be viewed 
         - name: Authorization
           in: header
           required: true
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
+        
       responses:
         '200':
           description: Successfully retrieved the connections list.
@@ -2769,8 +2865,11 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
         '401':
-          description: Unauthorized.
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2979,7 +3078,7 @@ paths:
                     type: string
                     example: "Error withdrawing connection request" 
 
-  /api/v1/my-network/block/{user_id}:
+  /api/v1/user/block/{user_id}:
     post:
       tags:
         - Block/Unblock
@@ -3049,7 +3148,7 @@ paths:
                     type: string
                     example: "Error blocking user"
 
-  /api/v1/manage-by-blocked-list/unblock/{user_id}:
+  /api/v1/user/manage-by-blocked-list/unblock/{user_id}:
     delete:
       tags:
         - Block/Unblock
@@ -3129,7 +3228,7 @@ paths:
                     type: string
                     example: "Error unblocking user"
 
-  /api/v1/manage-by-blocked-list/blocked:
+  /api/v1/user/manage-by-blocked-list/blocked:
     get:
       tags:
         - Block/Unblock
@@ -3223,6 +3322,10 @@ paths:
                     type: integer
                     example: 150
                     description: The total number of connections for the user.
+                  number_of_following:
+                    type: integer
+                    example: 200
+                    description: The total number of users the authenticated user is following.
         '401':
           description: Unauthorized
           content:
@@ -3246,5 +3349,158 @@ paths:
                   error:
                     type: string
                     example: "Detailed error message" 
+
+  /api/v1/user/bio/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user bio
+      description: >
+        Retrieves the bio information of a user. The response varies based on whether the authenticated user is viewing their own profile (`is_me: true`) or another user's profile (`is_me: false`).
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose bio is being retrieved.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the user bio.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the authenticated user is viewing their own profile.
+                  bio:
+                    type: object
+                    properties:
+                      contact_info:
+                        type: object
+                        properties:
+                          phone_number:
+                            type: integer
+                            nullable: true
+                            example: 1234567890
+                          country_code:
+                            type: string
+                            nullable: true
+                            example: "+1"
+                          phone_type:
+                            type: string
+                            nullable: true
+                            example: "Mobile"
+                          address:
+                            type: string
+                            nullable: true
+                            example: "123 Main St"
+                          birthday:
+                            type: string
+                            format: date-time
+                            nullable: true
+                            example: "1990-01-01T00:00:00.000Z"
+                          website:
+                            type: string
+                            nullable: true
+                            example: "http://johndoe.com"
+                      location:
+                        type: object
+                        properties:
+                          country_region:
+                            type: string
+                            example: "USA"
+                          city:
+                            type: string
+                            example: "New York"
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+                      headline:
+                        type: string
+                        example: "Software Engineer"
+                      experience:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Company A", "Company B"]
+                      education:
+                        type: array
+                        items:
+                          type: string
+                        example: ["University A", "University B"]
+                      website:
+                        type: string
+                        example: "http://johndoe.com"
+                  email:
+                    type: string
+                    example: "user1@example.com"
+                  profile_photo:
+                    type: string
+                    format: uri
+                    example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1743174303/user_uploads/images/1743174231833-duck.jpg"
+                  cover_photo:
+                    type: string
+                    format: uri
+                    example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1743174333/user_uploads/images/1743174262242-duck.jpg"
+                  number_of_connections:
+                    type: integer
+                    example: 6
+                  isSubscribed:
+                    type: boolean
+                    example: true
+                  name_of_one_mutual_connection:
+                    type: string
+                    nullable: true
+                    example: null
+                  follow_primary:
+                    type: boolean
+                    example: false
+                  is_in_received_connections:
+                    type: boolean
+                    example: false
+                  is_in_sent_connections:
+                    type: boolean
+                    example: false
+                  isInConnections:
+                    type: boolean
+                    example: true
+                  isAlreadyFollowing:
+                    type: boolean
+                    example: false
+                  isConnectByEmail:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An error occurred while retrieving the user bio."
 
       

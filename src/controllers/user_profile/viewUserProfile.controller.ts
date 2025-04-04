@@ -428,3 +428,82 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
     }
   }
 };
+
+
+export const getUserLicense = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and retrieve viewerId and targetUser
+    const result = await validateTokenAndUser(req, res);
+    if (!result) return;
+
+    const { viewerId, targetUser } = result;
+
+    // Retrieve the viewer's user document
+    const viewerUser = await findUserByUserId(viewerId, res);
+    if (!viewerUser) return;
+
+    // Check if the target profile is public or private and if the viewer is connected to the target user
+    const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
+    if (!hasAccess) return;
+
+    // Check if the viewer is the same as the user (is_me)
+    const isMe = viewerId === targetUser.user_id;
+
+    // Extract all unique issuing organization IDs that are ObjectIds
+    const organizationIds = targetUser.liscence_certificates
+      .filter((license: any) => mongoose.isValidObjectId(license.issuing_organization))
+      .map((license: any) => license.issuing_organization);
+
+    // Fetch organization details for issuing organizations
+    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id organization_name logo");
+    const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
+
+    // Map the license certificates to include the required fields
+    const userLicenses = targetUser.liscence_certificates.map((license: any) => {
+      let issuingOrganizationDetails;
+      if (mongoose.isValidObjectId(license.issuing_organization)) {
+        // If the issuing organization is an ObjectId, fetch details from the organizationMap
+        const organization = organizationMap.get(license.issuing_organization.toString());
+        issuingOrganizationDetails = organization
+          ? {
+              _id: organization._id,
+              name: organization.organization_name,
+              logo: organization.logo,
+            }
+          : null; // Handle cases where the organization is not found
+      } else {
+        // If the issuing organization is a string, return it as is
+        issuingOrganizationDetails = {
+          name: license.issuing_organization,
+        };
+      }
+
+      return {
+        _id: license._id,
+        name: license.name,
+        issuing_organization: issuingOrganizationDetails,
+        issue_date: license.issue_date,
+        expiration_date: license.expiration_date,
+        credintial_id: license.credintial_id,
+        credintial_url: license.credintial_url,
+        skills: license.skills || [],
+        media: license.media || [],
+      };
+    });
+
+    const response = {
+      is_me: isMe,
+      licenses: userLicenses,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Invalid or expired token") {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error fetching user licenses:", error);
+      res.status(500).json({ message: "Error fetching user licenses", error });
+    }
+  }
+};
+

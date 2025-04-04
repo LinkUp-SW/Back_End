@@ -18,5 +18,8 @@ router.get('/profile/education/:user_id', profile.getUserEducation);
 // Route to get user skills
 router.get('/profile/skills/:user_id', profile.getUserSkills);
 
+// Route to get user licenses
+router.get('/profile/licenses/:user_id', profile.getUserLicense);
+
 
 export default router;
