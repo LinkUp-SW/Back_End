@@ -309,3 +309,40 @@ export const paginatedJobQuery = async (
     throw error;
   }
 };
+
+export const getTimeAgoStage = () => {
+  return {
+      $addFields: {
+          timeAgo: {
+              $let: {
+                  vars: {
+                      diffInMs: { $subtract: [new Date(), "$posted_time"] },
+                      diffInSeconds: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000] },
+                      diffInMinutes: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000 * 60] },
+                      diffInHours: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000 * 60 * 60] },
+                      diffInDays: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000 * 60 * 60 * 24] }
+                  },
+                  in: {
+                      $cond: [
+                          { $gte: ["$$diffInDays", 1] },
+                          { $concat: [{ $toString: { $floor: "$$diffInDays" } }, " day(s) ago"] },
+                          {
+                              $cond: [
+                                  { $gte: ["$$diffInHours", 1] },
+                                  { $concat: [{ $toString: { $floor: "$$diffInHours" } }, " hour(s) ago"] },
+                                  {
+                                      $cond: [
+                                          { $gte: ["$$diffInMinutes", 1] },
+                                          { $concat: [{ $toString: { $floor: "$$diffInMinutes" } }, " minute(s) ago"] },
+                                          { $concat: [{ $toString: { $floor: "$$diffInSeconds" } }, " second(s) ago"] }
+                                      ]
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              }
+          }
+      }
+  };
+};

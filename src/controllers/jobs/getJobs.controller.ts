@@ -1,10 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import users from '../../models/users.model.ts';
-import jobs, { experienceLevelEnum, jobsInterface } from "../../models/jobs.model.ts";
+import jobs from "../../models/jobs.model.ts";
 import mongoose from 'mongoose';
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import organizations from "../../models/organizations.model.ts";
-import { paginatedJobQuery } from "../../utils/database.helper.ts";
+import { paginatedJobQuery, getTimeAgoStage } from "../../utils/database.helper.ts";
+
 
 /**
  * Get personalized job recommendations for the user
@@ -19,20 +18,20 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
     try {
         const user = await validateTokenAndGetUser(req, res);
         if (!user) return;
-        
+
         // Handle pagination
         const cursor = req.query.cursor as string || null;
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-        
+
         const userSkills = new Set<string>();
-        
+
         // Skills from the skills array
         if (user.skills && user.skills.length > 0) {
             user.skills.forEach(skill => {
                 if (skill.name) userSkills.add(skill.name.toLowerCase());
             });
         }
-        
+
         // Get user's current organization IDs
         const userOrgIds: mongoose.Types.ObjectId[] = [];
         if (user.work_experience && user.work_experience.length > 0) {
@@ -42,28 +41,28 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
                 }
             });
         }
-        
+
         // Get user's industry for matching
         const userIndustry = user.industry || '';
-        
+
         // Get user's applied job IDs to exclude them
-        const appliedJobIds = (user.applied_jobs || []).map(jobId => 
+        const appliedJobIds = (user.applied_jobs || []).map(jobId =>
             new mongoose.Types.ObjectId(jobId.toString())
         );
-        
+
         // Build base query
         const baseQuery: any = {};
-        
+
         // Exclude jobs from user's current organization
         if (userOrgIds.length > 0) {
             baseQuery.organization_id = { $nin: userOrgIds };
         }
-        
+
         // Exclude jobs user has already applied to
         if (appliedJobIds.length > 0) {
             baseQuery._id = { $nin: appliedJobIds };
         }
-        
+
         // Additional aggregation stages for personalized recommendations
         const extraStages = [
             {
@@ -105,6 +104,7 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
                     }
                 }
             },
+            getTimeAgoStage(), // Use the helper function here
             {
                 $project: {
                     _id: 1,
@@ -113,13 +113,13 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
                     workplace_type: 1,
                     salary: 1,
                     experience_level: 1,
-                    posted_time: 1,
+                    timeAgo: 1, // Include the calculated timeAgo field
                     'organization_id.name': '$organization.organization_name',
                     'organization_id.logo': '$organization.logo',
                 }
             }
         ];
-        
+
         // Use the helper function for paginated query with custom sorting by match score
         const result = await paginatedJobQuery(
             baseQuery,
@@ -128,7 +128,7 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
             { matchScore: -1, _id: -1 },
             extraStages
         );
-        
+
         return res.status(200).json({
             message: "Personalized job recommendations retrieved successfully",
             count: result.count,
@@ -147,9 +147,10 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
     try {
         const cursor = req.query.cursor as string || null;
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-        
+
         // Use the helper function with standard projection
         const extraStages = [
+            getTimeAgoStage(), // Use the helper function here
             {
                 $project: {
                     _id: 1,
@@ -158,15 +159,15 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
                     workplace_type: 1,
                     salary: 1,
                     experience_level: 1,
-                    posted_time: 1,
+                    timeAgo: 1, // Include the calculated timeAgo field
                     'organization_id.name': '$organization.organization_name',
-                    'organization_id.logo': '$organization.logo',   
+                    'organization_id.logo': '$organization.logo',
                 }
             }
         ];
-        
+
         const result = await paginatedJobQuery({}, cursor, limit, { _id: -1 }, extraStages);
-        
+
         return res.status(200).json({
             message: "Jobs retrieved successfully",
             count: result.count,
