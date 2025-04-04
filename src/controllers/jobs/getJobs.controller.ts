@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import users from '../../models/users.model.ts';
-import jobs, { jobsInterface } from "../../models/jobs.model.ts";
+import jobs, { experienceLevelEnum, jobsInterface } from "../../models/jobs.model.ts";
 import mongoose from 'mongoose';
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import organizations from "../../models/organizations.model.ts";
@@ -111,13 +111,11 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
                     job_title: '$job_title',
                     location: 1,
                     workplace_type: 1,
+                    salary: 1,
+                    experience_level: 1,
+                    posted_time: 1,
                     'organization_id.name': '$organization.organization_name',
                     'organization_id.logo': '$organization.logo',
-                    applications_count: { $size: '$applications' },
-                    matchScore: 1,
-                    skillMatchCount: 1,
-                    totalSkills: 1,
-                    targetted_skills: 1
                 }
             }
         ];
@@ -158,9 +156,11 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
                     job_title: 1,
                     location: 1,
                     workplace_type: 1,
+                    salary: 1,
+                    experience_level: 1,
+                    posted_time: 1,
                     'organization_id.name': '$organization.organization_name',
-                    'organization_id.logo': '$organization.logo',
-                    applications_count: { $size: '$applications' }
+                    'organization_id.logo': '$organization.logo',   
                 }
             }
         ];

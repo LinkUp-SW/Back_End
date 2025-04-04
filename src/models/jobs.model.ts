@@ -64,6 +64,7 @@ export interface jobsInterface extends mongoose.Document{
     };
     how_did_you_hear_about_us: howDidYouHearAboutUsEnum;
     salary: number;
+    posted_time: Date;
     applied_applications: jobApplicationsInterface[];
 }
 
@@ -92,6 +93,7 @@ const jobsSchema = new Schema<jobsInterface>({
     },
     how_did_you_hear_about_us: { type: String, enum: Object.values(howDidYouHearAboutUsEnum) },
     salary: { type: Number },
+    posted_time: { type: Date, default: Date.now },
     applied_applications: [{ type: Schema.Types.ObjectId, ref: "jobApplications" }],
 });
 
