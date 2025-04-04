@@ -189,15 +189,30 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
             return res.status(400).json({ message: 'Invalid job ID format' });
         }
         
-        const job = await jobs.findById(jobId)
-            .populate({
-                path: 'organization_id',
-                model: 'organizations'
-            });
+        // Use aggregation pipeline instead of findById
+        const jobData = await jobs.aggregate([
+            { 
+                $match: { _id: new mongoose.Types.ObjectId(jobId) } 
+            },
+            {
+                $lookup: {
+                    from: 'organizations',
+                    localField: 'organization_id',
+                    foreignField: '_id',
+                    as: 'organization'
+                }
+            },
+            getTimeAgoStage(), // Add the timeAgo field
+            {
+                $limit: 1
+            }
+        ]);
         
-        if (!job) {
+        if (!jobData || jobData.length === 0) {
             return res.status(404).json({ message: 'Job not found' });
         }
+        
+        const job = jobData[0];
         
         return res.status(200).json({
             message: "Job retrieved successfully",
@@ -205,6 +220,6 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
         });
     } catch (error) {
         console.error("Error retrieving job:", error);
-        next(error);
+        return res.status(500).json({ message: "Failed to retrieve job" });
     }
 };

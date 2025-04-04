@@ -50,7 +50,7 @@ const populateOrganizationJobs = async () => {
 
         for (let i = 0; i < 5; i++) {
             const organization = await organizations.create({
-                organization_name: organizationNames[i],
+                name: organizationNames[i],
                 category_type: i % 2 === 0 ? categoryTypeEnum.company : categoryTypeEnum.education,
                 unique_url: organizationNames[i].toLowerCase().replace(/\s+/g, '-'),
                 website: `https://www.${organizationNames[i].toLowerCase().replace(/\s+/g, '')}.com`,
@@ -71,7 +71,7 @@ const populateOrganizationJobs = async () => {
             }) as organizationsInterface;
             
             organizationsArray.push(organization);
-            console.log(`Created organization: ${organization.organization_name}`);
+            console.log(`Created organization: ${organization.name}`);
         }
 
         // Create sample jobs for each organization
@@ -200,7 +200,7 @@ const populateOrganizationJobs = async () => {
                     applied_applications: []
                 }) as jobsInterface;
                 
-                console.log(`Created job: ${job.job_title} for ${organization.organization_name}`);
+                console.log(`Created job: ${job.job_title} for ${organization.name}`);
             }
         }
 
