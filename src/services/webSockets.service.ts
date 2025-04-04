@@ -4,6 +4,7 @@ import { UserRepository } from "../repositories/user.repository.ts";
 import { conversationRepository } from "../repositories/conversation.repository.ts";
 import tokenUtils from "../utils/token.utils.ts";
 import { CustomError } from "../utils/customError.utils.ts";
+import {uploadMedia} from "../utils/helper.ts";
 
 export class WebSocketService {
   private io: SocketIOServer;
@@ -25,7 +26,8 @@ export class WebSocketService {
       connectionStateRecovery: {
         maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
         skipMiddlewares: true,
-      }
+      },
+      maxHttpBufferSize: 1e8, // 100 MB
     });
     this.userRepo = userRepo;
     this.conversationRepo = conversationRepo;
@@ -63,7 +65,7 @@ export class WebSocketService {
       });
 
       // Message handlers
-      socket.on("private_message", this.handlePrivateMessage.bind(this, socket));
+      socket.on("private_message", (data) => this.handlePrivateMessage(socket, data));
       socket.on("react_to_message", this.handleMessageReaction.bind(this, socket));
       
       // Typing indicators
@@ -110,58 +112,81 @@ export class WebSocketService {
     try {
       const senderId = await this.getUserIdFromSocket(socket.id);
       if (!senderId) throw new CustomError("Sender not authenticated", 401);
-
-      const { to: receiverId, message, media = [] } = data;
-
-      // Validate receiver
-      const receiver = await this.userRepo.findByUserId(receiverId);
-      if (!receiver) throw new CustomError("Recipient not found", 404);
-      if (receiver.blocked?.includes(senderId)) {
-        throw new CustomError("You can't send messages to this user", 403);
+  
+      const { to: receiverId, message, media } = data;
+      console.log("Received private message:", { senderId, receiverId, message });
+      console.log("[DEBUG] Received payload:", {
+        mediaExists: !!media,
+        mediaLength: media?.length || 0
+      });
+  
+      let mediaUrls: string[] = [];
+      let mediaTypes: string[] = [];
+  
+      // Only process media if provided and non-empty
+      if (media && media.length > 0) {
+        if (!Array.isArray(media)) {
+          throw new CustomError("Media should be an array", 400);
+        }
+        if (media.length > 5) {
+          throw new CustomError("Maximum 5 media files allowed", 400);
+        }
+        if (media.some(m => !m.startsWith("data:"))) {
+          throw new CustomError("Invalid media format", 400);
+        }
+        const mediaUploads = media.map(async (base64Data) => {
+          const { url, type } = await uploadMedia(base64Data);
+          return { url, type };
+        });
+        console.log("Uploading media to Cloudinary...:", mediaUploads);
+        const mediaResults = await Promise.all(mediaUploads);
+        mediaUrls = mediaResults.map(m => m.url);
+        mediaTypes = mediaResults.map(m => m.type);
+        console.log("Media URLs:", mediaUrls);
       }
-
+  
       // Find or create conversation
       let conversation = await this.conversationRepo.findConversationByUsers(senderId, receiverId);
       if (!conversation) {
         conversation = await this.conversationRepo.createConversation(senderId, receiverId);
       }
-
-      // Add message
+  
       await this.conversationRepo.addMessage(
         conversation._id.toString(),
         senderId,
         message,
-        media
+        mediaUrls,
+        mediaTypes
       );
-
+  
       // Prepare message object for real-time delivery
       const messageObj = {
         conversationId: conversation._id,
         senderId,
         message: {
           message,
-          media,
+          media: mediaUrls,
           timestamp: new Date(),
           is_seen: false
         }
       };
-
+  
       // Deliver to recipient if online
       const receiverSocketId = this.userSockets.get(receiverId);
       if (receiverSocketId) {
         this.io.to(receiverSocketId).emit("new_message", messageObj);
-        
+  
         // Update unread count
         const unreadCount = await this.getUnseenMessagesCount(receiverId);
         this.io.to(receiverSocketId).emit("unread_messages_count", { count: unreadCount });
       }
-
+  
       // Confirm to sender
       socket.emit("message_sent", {
         ...messageObj,
         recipientId: receiverId
       });
-
+  
     } catch (error) {
       console.error("Message send error:", error);
       socket.emit("message_error", {
@@ -169,6 +194,7 @@ export class WebSocketService {
       });
     }
   }
+  
 
   private async handleMessageReaction(socket: Socket, data: { conversationId: string; messageId: string; reaction: string }) {
     try {

@@ -49,7 +49,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET!;
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'otherUserId' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'testUserId' });
   console.log('Generated Token:', token);
 };
 

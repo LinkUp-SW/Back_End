@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import tokenUtils from "../utils/token.utils.ts";
 import { validateUserIdFromRequest, findUserByUserId } from "../utils/database.helper.ts";
+import cloudinary from "../../config/cloudinary.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization || "";
@@ -68,4 +69,18 @@ export const validateFileUpload = (req: Request, res: Response): string | null =
   }
 
   return profilePictureUrl;
+};
+
+export const uploadMedia = async (file: string, folder = 'messaging_app') => {
+  try {
+    const result = await cloudinary.uploader.upload(file, {
+      folder,
+      resource_type: 'auto'
+    });
+    console.log('Cloudinary upload result:', result);
+    return { url: result.secure_url, type: result.format };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw new Error('Failed to upload media');
+  }
 };
