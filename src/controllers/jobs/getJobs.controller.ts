@@ -114,7 +114,7 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
                     salary: 1,
                     experience_level: 1,
                     timeAgo: 1, // Include the calculated timeAgo field
-                    'organization_id.name': '$organization.organization_name',
+                    'organization_id.name': '$organization.name',
                     'organization_id.logo': '$organization.logo',
                 }
             }
@@ -160,7 +160,7 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
                     salary: 1,
                     experience_level: 1,
                     timeAgo: 1, // Include the calculated timeAgo field
-                    'organization_id.name': '$organization.organization_name',
+                    'organization_id.name': '$organization.name',
                     'organization_id.logo': '$organization.logo',
                 }
             }
