@@ -223,7 +223,7 @@ export const getUserExperience = async (req: Request, res: Response): Promise<vo
       .map((experience: any) => experience.organization);
 
     // Fetch organization details for organizations that are ObjectIds
-    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id organization_name logo");
+    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id name logo");
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Map the work experience details
@@ -237,7 +237,7 @@ export const getUserExperience = async (req: Request, res: Response): Promise<vo
           organizationDetails = organization
             ? {
                 _id: organization._id,
-                name: organization.organization_name,
+                name: organization.name,
                 logo: organization.logo,
               }
             : null; // Handle cases where the organization is not found
@@ -301,7 +301,7 @@ export const getUserEducation = async (req: Request, res: Response): Promise<voi
       .map((education: any) => education.school);
 
     // Fetch organization details for schools that are ObjectIds
-    const organizations = await Organization.find({ _id: { $in: schoolIds } }).select("_id organization_name logo");
+    const organizations = await Organization.find({ _id: { $in: schoolIds } }).select("_id name logo");
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Map the education details
@@ -315,7 +315,7 @@ export const getUserEducation = async (req: Request, res: Response): Promise<voi
           schoolDetails = organization
             ? {
                 _id: organization._id,
-                name: organization.organization_name,
+                name: organization.name,
                 logo: organization.logo,
               }
             : null; // Handle cases where the organization is not found
@@ -379,7 +379,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
     const endorserIds = [...new Set(targetUser.skills.flatMap((skill: any) => skill.endorsments))];
 
     // Fetch organization 
-    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id organization_name logo");
+    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id name logo");
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Fetch endorser details 
@@ -406,7 +406,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
         return organization
           ? {
               _id: organization._id,
-              name: organization.organization_name,
+              name: organization.name,
               profilePicture: organization.logo,
             }
           : null; // Handle cases where the organization is not found
@@ -455,7 +455,7 @@ export const getUserLicense = async (req: Request, res: Response): Promise<void>
       .map((license: any) => license.issuing_organization);
 
     // Fetch organization details for issuing organizations
-    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id organization_name logo");
+    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id name logo");
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Map the license certificates to include the required fields
@@ -467,7 +467,7 @@ export const getUserLicense = async (req: Request, res: Response): Promise<void>
         issuingOrganizationDetails = organization
           ? {
               _id: organization._id,
-              name: organization.organization_name,
+              name: organization.name,
               logo: organization.logo,
             }
           : null; // Handle cases where the organization is not found
