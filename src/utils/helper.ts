@@ -85,8 +85,8 @@ export const validateFileUpload = (req: Request, res: Response): string | null =
 export const searchOrganizationsByType = async (query: string, categoryType: categoryTypeEnum) => {
   return await Organization.find({
     category_type: categoryType,
-    organization_name: { $regex: query, $options: 'i' }
-  }).select('_id organization_name logo').limit(10);
+    name: { $regex: query, $options: 'i' }
+  }).select('_id name logo').limit(10);
 };
 
 /**
@@ -96,7 +96,7 @@ export const searchOrganizationsByType = async (query: string, categoryType: cat
  */
 export const searchAllOrganizations = async (query: string) => {
   return await Organization.find({
-    organization_name: { $regex: query, $options: 'i' }
-  }).select('_id organization_name logo category_type').limit(10);
+    name: { $regex: query, $options: 'i' }
+  }).select('_id name logo category_type').limit(10);
 };
 

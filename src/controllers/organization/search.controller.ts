@@ -20,7 +20,7 @@ const searchCompanies = async (req: Request, res: Response, next: NextFunction):
       message: "Companies retrieved successfully",
       data: companies.map(company => ({
         _id: company._id,
-        name: company.organization_name,
+        name: company.name,
         logo: company.logo
       }))
     });
@@ -47,7 +47,7 @@ const searchEducationalInstitutions = async (req: Request, res: Response, next: 
       message: "Educational institutions retrieved successfully",
       data: institutions.map(institution => ({
         _id: institution._id,
-        name: institution.organization_name,
+        name: institution.name,
         logo: institution.logo
       }))
     });
@@ -74,7 +74,7 @@ const searchOrganizations = async (req: Request, res: Response, next: NextFuncti
       message: "Organizations retrieved successfully",
       data: organizations.map(org => ({
         _id: org._id,
-        name: org.organization_name,
+        name: org.name,
         logo: org.logo,
         category_type: org.category_type
       }))
