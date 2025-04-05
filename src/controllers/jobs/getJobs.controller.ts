@@ -63,59 +63,37 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
             baseQuery._id = { $nin: appliedJobIds };
         }
 
-        // Additional aggregation stages for personalized recommendations
         const extraStages = [
+            getTimeAgoStage(), 
             {
-                $addFields: {
-                    skillMatchCount: {
-                        $size: {
-                            $filter: {
-                                input: '$targetted_skills',
-                                as: 'skill',
-                                cond: {
-                                    $in: [{ $toLower: '$$skill' }, Array.from(userSkills)]
-                                }
-                            }
-                        }
-                    },
-                    totalSkills: { $size: '$targetted_skills' },
-                    industryMatch: {
-                        $cond: [
-                            { $in: [userIndustry, '$organization_industry'] },
-                            1,
-                            0
-                        ]
-                    }
+                $lookup: {
+                    from: 'organizations',
+                    localField: 'organization_id',
+                    foreignField: '_id',
+                    as: 'org'
                 }
             },
             {
-                $addFields: {
-                    matchScore: {
-                        $cond: [
-                            { $eq: ['$totalSkills', 0] },
-                            0,
-                            {
-                                $add: [
-                                    { $divide: ['$skillMatchCount', { $max: [1, '$totalSkills'] }] },
-                                    '$industryMatch'
-                                ]
-                            }
-                        ]
-                    }
+                $unwind: {
+                    path: '$org',
+                    preserveNullAndEmptyArrays: true
                 }
             },
-            getTimeAgoStage(), // Use the helper function here
             {
                 $project: {
                     _id: 1,
-                    job_title: '$job_title',
+                    job_title: 1,
                     location: 1,
                     workplace_type: 1,
-                    salary: 1,
                     experience_level: 1,
-                    timeAgo: 1, // Include the calculated timeAgo field
-                    'organization_id.name': '$organization.name',
-                    'organization_id.logo': '$organization.logo',
+                    salary: 1,
+                    posted_time: 1,
+                    timeAgo: 1,
+                    organization: {
+                        _id: '$org._id',
+                        name: '$org.name',
+                        logo: '$org.logo'
+                    }
                 }
             }
         ];
@@ -150,18 +128,36 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
 
         // Use the helper function with standard projection
         const extraStages = [
-            getTimeAgoStage(), // Use the helper function here
+            getTimeAgoStage(),
+            {
+                $lookup: {
+                    from: 'organizations',
+                    localField: 'organization_id',
+                    foreignField: '_id',
+                    as: 'org'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$org',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
             {
                 $project: {
                     _id: 1,
                     job_title: 1,
                     location: 1,
                     workplace_type: 1,
+                    experience_level: 1, 
                     salary: 1,
-                    experience_level: 1,
-                    timeAgo: 1, // Include the calculated timeAgo field
-                    'organization_id.name': '$organization.name',
-                    'organization_id.logo': '$organization.logo',
+                    posted_time: 1,
+                    timeAgo: 1,
+                    organization: {
+                        _id: '$org._id',
+                        name: '$org.name',
+                        logo: '$org.logo'
+                    }
                 }
             }
         ];
@@ -199,7 +195,33 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
                     from: 'organizations',
                     localField: 'organization_id',
                     foreignField: '_id',
-                    as: 'organization'
+                    as: 'org'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$org',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    job_title: 1,
+                    location: 1,
+                    workplace_type: 1,
+                    experience_level: 1, 
+                    salary: 1,
+                    posted_time: 1,
+                    description: 1,
+                    benefits: 1,
+                    qualifications: 1,
+                    responsibilities: 1,
+                    organization: {
+                        _id: '$org._id',
+                        name: '$org.name',
+                        logo: '$org.logo'
+                    }
                 }
             },
             getTimeAgoStage(), // Add the timeAgo field
