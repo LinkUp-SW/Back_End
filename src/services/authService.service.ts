@@ -45,7 +45,7 @@ export class AuthService {
     if (user) {
       const token = tokenFunctionalities.createToken({
         time: "1h",
-        userID: await generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name), // TODO: Change it to username.
+        userID: user.user_id, 
       });
       user.is_verified = true;
       await user.save();
