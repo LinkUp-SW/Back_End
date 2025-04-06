@@ -116,6 +116,18 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       return furthest;
     }, null);
 
+    let educationDetails = null;
+    if (furthestEducation && mongoose.isValidObjectId(furthestEducation.school)) {
+      const school = await Organization.findById(furthestEducation.school).select("_id name logo");
+      if (school) {
+        educationDetails = {
+            _id: school._id,
+            name: school.name,
+            logo: school.logo,
+        };
+      }
+    }
+
     // Find the current work experience where is_current is true
     const currentExperience = targetUser.work_experience.find((experience: any) => experience.is_current) 
   || targetUser.work_experience.reduce((furthest: any, current: any) => {
@@ -124,6 +136,19 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
     }
     return furthest;
   }, null);
+
+    let experienceDetails = null;
+    if (currentExperience && mongoose.isValidObjectId(currentExperience.organization)) {
+      const organization = await Organization.findById(currentExperience.organization).select("_id name logo");
+      if (organization) {
+        experienceDetails = {
+            _id: organization._id,
+            name: organization.name,
+            logo: organization.logo,
+
+        };
+      }
+    }
 
     if (isMe) {
       // If the viewer is the same as the user, return full bio
@@ -138,8 +163,8 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
         number_of_connections: targetUser.connections.length,
         contact_info: targetUser.bio.contact_info,
         isSubscribed: targetUser.subscription?.subscribed || false,
-        education: furthestEducation || null,
-        work_experience: currentExperience || null,
+        education: educationDetails,
+        work_experience: experienceDetails,
       };
 
       res.status(200).json(userBio);
@@ -205,8 +230,8 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       isInConnections: isInConnections,
       isAlreadyFollowing: isAlreadyFollowing,
       isConnectByEmail: isConnectByEmail,
-      education: furthestEducation || null,
-      work_experience: currentExperience || null,
+      education: educationDetails,
+      work_experience: experienceDetails,
     };
 
     res.status(200).json(userBio);
