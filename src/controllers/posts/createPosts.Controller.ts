@@ -23,11 +23,11 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
             publicPost,
             taggedUsers
         } =req.body;
-        const userId = await getUserIdFromToken(req,res);
+        let userId = await getUserIdFromToken(req,res);
         if (!userId) return;
         const user = await findUserByUserId(userId,res);
         if (!user) return;
-        if ( !content || !commentsDisabled || publicPost == null || publicPost === undefined || !taggedUsers){
+        if ( (!content && !media) || !commentsDisabled || publicPost == null || publicPost === undefined){
             return res.status(400).json({message:'Required fields missing' })
         }
         let processedMedia: string[] | null = null;
@@ -39,9 +39,10 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
             }
 
         }
+
         const postRepository = new PostRepository;
         const newPost = await postRepository.create(
-            userId,
+            user._id!.toString(),
             content,
             processedMedia,
             mediaType,
@@ -52,7 +53,7 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
         await newPost.save();
         user.activity.posts.push(newPost);
         await user.save();
-        return res.status(200).json({message:'Post successfully created' })
+        return res.status(200).json({message:'Post successfully created', postId:newPost._id })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message,success:false });
