@@ -3365,3 +3365,143 @@ paths:
           description: Invalid or expired token.
         '500':
           description: Server error.    
+  /api/v1/post/save-post:
+    post:
+      tags:
+        - Saved Posts
+      summary: Save a post
+      description: Saves a post to the user's saved posts list.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to save.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully saved for user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post successfully saved for user."
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '404':
+          description: Post does not exist.
+        '500':
+          description: Server error.
+
+    get:
+      tags:
+        - Saved Posts
+      summary: Display saved posts
+      description: Retrieves the user's saved posts in batches.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  description: Number of posts to retrieve in a batch.
+                cursor:
+                  type: integer
+                  description: Cursor for pagination.
+              required:
+                - limit
+      responses:
+        '200':
+          description: Posts returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully."
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                  nextCursor:
+                    type: integer
+                    description: Cursor for the next batch of posts.
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.
+
+    delete:
+      tags:
+        - Saved Posts
+      summary: Delete a saved post
+      description: Deletes a post from the user's saved posts list.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to delete.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Deleted saved post successfully for user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deleted saved post successfully for user."
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '404':
+          description: Post does not exist.
+        '500':
+          description: Server error.
