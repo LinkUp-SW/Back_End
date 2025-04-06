@@ -78,6 +78,6 @@ describe("Posts Model", () => {
 
         await expect(postDoc.save()).resolves.toBeDefined();
         expect(postDoc.date).toBeDefined();
-        expect(postDoc.visibility).toBe(true);
+        expect(postDoc.public_post).toBe(true);
     }, 15000);
 });
