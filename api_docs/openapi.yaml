@@ -3202,7 +3202,7 @@ paths:
                     type: string
                     example: "Error fetching blocked list"
 
-  /api/v1/posts/create-post:
+  /api/v1/post/create-post:
     post:
       tags:
         - Posts
@@ -3266,7 +3266,7 @@ paths:
         '500':
           description: Server error.
 
-  /api/v1/posts/edit-post:
+  /api/v1/post/edit-post:
     patch:
       tags:
         - Posts
@@ -3324,7 +3324,7 @@ paths:
         '500':
           description: Server error.
 
-  /api/v1/posts/delete-post:
+  /api/v1/post/delete-post:
     delete:
       tags:
         - Posts
