@@ -13,6 +13,7 @@ import { validateTokenAndUser } from "../../utils/helperFunctions.utils.ts";
 import Organization from "../../models/organizations.model.ts"; // Import the organization model
 import User from "../../models/users.model.ts"; // Import the user model
 import mongoose from "mongoose"; // Import mongoose
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
 
 export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -114,6 +115,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
         bio: targetUser.bio,
         email: targetUser.email,
         profile_photo: targetUser.profile_photo || null,
+        is_default_profile_photo: targetUser.profile_photo === DEFAULT_IMAGE_URL,
         cover_photo: targetUser.cover_photo || null,
         number_of_connections: targetUser.connections.length,
         contact_info: targetUser.bio.contact_info,
@@ -123,7 +125,6 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       res.status(200).json(userBio);
       return;
     }
-
 
     // Find mutual connections
     const mutualConnections = findMutualConnections(
@@ -171,6 +172,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       bio: targetUser.bio,
       email: targetUser.email,
       profile_photo: targetUser.profile_photo || null,
+      is_default_profile_photo: targetUser.profile_photo === DEFAULT_IMAGE_URL,
       cover_photo: targetUser.cover_photo || null,
       number_of_connections: targetUser.connections.length,
       name_of_one_mutual_connection: nameOfOneMutualConnection,
@@ -383,7 +385,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Fetch endorser details 
-    const endorsers = await User.find({ _id: { $in: endorserIds } }).select("_id bio.first_name bio.last_name profile_photo");
+    const endorsers = await User.find({ _id: { $in: endorserIds } }).select("user_id bio.first_name bio.last_name profile_photo");
     const endorserMap = new Map(endorsers.map((user: any) => [user._id.toString(), user]));
 
     // Map the skills to include the required fields
@@ -395,7 +397,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
         const endorser = endorserMap.get(endorsementId.toString());
         return endorser
           ? {
-              user_id: endorser._id,
+              user_id: endorser.user_id,
               name: `${endorser.bio.first_name} ${endorser.bio.last_name}`,
               profilePicture: endorser.profile_photo || null,
             }
