@@ -129,5 +129,3 @@ For questions or support, please contact the LinkUp-SW team:
 - **Email**: linkup.backend.team@gmail.com
 - **GitHub**: [LinkUp-SW](https://github.com/LinkUp-SW)
 ```
-
-This README provides a professional overview of your project, including installation steps, features, and technical details. Let me know if you'd like to customize any section further!
