@@ -1,5 +1,5 @@
 import express from 'express';
-import { updateUsername } from '../../controllers/authentication/updateUsername.Controller.ts';
+import { updateUsername } from '../../controllers/authentication/updateUsername.controller.ts';
 
 const router = express.Router();
 
