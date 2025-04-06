@@ -37,6 +37,8 @@ import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
 import createPost from './src/routes/posts/createPosts.routes.ts';
 import deletePost from './src/routes/posts/deletePosts.routes.ts';
 import editPost from './src/routes/posts/editPosts.routes.ts';
+import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -50,7 +52,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin39' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Sara-1234' });
   console.log('Generated Token:', token);
 };
 
@@ -59,7 +61,7 @@ connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
-      //generateStartupToken();
+      generateStartupToken();
     });
   })
   .catch(err => {
@@ -131,7 +133,8 @@ app.use('/api/v1/user',
   app.use('/api/v1/post',
     createPost,
     deletePost,
-    editPost
+    editPost,
+    savePostRoutes
   );
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
