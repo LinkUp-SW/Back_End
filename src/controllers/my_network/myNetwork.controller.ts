@@ -387,11 +387,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         true // Include mutual connections
       );
       if (!formattedConnections) return;
+
+      const numberOfReceivedConnections = viewerUser.received_connections.length;
   
       // Return the paginated received connections and the next cursor
       res.status(200).json({
         receivedConnections: formattedConnections,
         nextCursor,
+        numberOfReceivedConnections,
       });
     } catch (error) {
       if (error instanceof Error && error.message === "Invalid or expired token") {
