@@ -1,5 +1,5 @@
 import express from 'express';
-import { updatePassword } from '../../controllers/authentication/updatePassword.controller.ts';
+import { updatePassword } from '../../controllers/authentication/updatePassword.Controller.ts';
 
 const router = express.Router();
 
