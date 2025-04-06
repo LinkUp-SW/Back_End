@@ -119,7 +119,7 @@ const deleteCoverPhoto = async (req: Request, res: Response): Promise<void> => {
     targetUser.cover_photo = DEFAULT_IMAGE_URL;
     await targetUser.save();
 
-    res.status(200).json({ message: "Cover photo deleted successfully" });
+    res.status(200).json({ message: "Cover photo deleted successfully" , coverPhoto: targetUser.cover_photo });
   } catch (error) {
     console.error("Error deleting cover photo:", error);
     res.status(500).json({ message: "Error deleting cover photo", error });
