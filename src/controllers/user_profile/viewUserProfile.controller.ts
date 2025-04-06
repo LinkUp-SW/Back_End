@@ -94,32 +94,52 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
   try {
     const result = await validateTokenAndUser(req, res);
     if (!result) return;
-     
+
     const { viewerId, targetUser: targetUser } = result;
-     
+
     // Retrieve the viewer's user document
     const viewerUser = await findUserByUserId(viewerId, res);
     if (!viewerUser) return;
 
-    // check if the target profile is public or private and if the viewer is connected to the target user
+    // Check if the target profile is public or private and if the viewer is connected to the target user
     const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
     if (!hasAccess) return;
 
     // Check if the viewer is the same as the user (is_me)
     const isMe = viewerId === targetUser.user_id;
 
+    // Find the education with the furthest end_date
+    const furthestEducation = targetUser.education.reduce((furthest: any, current: any) => {
+      if (!furthest || new Date(current.end_date) > new Date(furthest.end_date)) {
+        return current;
+      }
+      return furthest;
+    }, null);
+
+    // Find the current work experience where is_current is true
+    const currentExperience = targetUser.work_experience.find((experience: any) => experience.is_current) 
+  || targetUser.work_experience.reduce((furthest: any, current: any) => {
+    if (!furthest || new Date(current.end_date) > new Date(furthest.end_date)) {
+      return current;
+    }
+    return furthest;
+  }, null);
+
     if (isMe) {
-      // If the viewer is the same as the user, return full bio 
+      // If the viewer is the same as the user, return full bio
       const userBio = {
         is_me: true,
         bio: targetUser.bio,
         email: targetUser.email,
         profile_photo: targetUser.profile_photo || null,
         is_default_profile_photo: targetUser.profile_photo === DEFAULT_IMAGE_URL,
+        is_defult_cover_photo: targetUser.cover_photo === DEFAULT_IMAGE_URL,
         cover_photo: targetUser.cover_photo || null,
         number_of_connections: targetUser.connections.length,
         contact_info: targetUser.bio.contact_info,
         isSubscribed: targetUser.subscription?.subscribed || false,
+        education: furthestEducation || null,
+        work_experience: currentExperience || null,
       };
 
       res.status(200).json(userBio);
@@ -163,7 +183,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
 
     // Check if the user privacy settings allows invitations by email
     const isConnectByEmail = targetUser.privacy_settings?.flag_who_can_send_you_invitations === "email";
-     
+
     // Check if the user is premium
     const isSubscribed = targetUser.subscription?.subscribed || false;
 
@@ -173,6 +193,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       email: targetUser.email,
       profile_photo: targetUser.profile_photo || null,
       is_default_profile_photo: targetUser.profile_photo === DEFAULT_IMAGE_URL,
+      is_defult_cover_photo: targetUser.cover_photo === DEFAULT_IMAGE_URL,
       cover_photo: targetUser.cover_photo || null,
       number_of_connections: targetUser.connections.length,
       name_of_one_mutual_connection: nameOfOneMutualConnection,
@@ -184,20 +205,19 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       isInConnections: isInConnections,
       isAlreadyFollowing: isAlreadyFollowing,
       isConnectByEmail: isConnectByEmail,
-      
+      education: furthestEducation || null,
+      work_experience: currentExperience || null,
     };
 
     res.status(200).json(userBio);
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
-      res.status(401).json({ message: error.message,success:false });
-}
-  else{
-
-    console.error("Error fetching user bio:", error);
-    res.status(500).json({ message: "Error fetching user bio", error });
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error fetching user bio:", error);
+      res.status(500).json({ message: "Error fetching user bio", error });
+    }
   }
-}
 };
 
 export const getUserExperience = async (req: Request, res: Response): Promise<void> => {
