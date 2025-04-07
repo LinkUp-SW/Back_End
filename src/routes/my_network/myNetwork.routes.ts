@@ -28,7 +28,7 @@ router.get("/my-network/invitation-manager/received", connections.getReceivedCon
 router.post("/accept/:user_id", connections.acceptConnectionRequest);
 
 // Route to get connections list
-router.get("/my-network/invite-connect/connections", connections.getAllConnections);
+router.get("/my-network/invite-connect/connections/:user_id", connections.getAllConnections);
 
 // Route to remove a connection
 router.delete("/my-network/connections/remove/:user_id", connections.removeConnection);
@@ -47,5 +47,9 @@ router.delete("/manage-by-blocked-list/unblock/:user_id", connections.unblockUse
 
 // Route to get the blocked list
 router.get("/manage-by-blocked-list/blocked", connections.getBlockedList);
+
+// Route to get the number of connections
+router.get("/my-network/connections/count", connections.getNumberOfConnectionsAndFollowers);
+
 
 export default router;

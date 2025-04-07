@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
-import { getFormattedUserList, formatConnectionData } from "../../repositories/user.repository.ts";
+
+import { getFormattedUserList, formatConnectionData, getPaginatedConnectionsFollowers, handleProfileAccess } from "../../repositories/user.repository.ts";
+
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
 
@@ -133,40 +135,45 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
   
-      // Filter the following list to exclude users in the connections network
-      const nonConnectionFollowing = viewerUser.following.filter((followingId: any) => {
-        const followingIdStr = followingId.toString(); // Convert followingId to string
-        return !viewerUser.connections.some(
-          (connection: any) => connection._id.toString() === followingIdStr
-        );
-      });
+      // Get pagination parameters from the query
+      const { limit = 10, cursor } = req.query;
   
-      // Retrieve and format the filtered following list
+      // Fetch paginated following list using the helper function
+      const { connections: following, nextCursor } = await getPaginatedConnectionsFollowers(
+        viewerUser._id as mongoose.Types.ObjectId,
+        parseInt(limit as string, 10),
+        cursor as string,
+        "following" // Specify the following field
+      );
+  
+      // Format the following list
       const formattedFollowingList = await getFormattedUserList(
-        nonConnectionFollowing.map((id: mongoose.Types.ObjectId) => new mongoose.Types.ObjectId(id)),
+        following.map((follow: any) => follow._id),
         res
       );
       if (!formattedFollowingList) return;
   
-      // Exclude the `_id` field from the response
-      const followingWithoutId = formattedFollowingList.map((user) => ({
+      // Add the `isConnection` attribute to each user
+      const followings  = formattedFollowingList.map((user) => ({
         user_id: user.user_id,
         name: user.name,
         headline: user.headline,
         profilePicture: user.profilePicture,
       }));
   
-      res.status(200).json({ following: followingWithoutId });
+      // Return the paginated following list and the next cursor
+      res.status(200).json({
+        following: followings,
+        nextCursor,
+      });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid or expired token') {
-        res.status(401).json({ message: error.message,success:false });
-}
-    else{
-
-      console.error("Error fetching following list:", error);
-      res.status(500).json({ message: "Error fetching following list", error });
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
+        console.error("Error fetching following list:", error);
+        res.status(500).json({ message: "Error fetching following list", error });
+      }
     }
-  }
   };
 
   export const getFollowersList = async (req: Request, res: Response): Promise<void> => {
@@ -179,38 +186,48 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
   
-      // Retrieve and format the followers list
+      // Get pagination parameters from the query
+      const { limit = 10, cursor } = req.query;
+  
+      // Fetch paginated followers using the helper function
+      const { connections: followers, nextCursor } = await getPaginatedConnectionsFollowers(
+        viewerUser._id as mongoose.Types.ObjectId,
+        parseInt(limit as string, 10),
+        cursor as string,
+        "followers" // Specify the followers field
+      );
+  
+      // Format the followers list
       const formattedFollowersList = await getFormattedUserList(
-        viewerUser.followers.map((id: mongoose.Types.ObjectId) => id),
+        followers.map((follower: any) => follower._id),
         res
       );
       if (!formattedFollowersList) return;
   
       // Add the `following` attribute to each user
       const followersWithFollowingStatus = formattedFollowersList.map((user) => ({
-        user_id: user.user_id, // Use `user_id` from the formatted list
+        user_id: user.user_id, 
         name: user.name,
         headline: user.headline,
         profilePicture: user.profilePicture,
         following: viewerUser.following.some(
-          (followingId: mongoose.Types.ObjectId) => followingId.equals(user._id) // Use `equals` to compare ObjectId
-        ), // Check if the viewer follows this user
+          (followingId: mongoose.Types.ObjectId) => followingId.equals(user._id) 
+        ), 
       }));
   
-      // Sort the followers list in descending order (most recent followers first)
-      const sortedFollowers = followersWithFollowingStatus.reverse();
-  
-      res.status(200).json({ followers: sortedFollowers });
+      // Return the paginated followers list and the next cursor
+      res.status(200).json({
+        followers: followersWithFollowingStatus,
+        nextCursor,
+      });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid or expired token') {
-        res.status(401).json({ message: error.message,success:false });
-}
-    else{
-
-      console.error("Error fetching followers list:", error);
-      res.status(500).json({ message: "Error fetching followers list", error });
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
+        console.error("Error fetching followers list:", error);
+        res.status(500).json({ message: "Error fetching followers list", error });
+      }
     }
-  }
   };
   export const sendConnectionRequest = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -355,9 +372,20 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
   
+      // Get pagination parameters from the query
+      const { limit = 10, cursor } = req.query;
+  
+      // Fetch paginated received connections using the helper function
+      const { connections, nextCursor } = await getPaginatedConnectionsFollowers(
+        viewerUser._id as mongoose.Types.ObjectId,
+        parseInt(limit as string, 10),
+        cursor as string,
+        "received_connections" // Specify the received_connections field
+      );
+  
       // Format the received connections
-      const receivedConnections = await formatConnectionData(
-        viewerUser.received_connections.map((connection: any) => ({
+      const formattedConnections = await formatConnectionData(
+        connections.map((connection: any) => ({
           _id: connection._id,
           date: connection.date,
         })),
@@ -365,19 +393,24 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         res,
         true // Include mutual connections
       );
-      if (!receivedConnections) return;
-  
-      res.status(200).json({ receivedConnections });
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid or expired token') {
-        res.status(401).json({ message: error.message,success:false });
-}
-    else{
-      console.error("Error fetching received connections:", error);
-      res.status(500).json({ message: "Error fetching received connections", error });
-    }
-    }
+      if (!formattedConnections) return;
 
+      const numberOfReceivedConnections = viewerUser.received_connections.length;
+  
+      // Return the paginated received connections and the next cursor
+      res.status(200).json({
+        receivedConnections: formattedConnections,
+        nextCursor,
+        numberOfReceivedConnections,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
+        console.error("Error fetching received connections:", error);
+        res.status(500).json({ message: "Error fetching received connections", error });
+      }
+    }
   };
 
   export const getSentConnections = async (req: Request, res: Response): Promise<void> => {
@@ -390,28 +423,42 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
   
+      // Get pagination parameters from the query
+      const { limit = 10, cursor } = req.query;
+  
+      // Fetch paginated sent connections using the helper function
+      const { connections, nextCursor } = await getPaginatedConnectionsFollowers(
+        viewerUser._id as mongoose.Types.ObjectId,
+        parseInt(limit as string, 10),
+        cursor as string,
+        "sent_connections" 
+      );
+  
       // Format the sent connections
-      const sentConnections = await formatConnectionData(
-        viewerUser.sent_connections.map((connection: any) => ({
-          _id: connection._id.toString(),
+      const formattedConnections = await formatConnectionData(
+        connections.map((connection: any) => ({
+          _id: connection._id,
           date: connection.date,
         })),
         viewerUser,
         res,
         false // Do not include mutual connections
       );
-      if (!sentConnections) return;
+      if (!formattedConnections) return;
   
-      res.status(200).json({ sentConnections });
+      // Return the paginated sent connections and the next cursor
+      res.status(200).json({
+        sentConnections: formattedConnections,
+        nextCursor,
+      });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid or expired token') {
-        res.status(401).json({ message: error.message,success:false });
-}
-    else{
-      console.error("Error fetching sent connections:", error);
-      res.status(500).json({ message: "Error fetching sent connections", error });
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
+        console.error("Error fetching sent connections:", error);
+        res.status(500).json({ message: "Error fetching sent connections", error });
+      }
     }
-  }
   };
 
   export const acceptConnectionRequest = async (req: Request, res: Response): Promise<void> => {
@@ -511,39 +558,66 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
 
   export const getAllConnections = async (req: Request, res: Response): Promise<void> => {
     try {
-      // Validate token and retrieve viewerId
-      const viewerId = await getUserIdFromToken(req, res);
-      if (!viewerId) return;
-  
+      const result = await validateTokenAndUser(req, res);
+      if (!result) return;
+        
+      const { viewerId, targetUser: targetUser } = result;
+        
       // Retrieve the viewer's user document
       const viewerUser = await findUserByUserId(viewerId, res);
       if (!viewerUser) return;
+    
+      // check if the target profile is public or private and if the viewer is connected to the target user
+      const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
+      if (!hasAccess) return;
+
+
+      // check if the target user is not a connection of the viewer
+      if (viewerId !== targetUser.user_id.toString()) {
+        const isConnection = viewerUser.connections.some(
+          (connection: any) => connection._id.toString() === targetUser._id.toString()
+        );
+        if (!isConnection) {
+          res.status(403).json({ message: "You can't view this users' connections." });
+          return;
+        }
+      }
+
+      // Get pagination parameters from the query
+      const { limit = 10, cursor } = req.query;
   
-      // Format the connections list
+      // Fetch paginated connections using the helper function
+      const { connections, nextCursor } = await getPaginatedConnectionsFollowers(
+        targetUser._id as mongoose.Types.ObjectId,
+        parseInt(limit as string, 10),
+        cursor as string
+      );
+  
+      // Format the connections
       const formattedConnections = await formatConnectionData(
-        viewerUser.connections.map((connection: any) => ({
+        connections.map((connection: any) => ({
           _id: connection._id,
           date: connection.date,
         })),
-        viewerUser,
+        targetUser,
         res,
         false // Do not include mutual connections
       );
       if (!formattedConnections) return;
   
-      // Sort the connections in descending order (most recent first)
-      const sortedConnections = formattedConnections.reverse();
-  
-      res.status(200).json({ connections: sortedConnections });
+      // Return the paginated connections and the next cursor
+      res.status(200).json({
+        connections: formattedConnections,
+        nextCursor,
+      });
     } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid or expired token') {
-        res.status(401).json({ message: error.message,success:false });
-}
-    else{
-      console.error("Error fetching connections:", error);
-      res.status(500).json({ message: "Error fetching connections", error });
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
+        console.error("Error fetching connections:", error);
+        res.status(500).json({ message: "Error fetching connections", error });
+      }
     }
-  }
   };
 
   export const removeConnection = async (req: Request, res: Response): Promise<void> => {
@@ -906,6 +980,37 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       res.status(500).json({ message: "Error fetching blocked list", error });
     }
   }
+  };
+
+export const getNumberOfConnectionsAndFollowers = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Validate token and retrieve viewerId and targetUser
+      const viewerId = await getUserIdFromToken(req, res);
+      if (!viewerId) return;
+
+      const viewerUser = await findUserByUserId(viewerId, res);
+      if (!viewerUser) return;
+  
+    
+      // Return the number of connections
+      const numberOfConnections = viewerUser.connections.length;
+  
+      // Return th3 number of following
+      const numberOfFollowing = viewerUser.following.length;  
+
+      res.status(200).json({
+        user_id: viewerUser.user_id,
+        number_of_connections: numberOfConnections,
+        number_of_following: numberOfFollowing,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Invalid or expired token") {
+        res.status(401).json({ message: error.message});
+      } else {
+        console.error("Error fetching number of connections:", error);
+        res.status(500).json({ message: "Error fetching number of connections", error });
+      }
+    }
   };
 
   

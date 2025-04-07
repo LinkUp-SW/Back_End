@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser} from "../../utils/helperFunctions.utils.ts";
+import { getUserIdFromToken, validateTokenAndUser, } from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
-
+import {findUserByUserId} from "../../utils/database.helper.ts";
+import { profile } from "console";
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
+ 
 
 
 // Upload Profile Picture
@@ -98,17 +101,11 @@ const updateProfilePicture = async (req: Request, res: Response): Promise<void> 
 // Delete Profile Picture
 const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validation = await validateTokenAndUser(req, res);
-    if (!validation) return;
+    const viewerId = await getUserIdFromToken(req, res);
+    if (!viewerId) return;
 
-    const { viewerId, targetUser } = validation;
-
-    // Ensure the viewer is the same as the user (only the user can delete their own profile picture)
-    if (viewerId !== targetUser.user_id) {
-      res.status(403).json({ message: "You are not authorized to delete the profile picture for this user." });
-      return;
-    }
-
+    const targetUser = await findUserByUserId(viewerId, res);
+    if (!targetUser) return;
     // Retrieve the current profile picture URL from the user's document
     const profilePictureUrl = targetUser.profile_photo;
     if (!profilePictureUrl) {
@@ -131,10 +128,10 @@ const deleteProfilePicture = async (req: Request, res: Response): Promise<void> 
     }
 
     // Clear the profile_photo field in the user's document
-    targetUser.profile_photo = "";
+    targetUser.profile_photo = DEFAULT_IMAGE_URL; // Set to default image URL
     await targetUser.save();
 
-    res.status(200).json({ message: "Profile picture deleted successfully" });
+    res.status(200).json({ message: "Profile picture deleted successfully" , profilePicture: targetUser.profile_photo});
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
       res.status(401).json({ message: error.message,success:false });

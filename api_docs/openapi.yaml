@@ -363,7 +363,7 @@ paths:
           description: Server error
                     example: "Server error"
 
-  /profile/profile-picture/{user_id}:
+  /profile/profile-picture:
     post:
       tags:
         - Profile Picture
@@ -588,6 +588,8 @@ paths:
                   error:
                     type: string
                     example: "Cloudinary error"
+    
+  /profile/profile-picture/{user_id}:
     get:
       tags:
         - Profile Picture
@@ -644,7 +646,7 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /profile/cover-photo/{user_id}:
+  /profile/cover-photo:
     post:
       tags:
         - Cover Photo
@@ -874,6 +876,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
+  /profile/cover-photo/{user_id}:
     get:
       tags:
         - Cover Photo
@@ -930,7 +933,7 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /profile/resume/{user_id}:
+  /profile/resume:
     post:
       tags:
         - Resume
@@ -1093,6 +1096,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
+    delete:
     delete:
       tags:
         - Resume
@@ -2236,6 +2240,19 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the following list.
@@ -2261,6 +2278,9 @@ paths:
                         profilePicture:
                           type: string
                           example: "https://example.com/profile-picture.jpg"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
         '401':
           description: Unauthorized.
           content:
@@ -2297,6 +2317,20 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the followers list.
@@ -2325,6 +2359,10 @@ paths:
                         following:
                           type: boolean
                           example: true
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                  
         '401':
           description: Unauthorized.
           content:
@@ -2458,6 +2496,19 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the sent connection requests.
@@ -2487,6 +2538,12 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
+
+                        
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                  
         '401':
           description: Unauthorized.
           content:
@@ -2523,6 +2580,20 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication.
+
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
       responses:
         '200':
           description: Successfully retrieved the received connection requests.
@@ -2552,7 +2623,16 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
-                       
+                        numberOfMutualConnections:
+                          type: integer
+                          example: 5
+                        nameOfOneMutualConnection:
+                          type: string
+                          example: "Jane Smith"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
+                         
         '401':
           description: Unauthorized.
           content:
@@ -2651,7 +2731,7 @@ paths:
                     type: string
                     example: "Error accepting connection request"
 
-  /api/v1/user/my-network/invite-connect/connections:
+  /api/v1/user/my-network/invite-connect/connections/{user_id}:
     get:
       tags:
         - Connections
@@ -2660,12 +2740,32 @@ paths:
         Retrieves the list of all connections for the authenticated user. 
         The response includes user details and the date the connection was established.
       parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose connections are to be viewed 
         - name: Authorization
           in: header
           required: true
           schema:
             type: string
           description: Bearer token for authentication.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            description: The maximum number of items to return. Defaults to 10 if not specified.
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: A cursor for pagination. Use the value from the `next_cursor` field in the previous response.
+        
       responses:
         '200':
           description: Successfully retrieved the connections list.
@@ -2695,8 +2795,11 @@ paths:
                           type: string
                           format: date-time
                           example: "2025-03-28T12:34:56.789Z"
+                  next_cursor:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1Ni"
         '401':
-          description: Unauthorized.
+          description: Unauthorized
           content:
             application/json:
               schema:
@@ -2905,7 +3008,7 @@ paths:
                     type: string
                     example: "Error withdrawing connection request" 
 
-  /api/v1/my-network/block/{user_id}:
+  /api/v1/user/block/{user_id}:
     post:
       tags:
         - Block/Unblock
@@ -2975,7 +3078,7 @@ paths:
                     type: string
                     example: "Error blocking user"
 
-  /api/v1/manage-by-blocked-list/unblock/{user_id}:
+  /api/v1/user/manage-by-blocked-list/unblock/{user_id}:
     delete:
       tags:
         - Block/Unblock
@@ -3055,7 +3158,7 @@ paths:
                     type: string
                     example: "Error unblocking user"
 
-  /api/v1/manage-by-blocked-list/blocked:
+  /api/v1/user/manage-by-blocked-list/blocked:
     get:
       tags:
         - Block/Unblock

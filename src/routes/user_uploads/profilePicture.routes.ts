@@ -14,7 +14,7 @@ const router = Router();
 
 // Route to upload a profile picture
 router.post(
-  "/profile/profile-picture/:user_id",
+  "/profile/profile-picture",
   authorizeUpload, // Validate token and user_id first
   multerImageErrorHandler("profilePicture"), // Upload profilePicture & Handle Multer errors
   uploadProfilePicture
@@ -22,14 +22,14 @@ router.post(
 
 // Route to update a profile picture
 router.put(
-  "/profile/profile-picture/:user_id",
+  "/profile/profile-picture",
   authorizeUpload, // Validate token and user_id first
   multerImageErrorHandler("profilePicture"), // Upload profilePicture & Handle Multer errors
   updateProfilePicture
 );
 
 // Route to delete a profile picture
-router.delete("/profile/profile-picture/:user_id", deleteProfilePicture);
+router.delete("/profile/profile-picture", deleteProfilePicture);
 
 // Get the profile picture
 router.get("/profile/profile-picture/:user_id", getProfilePicture);

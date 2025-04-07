@@ -8,7 +8,6 @@ import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
 
-
 export enum sexEnum{
     male="Male",
     female="Female"
@@ -25,6 +24,11 @@ export enum invitationsEnum{
     everyone = "Everyone",
     email = "email",
 
+}
+
+export interface aboutInterface {
+    about: string;
+    skills: string[];
 }
 
 export enum accountStatusEnum{
@@ -61,6 +65,7 @@ export interface ConnectionUserInterface {
     
   }
 
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
 
 export interface usersInterface extends mongoose.Document{
     user_id: string;
@@ -130,7 +135,9 @@ export interface usersInterface extends mongoose.Document{
         _id: string;
         name: string;
         endorsments: usersInterface[];
-        used_where: string[];
+        educations: string[];
+        experiences: string[];
+        licenses: string[];
     }[];
     liscence_certificates: {
         _id: string;
@@ -138,7 +145,7 @@ export interface usersInterface extends mongoose.Document{
         issuing_organization: organizationsInterface;
         issue_date: Date;
         expiration_date: Date;
-        credintial_id: number;
+        credintial_id: string;
         credintial_url: string;
         skills: string[];
         media: {
@@ -200,6 +207,7 @@ export interface usersInterface extends mongoose.Document{
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
+    about?: aboutInterface;
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
@@ -245,15 +253,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     education: [
         {
             _id: { type: String },
-            school: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "School must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            school: { type: Schema.Types.ObjectId, ref: "organizations" },
             degree: { type: String },
             field_of_study: { type: String },
             start_date: { type: Date },
@@ -276,15 +276,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             _id: { type: String },
             title: { type: String },
             employee_type: { type: String },
-            organization: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "Company must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             is_current: { type: Boolean },
             start_date: { type: Date },
             end_date: { type: Date },
@@ -306,24 +298,18 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         _id: { type: String },
         name: { type: String },
         endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        used_where: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
+        educations: [{ type: String }],
+        experiences: [{ type: String }],
+        licenses: [{ type: String }],
     },],
     liscence_certificates: [
         {
             _id: { type: String},
             name: { type: String },
-            issuing_organization: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "Company must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             issue_date: { type: Date },
             expiration_date: { type: Date },
-            credintial_id: { type: Number },
+            credintial_id: { type: String },
             credintial_url: { type: String },
             skills: [{ type: String }],
             media: [
@@ -346,7 +332,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Profile photo must be a valid URL, an empty string, or null",
         },
-        default: null, // Allow null by default
+        default: DEFAULT_IMAGE_URL, 
       },
       cover_photo: {
         type: String,
@@ -356,7 +342,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Cover photo must be a valid URL, an empty string, or null",
         },
-        default: null,
+        default: DEFAULT_IMAGE_URL,
       },
       resume: {
         type: String,
@@ -447,6 +433,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
+    about: {
+        about: { type: String },
+        skills: [{ type: String }],
+    },
 });
 
 usersSchema.pre('save', async function(next) {

@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser, validateFileUpload } from "../../utils/helperFunctions.utils.ts";
+import { validateTokenAndUser, validateFileUpload, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
+import {findUserByUserId} from "../../utils/database.helper.ts";
+
 
 // Upload Resume
 const uploadResume = async (req: Request, res: Response): Promise<void> => {
@@ -108,16 +110,11 @@ const updateResume = async (req: Request, res: Response): Promise<void> => {
 // Delete Resume
 const deleteResume = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validation = await validateTokenAndUser(req, res);
-    if (!validation) return;
+    const viewerId = await getUserIdFromToken(req, res);
+    if (!viewerId) return;
 
-    const { viewerId, targetUser } = validation;
-
-    // Ensure the viewer is the same as the user (only the user can delete their own resume)
-    if (viewerId !== targetUser) {
-      res.status(403).json({ message: "You are not authorized to delete the resume for this user." });
-      return;
-    }
+    const targetUser = await findUserByUserId(viewerId, res);
+    if (!targetUser) return;
 
     // Retrieve the current resume URL from the user's document
     const resumeUrl = targetUser.resume;

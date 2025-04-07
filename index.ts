@@ -42,6 +42,8 @@ import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
+import searchRoutes from './src/routes/organization.route.ts';
+import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,7 +57,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234'});
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
   console.log('Generated Token:', token);
 };
 
@@ -128,7 +130,9 @@ app.use('/api/v1/user',
     licenseRoutes,
     updateUserRoutes,
     skillsRoutes,
-    myNetwork,);
+    myNetwork,
+    privacySettingsRoutes,
+    aboutUserRoutes,);
 
 // Mount Jobs Routes
 app.use('/api/v1/jobs', 
@@ -136,8 +140,6 @@ app.use('/api/v1/jobs',
     saveJobsRoutes,
     getJobsRoutes);
 
-// Privacy Settings Routes
-app.use('/api/v1/user', privacySettingsRoutes);
 
   app.use('/api/v1/post',
     createPost,
@@ -145,6 +147,10 @@ app.use('/api/v1/user', privacySettingsRoutes);
     editPost,
     savePostRoutes
   );
+
+
+app.use('/api/v1/search', searchRoutes);
+
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import tokenUtils from "../utils/token.utils.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
+import Organization, { categoryTypeEnum } from "../models/organizations.model.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization || "";
@@ -73,5 +74,29 @@ export const validateFileUpload = (req: Request, res: Response): string | null =
   }
 
   return profilePictureUrl;
+};
+
+/**
+ * Search for organizations of a specific category type
+ * @param query The search query
+ * @param categoryType The category type to search within
+ * @returns Array of matching organizations
+ */
+export const searchOrganizationsByType = async (query: string, categoryType: categoryTypeEnum) => {
+  return await Organization.find({
+    category_type: categoryType,
+    name: { $regex: query, $options: 'i' }
+  }).select('_id name logo').limit(10);
+};
+
+/**
+ * Search for organizations across all category types
+ * @param query The search query
+ * @returns Array of matching organizations
+ */
+export const searchAllOrganizations = async (query: string) => {
+  return await Organization.find({
+    name: { $regex: query, $options: 'i' }
+  }).select('_id name logo category_type').limit(10);
 };
 

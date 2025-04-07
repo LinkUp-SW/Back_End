@@ -72,15 +72,28 @@ export const checkProfileAccess = async (
   targetUserId: string
 ): Promise<{ accessGranted: boolean; reason?: string }> => {
   try {
+    if (currentUserId === targetUserId) {
+      return { accessGranted: true }; // Allow access to own profile
+    }
     // Find the target user by their user_id
     const targetUser = await Users.findOne({ user_id: targetUserId });
     if (!targetUser) {
       return { accessGranted: false, reason: "User not found" }; // Target user does not exist
     }
+    const currentUser = await Users.findOne({ user_id: currentUserId }) as usersInterface;
+    if (!currentUser) {
+        return { accessGranted: false, reason: "Current user not found" };
+    }
+    
+    const isBlocking = currentUser.blocked.some(
+      (blocked: any) => blocked._id.toString() === (targetUser._id as ObjectId).toString()
+    );
+    if (isBlocking) {
+      return { accessGranted: false, reason: "blocking" };
+    } 
 
-    // Deny access if the current user is blocked by the target user
     const isBlocked = targetUser.blocked.some(
-      (blocked: any) => blocked.user_id === currentUserId
+      (blocked: any) => blocked._id.toString() === (currentUser._id as ObjectId).toString()
     );
     if (isBlocked) {
       return { accessGranted: false, reason: "blocked" };
@@ -96,7 +109,7 @@ export const checkProfileAccess = async (
 
     // Allow access if the current user is connected to the target user
     const isConnected = targetUser.connections.some(
-      (connection: any) => connection.user_id === currentUserId
+      (connection: any) => connection._id === (currentUser._id as ObjectId).toString()
     );
     if (isConnected) {
       return { accessGranted: true };
@@ -171,56 +184,116 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
 };
 
+export enum SkillSourceType {
+  EDUCATION = 'education',
+  EXPERIENCE = 'experience',
+  LICENSE = 'license'
+}
 
-export const updateUserSkills = (user: usersInterface, skills: string[], organization: string) => {
+export const updateUserSkills = (
+  user: usersInterface, 
+  skills: string[], 
+  sourceId: string,
+  sourceType: SkillSourceType
+) => {
   if (skills && skills.length > 0) {
-      for (const skillName of skills) {
-          const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
-          
-          if (skillIndex !== -1) {
-              const experienceExists = user.skills[skillIndex].used_where.includes(organization);
-              
-              if (!experienceExists) {
-                  user.skills[skillIndex].used_where.push(organization);  
-              }
-          } else {
-              
-              user.skills.push({
-                  _id: new ObjectId().toString(),
-                  name: skillName,
-                  endorsments: [],
-                  used_where: [organization]
-              });
-          }
-      }
-  }
-};
-
-
-export const handleRemovedSkills = (user: usersInterface, oldSkills: string[], newSkills: string[], organization: string) => {
-  const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
-  for (const skillName of removedSkills) {
+    for (const skillName of skills) {
       const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+      
       if (skillIndex !== -1) {
-          user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
-              org => org.toString() !== organization.toString()
-          );
+        // Skill exists, add reference to appropriate array if not already there
+        const idExists = (() => {
+          switch(sourceType) {
+            case SkillSourceType.EDUCATION:
+              return user.skills[skillIndex].educations.includes(sourceId);
+            case SkillSourceType.EXPERIENCE:
+              return user.skills[skillIndex].experiences.includes(sourceId);
+            case SkillSourceType.LICENSE:
+              return user.skills[skillIndex].licenses.includes(sourceId);
+          }
+        })();
+        
+        if (!idExists) {
+          switch(sourceType) {
+            case SkillSourceType.EDUCATION:
+              user.skills[skillIndex].educations.push(sourceId);
+              break;
+            case SkillSourceType.EXPERIENCE:
+              user.skills[skillIndex].experiences.push(sourceId);
+              break;
+            case SkillSourceType.LICENSE:
+              user.skills[skillIndex].licenses.push(sourceId);
+              break;
+          }
+        }
+      } else {
+        // Skill doesn't exist, create it with reference in the appropriate array
+        const newSkill = {
+          _id: new ObjectId().toString(),
+          name: skillName,
+          endorsments: [],
+          educations: sourceType === SkillSourceType.EDUCATION ? [sourceId] : [],
+          experiences: sourceType === SkillSourceType.EXPERIENCE ? [sourceId] : [],
+          licenses: sourceType === SkillSourceType.LICENSE ? [sourceId] : []
+        };
+        
+        user.skills.push(newSkill);
       }
+    }
   }
 };
 
-
-export const handleDeletedExperienceSkills = (user: usersInterface, experienceSkills: string[], organization: organizationsInterface): void => {
-  const organizationStillUsed = user.work_experience.some(exp => 
-    exp.organization === organization
-  );
+export const handleRemovedSkills = (
+  user: usersInterface, 
+  oldSkills: string[], 
+  newSkills: string[], 
+  sourceId: string,
+  sourceType: SkillSourceType
+) => {
+  const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
   
-  for (const skillName of experienceSkills) {
+  for (const skillName of removedSkills) {
     const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
-    if (skillIndex !== -1 && !organizationStillUsed) {
-      user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
-        org => org.toString() !== organization.toString()
-      );
+    
+    if (skillIndex !== -1) {
+      // Remove the reference from the appropriate array
+      switch(sourceType) {
+        case SkillSourceType.EDUCATION:
+          user.skills[skillIndex].educations = user.skills[skillIndex].educations.filter(id => id !== sourceId);
+          break;
+        case SkillSourceType.EXPERIENCE:
+          user.skills[skillIndex].experiences = user.skills[skillIndex].experiences.filter(id => id !== sourceId);
+          break;
+        case SkillSourceType.LICENSE:
+          user.skills[skillIndex].licenses = user.skills[skillIndex].licenses.filter(id => id !== sourceId);
+          break;
+      }
+    }
+  }
+};
+
+export const handleDeletedSkills = (
+  user: usersInterface, 
+  skillNames: string[], 
+  sourceId: string,
+  sourceType: SkillSourceType
+): void => {
+  for (const skillName of skillNames) {
+    const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+    
+    if (skillIndex !== -1) {
+      // Remove the reference from the appropriate array
+      switch(sourceType) {
+        case SkillSourceType.EDUCATION:
+          user.skills[skillIndex].educations = user.skills[skillIndex].educations.filter(id => id != sourceId);
+          break;
+        case SkillSourceType.EXPERIENCE:
+          user.skills[skillIndex].experiences = user.skills[skillIndex].experiences.filter(id => id != sourceId);
+          break;
+        case SkillSourceType.LICENSE:
+          user.skills[skillIndex].licenses = user.skills[skillIndex].licenses.filter(id => id != sourceId);
+          break;
+      }
     }
   }
 };

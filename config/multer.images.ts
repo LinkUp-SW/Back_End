@@ -3,7 +3,7 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "./cloudinary.ts";
 import path from "path";
 
-const allowedExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
+const allowedExtensions = [".jpg", ".jpeg", ".png", ".webp"];
 
 /**
  * Validates that the uploaded file is an image by:
@@ -24,7 +24,7 @@ const imageFileFilter = (
   }
 
   // If it doesn't match, reject the file
-  cb(new Error("Only image files are allowed. Valid extensions: .jpg, .jpeg, .png, .gif, .webp"));
+  cb(new Error("Only image files are allowed. Valid extensions: .jpg, .jpeg, .png, .webp"));
 };
 
 const imageStorage = new CloudinaryStorage({
