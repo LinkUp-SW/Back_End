@@ -421,44 +421,76 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
     // Check if the viewer is the same as the user (is_me)
     const isMe = viewerId === targetUser.user_id;
 
-    // Extract all unique organization and endorser IDs
-    const organizationIds = [...new Set(targetUser.skills.flatMap((skill: any) => skill.used_where))];
-    const endorserIds = [...new Set(targetUser.skills.flatMap((skill: any) => skill.endorsments))];
-
-    // Fetch organization 
-    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id name logo");
-    const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
-
-    // Fetch endorser details 
-    const endorsers = await User.find({ _id: { $in: endorserIds } }).select("user_id bio.first_name bio.last_name profile_photo");
-    const endorserMap = new Map(endorsers.map((user: any) => [user._id.toString(), user]));
+    // Get fully populated user data to access related organizations
+    const populatedUser = await User.findById(targetUser._id)
+      .populate('education.school')
+      .populate('work_experience.organization')
+      .populate('liscence_certificates.issuing_organization')
+      .populate('skills.endorsments');
+    
+    if (!populatedUser) {
+      res.status(404).json({ message: 'User data not found' });
+      return;
+    }
 
     // Map the skills to include the required fields
-    const userSkills = targetUser.skills.map((skill: any) => ({
-      _id: skill._id,
-      name: skill.name,
-      total_endorsements: skill.endorsments.length, // Total number of endorsements
-      endorsements: skill.endorsments.map((endorsementId: any) => {
-        const endorser = endorserMap.get(endorsementId.toString());
-        return endorser
-          ? {
-              user_id: endorser.user_id,
-              name: `${endorser.bio.first_name} ${endorser.bio.last_name}`,
-              profilePicture: endorser.profile_photo || null,
-            }
-          : null; // Handle cases where the endorser is not found
-      }).filter((endorser: any) => endorser !== null), // Remove null entries
-      used_where: skill.used_where.map((organizationId: any) => {
-        const organization = organizationMap.get(organizationId.toString());
-        return organization
-          ? {
-              _id: organization._id,
-              name: organization.name,
-              profilePicture: organization.logo,
-            }
-          : null; // Handle cases where the organization is not found
-      }).filter((org: any) => org !== null), // Remove null entries
-    }));
+    const userSkills = populatedUser.skills.map((skill: any) => {
+      // Process endorsements
+      const endorsements = skill.endorsments.map((endorser: any) => ({
+        user_id: endorser.user_id,
+        name: `${endorser.bio?.first_name || ''} ${endorser.bio?.last_name || ''}`.trim(),
+        profilePicture: endorser.profile_photo || null,
+      }));
+
+      // Process educations
+      const educationItems = skill.educations.map((educationId: string) => {
+        const edu = populatedUser.education.find((e: any) => e._id.toString() === educationId);
+        if (edu && edu.school) {
+          return {
+            id: edu._id,
+            name: edu.school.name,
+            logo: edu.school.logo
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Process experiences
+      const experienceItems = skill.experiences.map((experienceId: string) => {
+        const exp = populatedUser.work_experience.find((e: any) => e._id.toString() === experienceId);
+        if (exp && exp.organization) {
+          return {
+            id: exp._id,
+            name: exp.title,
+            logo: exp.organization.logo
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Process licenses
+      const licenseItems = skill.licenses.map((licenseId: string) => {
+        const lic = populatedUser.liscence_certificates.find((l: any) => l._id.toString() === licenseId);
+        if (lic && lic.issuing_organization) {
+          return {
+            id: lic._id,
+            name: lic.name,
+            logo: lic.issuing_organization.logo
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      return {
+        _id: skill._id,
+        name: skill.name,
+        total_endorsements: skill.endorsments.length,
+        endorsements: endorsements,
+        educations: educationItems,
+        experiences: experienceItems,
+        licenses: licenseItems
+      };
+    });
 
     const response = {
       is_me: isMe,
