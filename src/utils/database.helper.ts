@@ -66,47 +66,49 @@ export const findUserByUserId = async (user_id: string, res: Response) => {
 
 /**
  * Checks if the current user has access to view the target user's profile.
- * This function can be extended based on your application's business rules.
  */
 export const checkProfileAccess = async (
-    currentUserId: string,
-    targetUserId: string
-  ): Promise<boolean> => {
-    try {
-      // Find the target user by their user_id
-      const targetUser = await Users.findOne({ user_id: targetUserId });
-      if (!targetUser) {
-        return false; // Target user does not exist
-      }
-  
-      // Allow access if the profile is public
-      if (
-        targetUser.privacy_settings &&
-        targetUser.privacy_settings.flag_account_status === "Public"
-      ) {
-        return true;
-      }
-  
-      // Deny access if the current user is blocked by the target user
-      if (targetUser.blocked && targetUser.blocked.includes(currentUserId)) {
-        return false;
-      }
-  
-      // Allow access if the current user is connected to the target user
-      if (
-        targetUser.connections &&
-        targetUser.connections.includes(currentUserId)
-      ) {
-        return true;
-      }
-  
-      // Deny access if none of the conditions are met
-      return false;
-    } catch (error) {
-      console.error("Error checking profile access:", error);
-      return false;
+  currentUserId: string,
+  targetUserId: string
+): Promise<{ accessGranted: boolean; reason?: string }> => {
+  try {
+    // Find the target user by their user_id
+    const targetUser = await Users.findOne({ user_id: targetUserId });
+    if (!targetUser) {
+      return { accessGranted: false, reason: "User not found" }; // Target user does not exist
     }
-  };
+
+    // Deny access if the current user is blocked by the target user
+    const isBlocked = targetUser.blocked.some(
+      (blocked: any) => blocked.user_id === currentUserId
+    );
+    if (isBlocked) {
+      return { accessGranted: false, reason: "blocked" };
+    }
+
+    // Allow access if the profile is public
+    if (
+      targetUser.privacy_settings &&
+      targetUser.privacy_settings.flag_account_status === "Public"
+    ) {
+      return { accessGranted: true };
+    }
+
+    // Allow access if the current user is connected to the target user
+    const isConnected = targetUser.connections.some(
+      (connection: any) => connection.user_id === currentUserId
+    );
+    if (isConnected) {
+      return { accessGranted: true };
+    }
+
+    // Deny access if the profile is private
+    return { accessGranted: false, reason: "private" };
+  } catch (error) {
+    console.error("Error checking profile access:", error);
+    return { accessGranted: false, reason: "error" };
+  }
+};
 
 
 /**

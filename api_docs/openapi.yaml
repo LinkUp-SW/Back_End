@@ -2059,6 +2059,1370 @@ paths:
           description: No jobs found in this salary range
         '500':
           description: Server error
+  
+  /api/v1/user/follow/{user_id}:
+    post:
+      tags:
+        - Connections
+      summary: Follow a user
+      description: >
+        Allows a user to follow another user without requiring a connection. 
+        Validates the token and checks if the viewer is allowed to follow the target user 
+        based on their privacy settings, block list, and existing follow status.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to follow
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: User followed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are now following this user."
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      selfFollow:
+                        value: "You cannot follow yourself."
+                      alreadyFollowing:
+                        value: "You are already following this user."
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      blocked:
+                        value: "You are blocked from following this user."
+                      connectionsOnly:
+                        value: "Only connections can follow this user."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error following user"
+
+  /api/v1/user/unfollow/{user_id}:
+    delete:
+      tags:
+        - Connections
+      summary: Unfollow a user
+      description: >
+        Allows a user to unfollow another user. Validates the token and ensures the user is authorized to perform the action. 
+        Checks if the user is currently following the target user and removes the relationship if valid.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to unfollow.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: User unfollowed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You have unfollowed this user."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      selfUnfollow:
+                        value: "You cannot unfollow yourself."
+                      notFollowing:
+                        value: "You are not following this user."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized."
+        '404':
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error unfollowing user."
+  
+  /api/v1/user/my-network/network-manager/following:
+    get:
+      tags:
+        - Network Manager
+      summary: Get the following list
+      description: >
+        Retrieves the list of users that the authenticated user is following. 
+        Excludes users who are part of the connections network.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the following list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  following:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "John-De-123"
+                        name:
+                          type: string
+                          example: "John Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at TechCorp"
+                        profilePicture:
+                          type: string
+                          example: "https://example.com/profile-picture.jpg"
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching following list."
+
+  /api/v1/user/my-network/network-manager/followers:
+    get:
+      tags:
+        - Network Manager
+      summary: Get the followers list
+      description: >
+        Retrieves the list of users who are following the authenticated user. 
+        Includes additional information about whether the authenticated user is following each follower.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the followers list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  followers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "John-Doe-123"
+                        name:
+                          type: string
+                          example: "John Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at TechCorp"
+                        profilePicture:
+                          type: string
+                          example: "https://example.com/profile-picture.jpg"
+                        following:
+                          type: boolean
+                          example: true
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching followers list."
+  /api/v1/user/connect/{user_id}:
+    post:
+      tags:
+        - Connections
+      summary: Send a connection request
+      description: >
+        Allows a user to send a connection request to another user. 
+        Validates the token and ensures the user is authorized to perform the action. 
+        Checks various conditions such as whether the user is blocked, already connected, or restricted by privacy settings.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to send a connection request to.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: Required if the target user has set their privacy to "email".
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Connection request sent successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Connection request sent successfully."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      selfRequest:
+                        value: "You cannot send a connection request to yourself."
+                      alreadyConnected:
+                        value: "You are already connected to this user."
+                      emailRequired:
+                        value: "Email is required to send a connection request."
+                      emailMismatch:
+                        value: "The provided email does not match the user's email."
+                      alreadyPending:
+                        value: "You have already sent a connection request to this user."
+                      threeWeekRestriction:
+                        value: "You cannot send another connection request to this user for 3 weeks."
+                      subscriptionLimit:
+                        value: "You have reached the maximum number of connections allowed for non-subscribed users."
+        '403':
+          description: Forbidden.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are blocked from sending a connection request to this user."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error sending connection request."
+  /api/v1/user/my-network/invitation-manager/sent:
+    get:
+      tags:
+        - Invitation Manager
+      summary: Get sent connection requests
+      description: >
+        Retrieves the list of connection requests sent by the authenticated user. 
+        The response includes the user details and the date the connection request was sent.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the sent connection requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sentConnections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "John-Doe-123"
+                        name:
+                          type: string
+                          example: "John Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at TechCorp"
+                        profilePicture:
+                          type: string
+                          example: "https://example.com/profile-picture.jpg"
+                        date:
+                          type: string
+                          format: date-time
+                          example: "2025-03-28T12:34:56.789Z"
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching sent connections."
+
+  /api/v1/user/my-network/invitation-manager/received:
+    get:
+      tags:
+        - Invitation Manager
+      summary: Get received connection requests
+      description: >
+        Retrieves the list of connection requests received by the authenticated user. 
+        The response includes the user details, the date the connection request was received.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the received connection requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  receivedConnections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "John-Doe-123"
+                        name:
+                          type: string
+                          example: "John Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at TechCorp"
+                        profilePicture:
+                          type: string
+                          example: "https://example.com/profile-picture.jpg"
+                        date:
+                          type: string
+                          format: date-time
+                          example: "2025-03-28T12:34:56.789Z"
+                       
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching received connections."
+
+  /api/v1/user/my-network/invitation-manager/accept/{user_id}:
+    post:
+      tags:
+        - Invitation Manager
+      summary: Accept a connection request
+      description: >
+        Allows the authenticated user to accept a connection request from another user. 
+        Updates the connections list for both users and removes the pending request.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose connection request is being accepted.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Connection request accepted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Connection request accepted successfully"
+                  connectionDate:
+                    type: string
+                    format: date-time
+                    example: "2025-03-28T12:34:56.789Z"
+        '400':
+          description: Bad request .
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No pending connection request from this user"
+        '400':
+          description: Bad request reached subscriptionLimit.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You have reached the maximum number of connections allowed for non-subscribed users."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error accepting connection request"
+
+  /api/v1/user/my-network/invite-connect/connections:
+    get:
+      tags:
+        - Connections
+      summary: Get connections list
+      description: >
+        Retrieves the list of all connections for the authenticated user. 
+        The response includes user details and the date the connection was established.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the connections list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "John-Doe-123"
+                        name:
+                          type: string
+                          example: "John Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at TechCorp"
+                        profilePicture:
+                          type: string
+                          example: "https://example.com/profile-picture.jpg"
+                        date:
+                          type: string
+                          format: date-time
+                          example: "2025-03-28T12:34:56.789Z"
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching connections"
+
+  /api/v1/user/my-network/connections/remove/{user_id}:
+    delete:
+      tags:
+        - Connections
+      summary: Remove a connection
+      description: >
+        Allows the authenticated user to remove a connection with another user. 
+        Updates the connections list for both users and ensures the relationship is removed.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to remove from the connections list.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Connection removed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Connection removed successfully."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This user is not in your connections list."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error removing connection"
+  
+  /api/v1/user/my-network/invitation-manager/ignore/{user_id}:
+    delete:
+      tags:
+        - Invitation Manager
+      summary: Ignore a received connection request
+      description: >
+        Allows the authenticated user to ignore a received connection request from another user. 
+        Removes the pending connection request from the user's received connections list.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose connection request is being ignored.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Connection request ignored successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Connection request ignored successfully."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No received connection request from this user."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error ignoring connection request"
+
+  /api/v1/my-network/invitation-manager/withdraw/{user_id}:
+    delete:
+      tags:
+        - Invitation Manager
+      summary: Withdraw a sent connection request
+      description: >
+        Allows the authenticated user to withdraw a sent connection request to another user. 
+        Removes the pending connection request from the user's sent connections list and the target user's received connections list.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose connection request is being withdrawn.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Connection request withdrawn successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Connection request withdrawn successfully."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No sent connection request to this user."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error withdrawing connection request" 
+
+  /api/v1/my-network/block/{user_id}:
+    post:
+      tags:
+        - Block/Unblock
+      summary: Block a user
+      description: >
+        Allows the authenticated user to block another user. 
+        Removes the blocked user from the connections, followers, following, sent connections, and received connections lists.
+        Prevents the blocked user from interacting with the authenticated user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to block.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: User blocked successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User blocked successfully."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      selfBlock:
+                        value: "You cannot block yourself."
+                      alreadyBlocked:
+                        value: "This user is already blocked."
+                      recentlyUnblocked:
+                        value: "You cannot reblock this user within 48 hours of unblocking."
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error blocking user"
+
+  /api/v1/manage-by-blocked-list/unblock/{user_id}:
+    delete:
+      tags:
+        - Block/Unblock
+      summary: Unblock a user
+      description: >
+        Allows the authenticated user to unblock a previously blocked user. 
+        Requires the user's password for verification. Adds the unblocked user to the `unblocked_users` list with the current date.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to unblock.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: The password of the authenticated user for verification.
+                  example: "securepassword123"
+      responses:
+        '200':
+          description: User unblocked successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User unblocked successfully."
+        '400':
+          description: Bad request.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    examples:
+                      selfUnblock:
+                        value: "You cannot unblock yourself."
+                      notBlocked:
+                        value: "This user is not in your blocked list."
+                      passwordRequired:
+                        value: "Password is required to unblock a user."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid password."
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error unblocking user"
+
+  /api/v1/manage-by-blocked-list/blocked:
+    get:
+      tags:
+        - Block/Unblock
+      summary: Get blocked users list
+      description: >
+        Retrieves the list of users blocked by the authenticated user. 
+        Includes user details and the date when the user was blocked.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the blocked users list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocked_list:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "John-Doe-123"
+                        name:
+                          type: string
+                          example: "John Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at TechCorp"
+                        profilePicture:
+                          type: string
+                          example: "https://example.com/profile-picture.jpg"
+                        date:
+                          type: string
+                          format: date-time
+                          example: "2025-03-28T12:34:56.789Z"
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching blocked list"
+
+  /api/v1/post/create-post:
+    post:
+      tags:
+        - Posts
+      summary: Create a new post
+      description: Creates a new post for a user and associates it with their activity.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Content of the post.
+                mediaType:
+                  type: string
+                  description: Type of media (e.g., image, video).
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs.
+                commentsDisabled:
+                  type: string
+                  description: Who can comment on the post.
+                publicPost:
+                  type: boolean
+                  description: Whether the post is public.
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs tagged in the post.
+              required:
+                - content
+                - commentsDisabled
+                - publicPost
+                - taggedUsers
+      responses:
+        '200':
+          description: Post successfully created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.
+
+  /api/v1/post/edit-post:
+    patch:
+      tags:
+        - Posts
+      summary: Edit an existing post
+      description: Updates the content, media, or tagged users of an existing post.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to edit.
+                content:
+                  type: string
+                  description: Updated content of the post.
+                mediaType:
+                  type: string
+                  description: Updated type of media (e.g., image, video).
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of media URLs.
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of user IDs tagged in the post.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Post does not exist or required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.
+
+  /api/v1/post/delete-post:
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post
+      description: Deletes a post and removes it from the user's activity.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to delete.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: Post does not exist or required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.    
+  /api/v1/post/save-post:
+    post:
+      tags:
+        - Saved Posts
+      summary: Save a post
+      description: Saves a post to the user's saved posts list.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to save.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully saved for user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post successfully saved for user."
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '404':
+          description: Post does not exist.
+        '500':
+          description: Server error.
+
+    get:
+      tags:
+        - Saved Posts
+      summary: Display saved posts
+      description: Retrieves the user's saved posts in batches.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  description: Number of posts to retrieve in a batch.
+                cursor:
+                  type: integer
+                  description: Cursor for pagination.
+              required:
+                - limit
+      responses:
+        '200':
+          description: Posts returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully."
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                  nextCursor:
+                    type: integer
+                    description: Cursor for the next batch of posts.
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '500':
+          description: Server error.
+
+    delete:
+      tags:
+        - Saved Posts
+      summary: Delete a saved post
+      description: Deletes a post from the user's saved posts list.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to delete.
+              required:
+                - postId
+      responses:
+        '200':
+          description: Deleted saved post successfully for user.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deleted saved post successfully for user."
+        '400':
+          description: Required fields missing.
+        '401':
+          description: Invalid or expired token.
+        '404':
+          description: Post does not exist.
+        '500':
+          description: Server error.
 
 components:
   securitySchemes:

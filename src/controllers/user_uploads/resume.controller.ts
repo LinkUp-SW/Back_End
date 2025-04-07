@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser, validateFileUpload } from "../../utils/helper.ts";
+import { validateTokenAndUser, validateFileUpload } from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
 
 // Upload Resume
@@ -43,9 +43,14 @@ const uploadResume = async (req: Request, res: Response): Promise<void> => {
       resume: resumeUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error uploading resume:", error);
     res.status(500).json({ message: "Error uploading resume", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 
@@ -90,9 +95,14 @@ const updateResume = async (req: Request, res: Response): Promise<void> => {
       resume: newResumeUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error updating resume:", error);
     res.status(500).json({ message: "Error updating resume", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 // Delete Resume
@@ -101,16 +111,16 @@ const deleteResume = async (req: Request, res: Response): Promise<void> => {
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { viewerId, userId, user } = validation;
+    const { viewerId, targetUser } = validation;
 
     // Ensure the viewer is the same as the user (only the user can delete their own resume)
-    if (viewerId !== userId) {
+    if (viewerId !== targetUser) {
       res.status(403).json({ message: "You are not authorized to delete the resume for this user." });
       return;
     }
 
     // Retrieve the current resume URL from the user's document
-    const resumeUrl = user.resume;
+    const resumeUrl = targetUser.resume;
     if (!resumeUrl) {
       res.status(400).json({ message: "No resume to delete" });
       return;
@@ -136,14 +146,19 @@ const deleteResume = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Clear the resume field in the user's document
-    user.resume = "";
-    await user.save();
+    targetUser.resume = "";
+    await targetUser.save();
 
     res.status(200).json({ message: "Resume deleted successfully" });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error deleting resume:", error);
     res.status(500).json({ message: "Error deleting resume", error });
   }
+}
 };
 
 // Get Resume
@@ -152,20 +167,25 @@ const getResume = async (req: Request, res: Response): Promise<void> => {
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { user } = validation;
+    const { targetUser } = validation;
 
     // Check if a resume exists
-    if (!user.resume) {
+    if (!targetUser.resume) {
       res.status(404).json({ message: "Resume not found" });
       return;
     }
 
     // Return the resume URL
-    res.status(200).json({ resume: user.resume });
+    res.status(200).json({ resume: targetUser.resume });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error retrieving resume:", error);
     res.status(500).json({ message: "Error retrieving resume", error });
   }
+}
 };
 
 export { uploadResume, updateResume, deleteResume, getResume };

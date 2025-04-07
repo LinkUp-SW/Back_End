@@ -71,7 +71,13 @@ export const getUserProfile = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json(userProfile);
   } catch (error) {
+
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error fetching user profile:", error);
     res.status(500).json({ message: "Error fetching user profile", error });
   }
+}
 };

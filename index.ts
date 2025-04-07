@@ -33,6 +33,12 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
+import createPost from './src/routes/posts/createPosts.routes.ts';
+import deletePost from './src/routes/posts/deletePosts.routes.ts';
+import editPost from './src/routes/posts/editPosts.routes.ts';
+import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
+
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
@@ -44,7 +50,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
-
+app.use(express.json({limit:"50mb"}));
 
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
@@ -134,6 +140,16 @@ app.use('/api/v1/jobs',
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
 
+    skillsRoutes,
+    privacySettingsRoutes,
+    myNetwork);
+
+  app.use('/api/v1/post',
+    createPost,
+    deletePost,
+    editPost,
+    savePostRoutes
+  );
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });

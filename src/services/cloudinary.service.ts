@@ -1,4 +1,3 @@
-
 import { v2 as cloudinary } from 'cloudinary';
 /**
  * Extracts the publicId from a Cloudinary URL.
@@ -80,4 +79,34 @@ export const processMediaArray = async (mediaArray: any[] = []) => {
     }
     
     return processedMedia;
+};
+
+
+export const processPostMediaArray = async (mediaArray: any[] = []) => {
+  if (!mediaArray || !Array.isArray(mediaArray)) return [];
+
+  try {
+    const uploadPromises = mediaArray.map(async (mediaItem) => {
+      if (mediaItem && mediaItem.startsWith('data:')) {
+        try {
+          // Upload to Cloudinary
+          const uploadResponse = await cloudinary.uploader.upload(mediaItem, {
+            resource_type: 'auto',
+          });
+          return uploadResponse.secure_url;
+        } catch (error) {
+          console.error('Error uploading to Cloudinary:', error);
+          return null; // Return null if upload fails
+        }
+      }
+      return null; // Return null for invalid media items
+    });
+
+    // Wait for all uploads to complete
+    const processedMedia = await Promise.all(uploadPromises);
+    return processedMedia.filter((url) => url !== null); // Filter out failed uploads
+  } catch (error) {
+    console.error('Error processing media array:', error);
+    return [];
+  }
 };
