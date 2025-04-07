@@ -1093,7 +1093,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-  delete:
+    delete:
       tags:
         - Resume
       summary: Delete a resume
@@ -1160,7 +1160,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-  get:
+    get:
       tags:
         - Resume
       summary: Get a resume
@@ -1192,7 +1192,6 @@ paths:
                 properties:
                   message:
                     type: string
-
                     example: "Resume not found"
         '401':
           description: Unauthorized
@@ -1204,10 +1203,8 @@ paths:
                   message:
                     type: string
                     example: "Unauthorized"
-
         '403':
           description: Access denied
-
         '500':
           description: Error retrieving resume
           content:
@@ -1284,9 +1281,7 @@ paths:
                 properties:
                   message:
                     type: string
-
                     example: "Username already in use"
-
         '404':
           description: User not found
           content:
@@ -1306,7 +1301,6 @@ paths:
                 properties:
                   message:
                     type: string
-
                     example: "Server error"
   # Fix resume endpoints structure - remove standalone delete/get and put them under the path
   /profile/resume/{user_id}:
@@ -1362,121 +1356,7 @@ paths:
                     example: "https://cloudinary.com/user/resume.pdf"
         # Other response codes remain...
 
-  # Add skills endpoints
-  /api/v1/user/add-skill:
-    post:
-      tags:
-        - Skills
-      summary: Add a new skill
-      description: Adds a new skill to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentication token
-                name:
-                  type: string
-                  description: Name of the skill
-      responses:
-        '201':
-          description: Skill added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Skill added successfully"
-                  skill:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                      name:
-                        type: string
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Server error
-
-  /api/v1/user/update-skill/{skillId}:
-    put:
-      tags:
-        - Skills
-      summary: Update a skill
-      description: Updates an existing skill
-      parameters:
-        - name: skillId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the skill to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                name:
-                  type: string
-      responses:
-        '200':
-          description: Skill updated successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Skill not found
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-skill/{skillId}:
-    delete:
-      tags:
-        - Skills
-      summary: Delete a skill
-      description: Deletes a skill from the user's profile
-      parameters:
-        - name: skillId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the skill to delete
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-      responses:
-        '200':
-          description: Skill deleted successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Skill not found
-        '500':
-          description: Server error
-
+  
   # Add validate-token endpoint
   /api/v1/user/validate-token:
     get:
@@ -1625,395 +1505,6 @@ paths:
           description: User not found
         '500':
           description: Server error
-
-  # Work Experience Endpoints
-  /api/v1/user/add-work-experience:
-    post:
-      tags:
-        - Experience
-      summary: Add work experience
-      description: Adds a new work experience entry to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentication token
-                title:
-                  type: string
-                  description: Job title
-                company:
-                  type: string
-                  description: Company name
-                location:
-                  type: string
-                  description: Job location
-                start_date:
-                  type: string
-                  format: date
-                  description: Start date
-                end_date:
-                  type: string
-                  format: date
-                  description: End date (null if current position)
-                description:
-                  type: string
-                  description: Job description
-      responses:
-        '201':
-          description: Work experience added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Work experience added successfully"
-                  experience:
-                    type: object
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Server error
-
-  /api/v1/user/update-work-experience/{experienceId}:
-    put:
-      tags:
-        - Experience
-      summary: Update work experience
-      description: Updates an existing work experience entry
-      parameters:
-        - name: experienceId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the experience entry to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                # Same fields as add-work-experience
-      responses:
-        '200':
-          description: Work experience updated successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Experience not found
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-work-experience/{experienceId}:
-    delete:
-      tags:
-        - Experience
-      summary: Delete work experience
-      description: Deletes a work experience entry
-      parameters:
-        - name: experienceId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the experience entry to delete
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-      responses:
-        '200':
-          description: Work experience deleted successfully
-        '401':
-          description: Unauthorized
-        '404':
-          description: Experience not found
-        '500':
-          description: Server error
-
-  # Education Endpoints
-  /api/v1/user/add-education:
-    post:
-      tags:
-        - Education
-      summary: Add education
-      description: Adds a new education entry to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentication token
-                institution:
-                  type: string
-                  description: Name of educational institution
-                degree:
-                  type: string
-                  description: Degree obtained
-                field_of_study:
-                  type: string
-                  description: Field of study
-                start_date:
-                  type: string
-                  format: date
-                  description: Start date
-                end_date:
-                  type: string
-                  format: date
-                  description: End date (null if current education)
-                description:
-                  type: string
-                  description: Additional details
-      responses:
-        '201':
-          description: Education added successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Server error
-
-  /api/v1/user/update-education/{educationId}:
-    put:
-      tags:
-        - Education
-      summary: Update education
-      description: Updates an existing education entry
-      parameters:
-        - name: educationId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the education entry to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                # Same fields as add-education
-      responses:
-        '200':
-          description: Education updated successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: Education not found
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-education/{educationId}:
-    delete:
-      tags:
-        - Education
-      summary: Delete education
-      description: Deletes an education entry
-      parameters:
-        - name: educationId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the education entry to delete
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-      responses:
-        '200':
-          description: Education deleted successfully
-        '401':
-          description: Unauthorized
-        '404':
-          description: Education not found
-        '500':
-          description: Server error
-
-  # License/Certificate Endpoints
-  /api/v1/user/add-license:
-    post:
-      tags:
-        - License
-      summary: Add license or certificate
-      description: Adds a new license or certificate to the user's profile
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentication token
-                name:
-                  type: string
-                  description: License/certificate name
-                issuing_organization:
-                  type: string
-                  description: Organization that issued the license
-                issue_date:
-                  type: string
-                  format: date
-                  description: Date when the license was issued
-                expiration_date:
-                  type: string
-                  format: date
-                  description: Expiration date (if applicable)
-                credential_id:
-                  type: string
-                  description: Credential identifier
-      responses:
-        '201':
-          description: License added successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '500':
-          description: Server error
-
-  /api/v1/user/update-license/{licenseId}:
-    put:
-      tags:
-        - License
-      summary: Update license or certificate
-      description: Updates an existing license or certificate
-      parameters:
-        - name: licenseId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the license to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                # Same fields as add-license
-      responses:
-        '200':
-          description: License updated successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: License not found
-        '500':
-          description: Server error
-
-  /api/v1/user/delete-license/{licenseId}:
-    delete:
-      tags:
-        - License
-      summary: Delete license or certificate
-      description: Deletes a license or certificate
-      parameters:
-        - name: licenseId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the license to delete
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-      responses:
-        '200':
-          description: License deleted successfully
-        '401':
-          description: Unauthorized
-        '404':
-          description: License not found
-        '500':
-          description: Server error
-
-  # Update User Profile Endpoint
-  /api/v1/user/update-user-profile:
-    put:
-      tags:
-        - User Profile
-      summary: Update user profile
-      description: Updates general user profile information
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token:
-                  type: string
-                  description: Authentication token
-                first_name:
-                  type: string
-                last_name:
-                  type: string
-                headline:
-                  type: string
-                location:
-                  type: string
-                about:
-                  type: string
-                # Additional fields can be added here
-      responses:
-        '200':
-          description: Profile updated successfully
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '404':
-          description: User not found
-        '500':
-          description: Server error
   
   # Privacy Settings Endpoints
   /api/v1/user/privacy-settings/profile-visibility/{user_id}:
@@ -2139,6 +1630,433 @@ paths:
           description: Invalid email format
         '404':
           description: Email not registered
+        '500':
+          description: Server error
+   
+  # Jobs Endpoints
+  /api/v1/jobs/save-jobs/{jobId}:
+    post:
+      tags:
+        - Jobs
+      summary: Save a job
+      description: Saves a job to the user's saved jobs list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to save
+      responses:
+        '200':
+          description: Job saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job saved successfully"
+        '400':
+          description: Invalid job ID format or job already saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid job ID format" 
+        '401':
+          description: Unauthorized, authentication token missing or invalid
+        '404':
+          description: Job not found
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/get-saved-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get user's saved jobs
+      description: Retrieves all jobs saved by the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Saved jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+        '401':
+          description: Unauthorized, authentication token missing or invalid
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/get-top-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get personalized job recommendations
+      description: >
+        Returns job recommendations based on user skills, experience, and preferences.
+        Jobs are ranked by relevance to user profile.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination (ID of the last item in previous page)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of jobs to return per page
+      responses:
+        '200':
+          description: Job recommendations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Personalized job recommendations retrieved successfully"
+                  count: 
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 100
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSummary'
+                  nextCursor:
+                    type: string
+                    example: "60d5ec69c5d019ab15c55555"
+        '401':
+          description: Unauthorized, authentication token missing or invalid
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/get-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get all jobs
+      description: Retrieves all available jobs with pagination
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination (ID of the last item in previous page)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of jobs to return per page
+      responses:
+        '200':
+          description: Jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs retrieved successfully"
+                  count: 
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 100
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSummary'
+                  nextCursor:
+                    type: string
+                    example: "60d5ec69c5d019ab15c55555"
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/get-job/{jobId}:
+    get:
+      tags:
+        - Jobs
+      summary: Get job details
+      description: Retrieves detailed information about a specific job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retrieve
+      responses:
+        '200':
+          description: Job retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job retrieved successfully"
+                  data:
+                    $ref: '#/components/schemas/Job'
+        '400':
+          description: Invalid job ID format
+        '404':
+          description: Job not found
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/filter-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs with multiple criteria
+      description: Filters jobs based on multiple criteria submitted in the request body
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  description: Location to filter jobs by (full or partial match)
+                  example: "New York"
+                experienceLevel:
+                  oneOf:
+                    - type: string
+                      description: Single experience level to filter by
+                      example: "Entry Level"
+                    - type: array
+                      items:
+                        type: string
+                      description: Multiple experience levels to filter by
+                      example: ["Entry Level", "Mid-Senior Level"]
+                companyId:
+                  type: string
+                  description: ID of the company to filter jobs by
+                  example: "60d5ec69c5d019ab15c55678"
+                minSalary:
+                  type: number
+                  description: Minimum salary to filter jobs by
+                  example: 50000
+                maxSalary:
+                  type: number
+                  description: Maximum salary to filter jobs by
+                  example: 100000
+      responses:
+        '200':
+          description: Jobs filtered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered successfully"
+                  count:
+                    type: integer
+                    example: 5
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+        '400':
+          description: Invalid filter criteria or no filters provided
+        '404':
+          description: No jobs found matching the provided filters
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/filter-jobs/location/{location}:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs by location
+      description: Retrieves jobs filtered by a specific location
+      parameters:
+        - name: location
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Location to filter jobs by (partial match supported)
+          example: "Chicago"
+      responses:
+        '200':
+          description: Jobs filtered by location successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered by location successfully"
+                  count:
+                    type: integer
+                    example: 5
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+        '404':
+          description: No jobs found for this location
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/filter-jobs/experience-level/{levels}:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs by experience level
+      description: Retrieves jobs filtered by one or more experience levels
+      parameters:
+        - name: levels
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Comma-separated list of experience levels
+          example: "Entry Level,Mid-Senior Level"
+      responses:
+        '200':
+          description: Jobs filtered by experience levels successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered by experience levels successfully"
+                  count:
+                    type: integer
+                    example: 8
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+        '404':
+          description: No jobs found for the selected experience levels
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/filter-jobs/company/{companyId}:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs by company
+      description: Retrieves jobs posted by a specific company
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company
+          example: "60d5ec69c5d019ab15c55678"
+      responses:
+        '200':
+          description: Jobs filtered by company successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered by company successfully"
+                  count:
+                    type: integer
+                    example: 3
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+        '400':
+          description: Invalid company ID format
+        '404':
+          description: No jobs found for this company
+        '500':
+          description: Server error
+          
+  /api/v1/jobs/filter-jobs/salary-range/{minSalary}/{maxSalary}:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs by salary range
+      description: Retrieves jobs within a specific salary range
+      parameters:
+        - name: minSalary
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Minimum salary (numeric value)
+          example: "50000"
+        - name: maxSalary
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Maximum salary (numeric value)
+          example: "100000"
+      responses:
+        '200':
+          description: Jobs filtered by salary range successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered by salary range successfully"
+                  count:
+                    type: integer
+                    example: 12
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+        '400':
+          description: Invalid salary range or non-numeric values provided
+        '404':
+          description: No jobs found in this salary range
         '500':
           description: Server error
   
@@ -3505,3 +3423,103 @@ paths:
           description: Post does not exist.
         '500':
           description: Server error.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token is passed as a header in the format `Authorization: Bearer {token}`
+  schemas:
+    JobSummary:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60d5ec69c5d019ab15c55678"
+        job_title:
+          type: string
+          example: "Software Engineer"
+        location:
+          type: string
+          example: "New York, NY"
+        workplace_type:
+          type: string
+          example: "On-site"
+        salary:
+          type: number
+          example: 85000
+        experience_level:
+          type: string
+          example: "Mid-Senior Level"
+        posted_time:
+          type: string
+          format: date-time
+          example: "2023-05-20T12:00:00Z"
+        organization_id:
+          type: object
+          properties:
+            name:
+              type: string
+              example: "Tech Solutions Inc."
+            logo:
+              type: string
+              example: "https://example.com/logos/techsolutions.png"
+    
+    Job:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "60d5ec69c5d019ab15c55678"
+        job_title:
+          type: string
+          example: "Software Engineer"
+        job_description:
+          type: string
+          example: "We are looking for a software engineer with experience in..."
+        location:
+          type: string
+          example: "New York, NY"
+        workplace_type:
+          type: string
+          example: "On-site"
+        salary:
+          type: number
+          example: 85000
+        experience_level:
+          type: string
+          enum: ["Entry Level", "Mid-Senior Level", "Director", "Executive"]
+          example: "Mid-Senior Level"
+        posted_time:
+          type: string
+          format: date-time
+          example: "2023-05-20T12:00:00Z"
+        application_deadline:
+          type: string
+          format: date-time
+          example: "2023-06-20T23:59:59Z"
+        targetted_skills:
+          type: array
+          items:
+            type: string
+          example: ["JavaScript", "React", "Node.js"]
+        organization_id:
+          type: object
+          properties:
+            _id:
+              type: string
+              example: "60d5ec69c5d019ab15c55999"
+            organization_name:
+              type: string
+              example: "Tech Solutions Inc."
+            logo:
+              type: string
+              example: "https://example.com/logos/techsolutions.png"
+            website:
+              type: string
+              example: "https://techsolutions.com"
+            industry:
+              type: string
+              example: "Information Technology"

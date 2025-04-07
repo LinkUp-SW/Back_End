@@ -5,6 +5,8 @@ import { organizationsInterface } from "../models/organizations.model.ts";
 import { ObjectId } from "mongodb";
 import  "../models/posts.model.ts";
 import  "../models/comments.model.ts";
+import mongoose from "mongoose";
+import jobs from "../models/jobs.model.ts";
 
 /**
  * Validates that the provided user_id is a valid MongoDB ObjectId.
@@ -221,4 +223,128 @@ export const handleDeletedExperienceSkills = (user: usersInterface, experienceSk
       );
     }
   }
+};
+
+/**
+ * Helper function for paginated job queries with common aggregation logic
+ * @param baseQuery - Base query object to filter jobs
+ * @param cursor - Pagination cursor (MongoDB ObjectId string)
+ * @param limit - Number of results to return
+ * @param sortOptions - Sorting options for the query
+ * @param extraStages - Additional aggregation stages to include
+ * @returns Object containing job data, pagination info, and count
+ */
+export const paginatedJobQuery = async (
+  baseQuery: any = {},
+  cursor: string | null = null,
+  limit: number = 10,
+  sortOptions: any = { _id: -1 },
+  extraStages: any[] = []
+) => {
+  try {
+    // Check if database connection is established
+    if (!mongoose.connection || !mongoose.connection.db) {
+      throw new Error("Database connection not established");
+    }
+    
+    const query = { ...baseQuery };
+    
+    // If a cursor is provided, fetch jobs after the cursor
+    if (cursor && mongoose.Types.ObjectId.isValid(cursor)) {
+      query._id = { ...query._id, $lt: new mongoose.Types.ObjectId(cursor) };
+    }
+    
+    // Build the aggregation pipeline
+    const pipeline: any[] = [
+      { $match: query },
+      { $sort: sortOptions },
+      { $limit: limit + 1 } // Get one extra to determine if there's a next page
+    ];
+    
+    // Add organization lookup by default
+    pipeline.push({
+      $lookup: {
+        from: 'organizations',
+        localField: 'organization_id',
+        foreignField: '_id',
+        as: 'organization'
+      }
+    },
+    { $unwind: '$organization' });
+    
+    // Add applications lookup by default
+    pipeline.push({
+      $lookup: {
+        from: 'applications',
+        localField: '_id',
+        foreignField: 'job_id',
+        as: 'applications'
+      }
+    });
+    
+    // Add any extra aggregation stages
+    pipeline.push(...extraStages);
+    
+    // Execute the aggregation
+    const collection = mongoose.connection.db.collection('jobs');
+    const jobsData = await collection.aggregate(pipeline).toArray();
+    
+    // Determine if there's a next page and calculate the next cursor
+    const hasNextPage = jobsData.length > limit;
+    const nextCursor = hasNextPage ? jobsData[limit - 1]._id : null;
+    
+    // Return only the requested number of jobs
+    const jobsToReturn = hasNextPage ? jobsData.slice(0, limit) : jobsData;
+    
+    // Count total matching jobs
+    const totalCount = await collection.countDocuments(query);
+    
+    return {
+      data: jobsToReturn,
+      count: jobsToReturn.length,
+      total: totalCount,
+      nextCursor: nextCursor,
+      hasNextPage
+    };
+  } catch (error) {
+    console.error("Error in paginated job query:", error);
+    throw error;
+  }
+};
+
+export const getTimeAgoStage = () => {
+  return {
+      $addFields: {
+          timeAgo: {
+              $let: {
+                  vars: {
+                      diffInMs: { $subtract: [new Date(), "$posted_time"] },
+                      diffInSeconds: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000] },
+                      diffInMinutes: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000 * 60] },
+                      diffInHours: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000 * 60 * 60] },
+                      diffInDays: { $divide: [{ $subtract: [new Date(), "$posted_time"] }, 1000 * 60 * 60 * 24] }
+                  },
+                  in: {
+                      $cond: [
+                          { $gte: ["$$diffInDays", 1] },
+                          { $concat: [{ $toString: { $floor: "$$diffInDays" } }, " day(s) ago"] },
+                          {
+                              $cond: [
+                                  { $gte: ["$$diffInHours", 1] },
+                                  { $concat: [{ $toString: { $floor: "$$diffInHours" } }, " hour(s) ago"] },
+                                  {
+                                      $cond: [
+                                          { $gte: ["$$diffInMinutes", 1] },
+                                          { $concat: [{ $toString: { $floor: "$$diffInMinutes" } }, " minute(s) ago"] },
+                                          { $concat: [{ $toString: { $floor: "$$diffInSeconds" } }, " second(s) ago"] }
+                                      ]
+                                  }
+                              ]
+                          }
+                      ]
+                  }
+              }
+          }
+      }
+  };
 };
