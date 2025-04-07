@@ -228,19 +228,19 @@ const getUserSections = async (req: Request, res: Response, next: NextFunction):
 
         // Format education entries
         const educations = populatedUser.education.map(edu => ({
-            id: edu._id,
+            _id: edu._id,
             name: edu.school?.name || 'Unknown School'
         }));
         
         // Format experience entries
         const experiences = populatedUser.work_experience.map(exp => ({
-            id: exp._id,
+            _id: exp._id,
             name: exp.title || 'Unknown Position'
         }));
         
         // Format license entries
         const licenses = populatedUser.liscence_certificates.map(lic => ({
-            id: lic._id,
+            _id: lic._id,
             name: lic.name || 'Unknown Certificate'
         }));
 

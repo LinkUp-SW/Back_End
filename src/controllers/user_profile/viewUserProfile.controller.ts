@@ -447,7 +447,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
         const edu = populatedUser.education.find((e: any) => e._id.toString() === educationId);
         if (edu && edu.school) {
           return {
-            id: edu._id,
+            _id: edu._id,
             name: edu.school.name,
             logo: edu.school.logo
           };
@@ -460,7 +460,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
         const exp = populatedUser.work_experience.find((e: any) => e._id.toString() === experienceId);
         if (exp && exp.organization) {
           return {
-            id: exp._id,
+            _id: exp._id,
             name: exp.title,
             logo: exp.organization.logo
           };
@@ -473,7 +473,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
         const lic = populatedUser.liscence_certificates.find((l: any) => l._id.toString() === licenseId);
         if (lic && lic.issuing_organization) {
           return {
-            id: lic._id,
+            _id: lic._id,
             name: lic.name,
             logo: lic.issuing_organization.logo
           };
