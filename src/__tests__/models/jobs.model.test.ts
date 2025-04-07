@@ -20,7 +20,7 @@ describe('Jobs Model Test', () => {
             job_type: jobTypeEnum.full_time,
             workplace_type: workplaceTypeEnum.hybrid,
             organization_industry: ['Tech'],
-            experience_level: experienceLevelEnum.beginner,
+            experience_level: experienceLevelEnum.Entry_Level,
             job_description: 'Develop and maintain software applications.',
             targetted_skills: ['JavaScript', 'Node.js'],
             receive_applicants_by: receiveApplicantsByEnum.email,

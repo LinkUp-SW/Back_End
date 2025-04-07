@@ -36,7 +36,7 @@ const addLicenseForUser = async () => {
       issuing_organization: issuingOrganization,
       issue_date: new Date("2023-01-01"),
       expiration_date: new Date("2025-01-01"),
-      credintial_id: 987654321,
+      credintial_id: "987654321", // Convert to string
       credintial_url: "https://example.com/certificate",
       skills: ["Python", "Flask", "Django"],
       media: [
