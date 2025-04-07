@@ -47,7 +47,7 @@ const addSkill = async (req: Request, res: Response, next: NextFunction): Promis
             const edu = populatedUser.education.find(edu => edu._id.toString() === id);
             if (edu && edu.school) {
                 return {
-                    id: edu._id,
+                    _id: edu._id,
                     name: edu.school.name,
                     logo: edu.school.logo
                 };
@@ -59,7 +59,7 @@ const addSkill = async (req: Request, res: Response, next: NextFunction): Promis
             const exp = populatedUser.work_experience.find(exp => exp._id.toString() === id);
             if (exp && exp.organization) {
                 return {
-                    id: exp._id,
+                    _id: exp._id,
                     name: exp.title,
                     logo: exp.organization.logo
                 };
@@ -71,7 +71,7 @@ const addSkill = async (req: Request, res: Response, next: NextFunction): Promis
             const lic = populatedUser.liscence_certificates.find(lic => lic._id.toString() === id);
             if (lic && lic.issuing_organization) {
                 return {
-                    id: lic._id,
+                    _id: lic._id,
                     name: lic.name,
                     logo: lic.issuing_organization.logo
                 };
@@ -140,7 +140,7 @@ const updateSkill = async (req: Request, res: Response, next: NextFunction): Pro
             const edu = populatedUser.education.find(edu => edu._id.toString() === id);
             if (edu && edu.school) {
                 return {
-                    id: edu._id,
+                    _id: edu._id,
                     name: edu.school.name,
                     logo: edu.school.logo
                 };
@@ -152,7 +152,7 @@ const updateSkill = async (req: Request, res: Response, next: NextFunction): Pro
             const exp = populatedUser.work_experience.find(exp => exp._id.toString() === id);
             if (exp && exp.organization) {
                 return {
-                    id: exp._id,
+                    _id: exp._id,
                     name: exp.title,
                     logo: exp.organization.logo
                 };
@@ -164,7 +164,7 @@ const updateSkill = async (req: Request, res: Response, next: NextFunction): Pro
             const lic = populatedUser.liscence_certificates.find(lic => lic._id.toString() === id);
             if (lic && lic.issuing_organization) {
                 return {
-                    id: lic._id,
+                    _id: lic._id,
                     name: lic.name,
                     logo: lic.issuing_organization.logo
                 };
