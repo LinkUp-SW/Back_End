@@ -485,7 +485,7 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
         _id: skill._id,
         name: skill.name,
         total_endorsements: skill.endorsments.length,
-        endorsements: endorsements,
+        endorsments: endorsements,
         educations: educationItems,
         experiences: experienceItems,
         licenses: licenseItems
