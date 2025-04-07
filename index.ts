@@ -98,14 +98,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 // Initialize Google OAuth strategy via Passport
-// Initialize Google OAuth strategy via Passport
 googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Authenticatio Routes
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
 
@@ -129,7 +127,8 @@ app.use('/api/v1/user',
     educationRoutes,
     licenseRoutes,
     updateUserRoutes,
-    skillsRoutes);
+    skillsRoutes,
+    myNetwork,);
 
 // Mount Jobs Routes
 app.use('/api/v1/jobs', 
@@ -140,16 +139,13 @@ app.use('/api/v1/jobs',
 // Privacy Settings Routes
 app.use('/api/v1/user', privacySettingsRoutes);
 
-    skillsRoutes,
-    privacySettingsRoutes,
-    myNetwork);
-
   app.use('/api/v1/post',
     createPost,
     deletePost,
     editPost,
     savePostRoutes
   );
+
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
