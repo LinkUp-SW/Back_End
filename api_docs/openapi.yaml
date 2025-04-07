@@ -1097,10 +1097,10 @@ paths:
                     example: "Cloudinary error"
 
     delete:
-    delete:
       tags:
         - Resume
       summary: Delete a resume
+      description: Deletes the user's resume.
       description: Deletes the user's resume.
       parameters:
         - name: user_id
@@ -2449,8 +2449,6 @@ paths:
                         value: "You have already sent a connection request to this user."
                       threeWeekRestriction:
                         value: "You cannot send another connection request to this user for 3 weeks."
-                      subscriptionLimit:
-                        value: "You have reached the maximum number of connections allowed for non-subscribed users."
         '403':
           description: Forbidden.
           content:
@@ -2691,7 +2689,7 @@ paths:
                     format: date-time
                     example: "2025-03-28T12:34:56.789Z"
         '400':
-          description: Bad request .
+          description: Bad request.
           content:
             application/json:
               schema:
@@ -2700,16 +2698,6 @@ paths:
                   message:
                     type: string
                     example: "No pending connection request from this user"
-        '400':
-          description: Bad request reached subscriptionLimit.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "You have reached the maximum number of connections allowed for non-subscribed users."
         '401':
           description: Unauthorized.
           content:
@@ -3223,6 +3211,216 @@ paths:
                     type: string
                     example: "Error fetching blocked list"
 
+  /my-network/connections/count:
+    get:
+      tags:
+        - Connections
+      summary: Get the number of connections
+      description: Retrieves the total number of connections for the authenticated user.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the number of connections.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                    example: "John-Doe-123"
+                    description: The ID of the authenticated user.
+                  number_of_connections:
+                    type: integer
+                    example: 150
+                    description: The total number of connections for the user.
+                  number_of_following:
+                    type: integer
+                    example: 200
+                    description: The total number of users the authenticated user is following.
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching number of connections"
+                  error:
+                    type: string
+                    example: "Detailed error message" 
+
+  /api/v1/user/bio/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user bio
+      description: >
+        Retrieves the bio information of a user. The response varies based on whether the authenticated user is viewing their own profile (`is_me: true`) or another user's profile (`is_me: false`).
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose bio is being retrieved.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the user bio.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the authenticated user is viewing their own profile.
+                  bio:
+                    type: object
+                    properties:
+                      contact_info:
+                        type: object
+                        properties:
+                          phone_number:
+                            type: integer
+                            nullable: true
+                            example: 1234567890
+                          country_code:
+                            type: string
+                            nullable: true
+                            example: "+1"
+                          phone_type:
+                            type: string
+                            nullable: true
+                            example: "Mobile"
+                          address:
+                            type: string
+                            nullable: true
+                            example: "123 Main St"
+                          birthday:
+                            type: string
+                            format: date-time
+                            nullable: true
+                            example: "1990-01-01T00:00:00.000Z"
+                          website:
+                            type: string
+                            nullable: true
+                            example: "http://johndoe.com"
+                      location:
+                        type: object
+                        properties:
+                          country_region:
+                            type: string
+                            example: "USA"
+                          city:
+                            type: string
+                            example: "New York"
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+                      headline:
+                        type: string
+                        example: "Software Engineer"
+                      experience:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Company A", "Company B"]
+                      education:
+                        type: array
+                        items:
+                          type: string
+                        example: ["University A", "University B"]
+                      website:
+                        type: string
+                        example: "http://johndoe.com"
+                  email:
+                    type: string
+                    example: "user1@example.com"
+                  profile_photo:
+                    type: string
+                    format: uri
+                    example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1743174303/user_uploads/images/1743174231833-duck.jpg"
+                  cover_photo:
+                    type: string
+                    format: uri
+                    example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1743174333/user_uploads/images/1743174262242-duck.jpg"
+                  number_of_connections:
+                    type: integer
+                    example: 6
+                  isSubscribed:
+                    type: boolean
+                    example: true
+                  name_of_one_mutual_connection:
+                    type: string
+                    nullable: true
+                    example: null
+                  follow_primary:
+                    type: boolean
+                    example: false
+                  is_in_received_connections:
+                    type: boolean
+                    example: false
+                  is_in_sent_connections:
+                    type: boolean
+                    example: false
+                  isInConnections:
+                    type: boolean
+                    example: true
+                  isAlreadyFollowing:
+                    type: boolean
+                    example: false
+                  isConnectByEmail:
+                    type: boolean
+                    example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "An error occurred while retrieving the user bio."
+
   /api/v1/post/create-post:
     post:
       tags:
@@ -3526,6 +3724,389 @@ paths:
           description: Post does not exist.
         '500':
           description: Server error.
+
+  /api/v1/user/profile/licenses/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user licenses and certifications
+      description: >
+        Retrieves the licenses and certifications of a user. The response includes details such as issuing organization, issue and expiration dates, credential information, associated skills, and media.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose licenses are being retrieved.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the user licenses.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the authenticated user is viewing their own profile.
+                    example: true
+                  licenses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "67eed754aeb1108ee0d97770"
+                        name:
+                          type: string
+                          example: "Certified Java Developer"
+                        issuing_organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "67e6bb0adc0675f19ad1088d"
+                            name:
+                              type: string
+                              example: "Smart Systems"
+                            logo:
+                              type: string
+                              format: uri
+                              example: "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png"
+                        issue_date:
+                          type: string
+                          format: date-time
+                          example: "2023-01-01T00:00:00.000Z"
+                        expiration_date:
+                          type: string
+                          format: date-time
+                          example: "2025-01-01T00:00:00.000Z"
+                        credintial_id:
+                          type: integer
+                          example: 987654321
+                        credintial_url:
+                          type: string
+                          format: uri
+                          example: "https://example.com/certificate"
+                        skills:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Java", "Spring Boot"]
+                        media:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              media:
+                                type: string
+                                format: uri
+                                example: "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png"
+                              title:
+                                type: string
+                                example: "Certificate"
+                              description:
+                                type: string
+                                example: "Java Developer Certification"
+                              _id:
+                                type: string
+                                example: "67eed754aeb1108ee0d97771"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching user licenses"
+
+  /api/v1/user/profile/experience/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user work experience
+      description: >
+        Retrieves the work experience details of a user. The response includes details such as the organization, title, employment type, location, and associated skills.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose work experience is being retrieved.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the user work experience.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the authenticated user is viewing their own profile.
+                    example: true
+                  work_experience:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                          example: "Developer"
+                        employee_type:
+                          type: string
+                          example: "Full-time"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "67e6bb0adc0675f19ad1088d"
+                            name:
+                              type: string
+                              example: "Smart Systems"
+                            logo:
+                              type: string
+                              format: uri
+                              example: "https://example.com/logos/5.png"
+                        is_current:
+                          type: boolean
+                          example: true
+                        start_date:
+                          type: string
+                          format: date-time
+                          example: "2020-01-01T00:00:00.000Z"
+                        end_date:
+                          type: string
+                          format: date-time
+                          nullable: true
+                          example: null
+                        location:
+                          type: string
+                          example: "New York"
+                        description:
+                          type: string
+                          example: "Developed software solutions."
+                        location_type:
+                          type: string
+                          example: "On-site"
+                        skills:
+                          type: array
+                          items:
+                            type: string
+                          example: ["JavaScript", "Node.js"]
+                        media:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              media:
+                                type: string
+                                format: uri
+                                example: "http://example.com/media1"
+                              title:
+                                type: string
+                                example: "Project 1"
+                              description:
+                                type: string
+                                example: "Description of Project 1"
+                              _id:
+                                type: string
+                                example: "67e6b2e1ef869d719662ca12"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching user work experience"
+
+  /api/v1/user/profile/education/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user education details
+      description: >
+        Retrieves the education details of a user. The response includes details such as the school, degree, field of study, skills, and associated media.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose education details are being retrieved.
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Successfully retrieved the user education details.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the authenticated user is viewing their own profile.
+                    example: true
+                  education:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        school:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "67e6bb0adc0675f19ad10889"
+                            name:
+                              type: string
+                              example: "Digital Creations"
+                            logo:
+                              type: string
+                              format: uri
+                              example: "https://example.com/logos/4.png"
+                        degree:
+                          type: string
+                          example: "Bachelor's"
+                        field_of_study:
+                          type: string
+                          example: "Computer Science"
+                        start_date:
+                          type: string
+                          format: date-time
+                          example: "2010-01-01T00:00:00.000Z"
+                        end_date:
+                          type: string
+                          format: date-time
+                          example: "2014-01-01T00:00:00.000Z"
+                        grade:
+                          type: string
+                          example: "A"
+                        activites_and_socials:
+                          type: string
+                          example: "Coding Club"
+                        skills:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Programming"]
+                        description:
+                          type: string
+                          example: "Studied computer science."
+                        media:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              media:
+                                type: string
+                                format: uri
+                                example: "http://example.com/media2"
+                              title:
+                                type: string
+                                example: "Thesis"
+                              description:
+                                type: string
+                                example: "Description of Thesis"
+                              _id:
+                                type: string
+                                example: "67e6b2e1ef869d719662ca11"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching user education details"
 
 components:
   securitySchemes:
