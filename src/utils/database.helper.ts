@@ -182,56 +182,116 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
 };
 
+export enum SkillSourceType {
+  EDUCATION = 'education',
+  EXPERIENCE = 'experience',
+  LICENSE = 'license'
+}
 
-export const updateUserSkills = (user: usersInterface, skills: string[], organization: organizationsInterface) => {
+export const updateUserSkills = (
+  user: usersInterface, 
+  skills: string[], 
+  sourceId: string,
+  sourceType: SkillSourceType
+) => {
   if (skills && skills.length > 0) {
-      for (const skillName of skills) {
-          const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
-          
-          if (skillIndex !== -1) {
-              const experienceExists = user.skills[skillIndex].used_where.includes(organization);
-              
-              if (!experienceExists) {
-                  user.skills[skillIndex].used_where.push(organization);  
-              }
-          } else {
-              
-              user.skills.push({
-                  _id: new ObjectId().toString(),
-                  name: skillName,
-                  endorsments: [],
-                  used_where: [organization]
-              });
-          }
-      }
-  }
-};
-
-
-export const handleRemovedSkills = (user: usersInterface, oldSkills: string[], newSkills: string[], organization: string) => {
-  const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
-  for (const skillName of removedSkills) {
+    for (const skillName of skills) {
       const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+      
       if (skillIndex !== -1) {
-          user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
-              org => org.toString() !== organization.toString()
-          );
+        // Skill exists, add reference to appropriate array if not already there
+        const idExists = (() => {
+          switch(sourceType) {
+            case SkillSourceType.EDUCATION:
+              return user.skills[skillIndex].educations.includes(sourceId);
+            case SkillSourceType.EXPERIENCE:
+              return user.skills[skillIndex].experiences.includes(sourceId);
+            case SkillSourceType.LICENSE:
+              return user.skills[skillIndex].licenses.includes(sourceId);
+          }
+        })();
+        
+        if (!idExists) {
+          switch(sourceType) {
+            case SkillSourceType.EDUCATION:
+              user.skills[skillIndex].educations.push(sourceId);
+              break;
+            case SkillSourceType.EXPERIENCE:
+              user.skills[skillIndex].experiences.push(sourceId);
+              break;
+            case SkillSourceType.LICENSE:
+              user.skills[skillIndex].licenses.push(sourceId);
+              break;
+          }
+        }
+      } else {
+        // Skill doesn't exist, create it with reference in the appropriate array
+        const newSkill = {
+          _id: new ObjectId().toString(),
+          name: skillName,
+          endorsments: [],
+          educations: sourceType === SkillSourceType.EDUCATION ? [sourceId] : [],
+          experiences: sourceType === SkillSourceType.EXPERIENCE ? [sourceId] : [],
+          licenses: sourceType === SkillSourceType.LICENSE ? [sourceId] : []
+        };
+        
+        user.skills.push(newSkill);
       }
+    }
   }
 };
 
-
-export const handleDeletedExperienceSkills = (user: usersInterface, experienceSkills: string[], organization: organizationsInterface): void => {
-  const organizationStillUsed = user.work_experience.some(exp => 
-    exp.organization === organization
-  );
+export const handleRemovedSkills = (
+  user: usersInterface, 
+  oldSkills: string[], 
+  newSkills: string[], 
+  sourceId: string,
+  sourceType: SkillSourceType
+) => {
+  const removedSkills = oldSkills.filter(skill => !newSkills.includes(skill));
   
-  for (const skillName of experienceSkills) {
+  for (const skillName of removedSkills) {
     const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
-    if (skillIndex !== -1 && !organizationStillUsed) {
-      user.skills[skillIndex].used_where = user.skills[skillIndex].used_where.filter(
-        org => org.toString() !== organization.toString()
-      );
+    
+    if (skillIndex !== -1) {
+      // Remove the reference from the appropriate array
+      switch(sourceType) {
+        case SkillSourceType.EDUCATION:
+          user.skills[skillIndex].educations = user.skills[skillIndex].educations.filter(id => id !== sourceId);
+          break;
+        case SkillSourceType.EXPERIENCE:
+          user.skills[skillIndex].experiences = user.skills[skillIndex].experiences.filter(id => id !== sourceId);
+          break;
+        case SkillSourceType.LICENSE:
+          user.skills[skillIndex].licenses = user.skills[skillIndex].licenses.filter(id => id !== sourceId);
+          break;
+      }
+    }
+  }
+};
+
+export const handleDeletedSkills = (
+  user: usersInterface, 
+  skillNames: string[], 
+  sourceId: string,
+  sourceType: SkillSourceType
+): void => {
+  for (const skillName of skillNames) {
+    const skillIndex = user.skills.findIndex(skill => skill.name === skillName);
+    
+    if (skillIndex !== -1) {
+      // Remove the reference from the appropriate array
+      switch(sourceType) {
+        case SkillSourceType.EDUCATION:
+          user.skills[skillIndex].educations = user.skills[skillIndex].educations.filter(id => id != sourceId);
+          break;
+        case SkillSourceType.EXPERIENCE:
+          user.skills[skillIndex].experiences = user.skills[skillIndex].experiences.filter(id => id != sourceId);
+          break;
+        case SkillSourceType.LICENSE:
+          user.skills[skillIndex].licenses = user.skills[skillIndex].licenses.filter(id => id != sourceId);
+          break;
+      }
     }
   }
 };

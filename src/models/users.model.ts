@@ -135,7 +135,9 @@ export interface usersInterface extends mongoose.Document{
         _id: string;
         name: string;
         endorsments: usersInterface[];
-        used_where: organizationsInterface[];
+        educations: string[];
+        experiences: string[];
+        licenses: string[];
     }[];
     liscence_certificates: {
         _id: string;
@@ -295,7 +297,9 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         _id: { type: String },
         name: { type: String },
         endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        used_where: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
+        educations: [{ type: String }],
+        experiences: [{ type: String }],
+        licenses: [{ type: String }],
     },],
     liscence_certificates: [
         {
