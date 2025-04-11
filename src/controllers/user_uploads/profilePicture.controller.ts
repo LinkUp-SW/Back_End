@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import cloudinary from "../../../config/cloudinary.ts";
 import { extractPublicId } from "../../services/cloudinary.service.ts";
-import { validateTokenAndUser} from "../../utils/helper.ts";
+import { getUserIdFromToken, validateTokenAndUser, } from "../../utils/helperFunctions.utils.ts";
 import { usersInterface } from "../../models/users.model.ts";
-
+import {findUserByUserId} from "../../utils/database.helper.ts";
+import { profile } from "console";
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
+ 
 
 
 // Upload Profile Picture
@@ -40,9 +43,14 @@ const uploadProfilePicture = async (req: Request, res: Response): Promise<void> 
       profilePicture: profilePictureUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error uploading profile picture:", error);
     res.status(500).json({ message: "Error uploading profile picture", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 // Update Profile Picture
@@ -79,28 +87,27 @@ const updateProfilePicture = async (req: Request, res: Response): Promise<void> 
       profilePicture: newProfilePictureUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error updating profile picture:", error);
     res.status(500).json({ message: "Error updating profile picture", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 
 // Delete Profile Picture
 const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
   try {
-    const validation = await validateTokenAndUser(req, res);
-    if (!validation) return;
+    const viewerId = await getUserIdFromToken(req, res);
+    if (!viewerId) return;
 
-    const { viewerId, userId, user } = validation;
-
-    // Ensure the viewer is the same as the user (only the user can delete their own profile picture)
-    if (viewerId !== userId) {
-      res.status(403).json({ message: "You are not authorized to delete the profile picture for this user." });
-      return;
-    }
-
+    const targetUser = await findUserByUserId(viewerId, res);
+    if (!targetUser) return;
     // Retrieve the current profile picture URL from the user's document
-    const profilePictureUrl = user.profile_photo;
+    const profilePictureUrl = targetUser.profile_photo;
     if (!profilePictureUrl) {
       res.status(400).json({ message: "No profile picture to delete" });
       return;
@@ -121,14 +128,19 @@ const deleteProfilePicture = async (req: Request, res: Response): Promise<void> 
     }
 
     // Clear the profile_photo field in the user's document
-    user.profile_photo = "";
-    await user.save();
+    targetUser.profile_photo = DEFAULT_IMAGE_URL; // Set to default image URL
+    await targetUser.save();
 
-    res.status(200).json({ message: "Profile picture deleted successfully" });
+    res.status(200).json({ message: "Profile picture deleted successfully" , profilePicture: targetUser.profile_photo});
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error deleting profile picture:", error);
     res.status(500).json({ message: "Error deleting profile picture", error });
   }
+}
 };
 
 // Get Profile Picture
@@ -137,20 +149,25 @@ const getProfilePicture = async (req: Request, res: Response): Promise<void> => 
     const validation = await validateTokenAndUser(req, res);
     if (!validation) return;
 
-    const { user } = validation;
+    const { targetUser } = validation;
 
     // Check if a profile picture exists
-    if (!user.profile_photo) {
+    if (!targetUser.profile_photo) {
       res.status(404).json({ message: "Profile picture not found" });
       return;
     }
 
     // Return the profile picture URL
-    res.status(200).json({ profilePicture: user.profile_photo });
+    res.status(200).json({ profilePicture: targetUser.profile_photo });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error retrieving profile picture:", error);
     res.status(500).json({ message: "Error retrieving profile picture", error });
   }
+}
 };
 
 export { uploadProfilePicture, updateProfilePicture, deleteProfilePicture, getProfilePicture };

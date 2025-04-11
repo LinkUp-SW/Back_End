@@ -1,5 +1,5 @@
 import express from 'express';
-import { tokenValidation } from '../../controllers/authentication/validateToken.controller.ts';
+import { tokenValidation } from '../../controllers/authentication/validateToken.Controller.ts';
 const router = express.Router();
 
 

@@ -33,6 +33,17 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
+import createPost from './src/routes/posts/createPosts.routes.ts';
+import deletePost from './src/routes/posts/deletePosts.routes.ts';
+import editPost from './src/routes/posts/editPosts.routes.ts';
+import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
+
+import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
+import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
+import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
+import searchRoutes from './src/routes/organization.route.ts';
+import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,12 +52,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
-
+app.use(express.json({limit:"50mb"}));
 
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'TiTo-aggin93' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
   console.log('Generated Token:', token);
 };
 
@@ -89,14 +100,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 // Initialize Google OAuth strategy via Passport
-// Initialize Google OAuth strategy via Passport
 googleAuth(app);
 
 // Swagger API Docs
 const swaggerDocument = YAML.load(path.join(__dirname, 'api_docs', 'openapi.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Authenticatio Routes
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
 
@@ -120,10 +129,28 @@ app.use('/api/v1/user',
     educationRoutes,
     licenseRoutes,
     updateUserRoutes,
-    skillsRoutes);
+    skillsRoutes,
+    myNetwork,
+    privacySettingsRoutes,
+    aboutUserRoutes,);
 
-// Privacy Settings Routes
-app.use('/api/v1/user', privacySettingsRoutes);
+// Mount Jobs Routes
+app.use('/api/v1/jobs', 
+    filterJobsRoutes, 
+    saveJobsRoutes,
+    getJobsRoutes);
+
+
+  app.use('/api/v1/post',
+    createPost,
+    deletePost,
+    editPost,
+    savePostRoutes
+  );
+
+
+app.use('/api/v1/search', searchRoutes);
+
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');

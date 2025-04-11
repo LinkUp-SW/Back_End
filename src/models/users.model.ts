@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, ObjectId, Types } from "mongoose";
 import validator from "validator";
 import { conversationsInterface } from "./conversations.model.ts";
 import { postsInterface } from "./posts.model.ts";
@@ -7,7 +7,6 @@ import { commentsInterface } from "./comments.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
-
 
 export enum sexEnum{
     male="Male",
@@ -27,12 +26,46 @@ export enum invitationsEnum{
 
 }
 
+export interface aboutInterface {
+    about: string;
+    skills: string[];
+}
+
 export enum accountStatusEnum{
     public = "Public",
     private = "Private",
     connections = "Connections only"
 }
 
+export enum followEnum{
+    everyone = "Everyone",
+    connections = "Connections only"
+}
+
+export interface ConnectionRequest {
+    _id: ConnectionUserInterface;
+    date: Date;
+  }
+
+export interface ConnectionUserInterface {
+    _id?: mongoose.Types.ObjectId | string;
+    user_id?: string;
+    name: string;
+    headline: string | null;
+    profilePicture: string | null;
+    numberOfMutualConnections?: number; 
+    nameOfOneMutualConnection?: string | null; 
+    date?: Date; 
+    bio?: {
+        first_name?:string;
+        last_name?:string;
+        headline?:string;
+    };
+    connections?: mongoose.Types.ObjectId[];
+    
+  }
+
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
 
 export interface usersInterface extends mongoose.Document{
     user_id: string;
@@ -102,7 +135,9 @@ export interface usersInterface extends mongoose.Document{
         _id: string;
         name: string;
         endorsments: usersInterface[];
-        used_where: string[];
+        educations: string[];
+        experiences: string[];
+        licenses: string[];
     }[];
     liscence_certificates: {
         _id: string;
@@ -110,7 +145,7 @@ export interface usersInterface extends mongoose.Document{
         issuing_organization: organizationsInterface;
         issue_date: Date;
         expiration_date: Date;
-        credintial_id: number;
+        credintial_id: string;
         credintial_url: string;
         skills: string[];
         media: {
@@ -123,15 +158,19 @@ export interface usersInterface extends mongoose.Document{
     profile_photo: string;
     cover_photo: string;
     resume: string;
-
-    connections: string[];
-    followers: usersInterface[];
-    following: usersInterface[];
+    connections: ConnectionRequest[];
+    received_connections: ConnectionRequest[];
+    sent_connections: ConnectionRequest[];
+    withdrawn_connections: ConnectionRequest[];
+    followers: Types.ObjectId[];
+    following: Types.ObjectId[];
     privacy_settings: {
         flag_account_status: accountStatusEnum;
         flag_who_can_send_you_invitations: invitationsEnum;
         flag_messaging_requests: boolean;
         messaging_read_receipts: boolean;
+        make_follow_primary: boolean;
+        Who_can_follow_you: followEnum
     };
     activity: {
         posts: postsInterface[];
@@ -144,8 +183,10 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     };
+    savedPosts: postsInterface[];
     status: statusEnum; 
-    blocked: string[];
+    blocked: ConnectionRequest[];
+    unblocked_users: ConnectionRequest[];
     conversations: conversationsInterface[];
     notification: {
         seen : boolean,
@@ -166,6 +207,7 @@ export interface usersInterface extends mongoose.Document{
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
+    about?: aboutInterface;
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
@@ -211,15 +253,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     education: [
         {
             _id: { type: String },
-            school: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "School must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            school: { type: Schema.Types.ObjectId, ref: "organizations" },
             degree: { type: String },
             field_of_study: { type: String },
             start_date: { type: Date },
@@ -242,15 +276,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             _id: { type: String },
             title: { type: String },
             employee_type: { type: String },
-            organization: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "Company must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             is_current: { type: Boolean },
             start_date: { type: Date },
             end_date: { type: Date },
@@ -272,24 +298,18 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         _id: { type: String },
         name: { type: String },
         endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        used_where: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
+        educations: [{ type: String }],
+        experiences: [{ type: String }],
+        licenses: [{ type: String }],
     },],
     liscence_certificates: [
         {
             _id: { type: String},
             name: { type: String },
-            issuing_organization: { type: Schema.Types.Mixed,
-                validate: {
-                  validator: function (value) {
-                    return typeof value === "string" || mongoose.isValidObjectId(value);
-                  },
-                  message: "Company must be either an ObjectId or a string",
-                },
-                ref: "organizations",
-              },
+            issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             issue_date: { type: Date },
             expiration_date: { type: Date },
-            credintial_id: { type: Number },
+            credintial_id: { type: String },
             credintial_url: { type: String },
             skills: [{ type: String }],
             media: [
@@ -312,7 +332,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Profile photo must be a valid URL, an empty string, or null",
         },
-        default: null, // Allow null by default
+        default: DEFAULT_IMAGE_URL, 
       },
       cover_photo: {
         type: String,
@@ -322,7 +342,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Cover photo must be a valid URL, an empty string, or null",
         },
-        default: null,
+        default: DEFAULT_IMAGE_URL,
       },
       resume: {
         type: String,
@@ -334,15 +354,39 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         },
         default: null,
       },
-    connections: [{ type: String}],
-
-    followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
-    following: [{ type: Schema.Types.ObjectId, ref: "users" }],
+      connections: [
+        {
+          _id: { type: Schema.Types.ObjectId, ref: "users" }, // Reference to the user's ObjectId
+          date: { type: Date, default: Date.now },
+        },
+      ],
+      received_connections: [
+        {
+          _id: { type: Schema.Types.ObjectId, ref: "users" }, // Reference to the user's ObjectId
+          date: { type: Date, default: Date.now },
+        },
+      ],
+      sent_connections: [
+        {
+          _id: { type: Schema.Types.ObjectId, ref: "users" }, // Reference to the user's ObjectId
+          date: { type: Date, default: Date.now },
+        },
+      ],
+      withdrawn_connections: [
+        {
+          _id: { type: Schema.Types.ObjectId, ref: "users" }, // Reference to the user's ObjectId
+          date: { type: Date },
+        },
+      ],
+      followers: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
+      following: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
     privacy_settings: {
         flag_account_status: { type: String, enum: Object.values(accountStatusEnum) },
         flag_who_can_send_you_invitations: { type: String, enum: Object.values(invitationsEnum) },
         flag_messaging_requests: { type: Boolean },
         messaging_read_receipts: { type: Boolean },
+        make_follow_primary: { type: Boolean },
+        Who_can_follow_you: { type: String, enum: Object.values(followEnum) },
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
@@ -355,8 +399,20 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     },
+    savedPosts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
     status: { type: String, enum: Object.values(statusEnum)},
-    blocked: [{ type: String}],
+    blocked: [
+        {
+          _id: { type: Schema.Types.ObjectId, ref: "users" }, // Reference to the user's ObjectId
+          date: { type: Date, required: true },
+        },
+      ],
+    unblocked_users: [
+        {
+          _id: { type: Schema.Types.ObjectId, ref: "users" }, // Reference to the user's ObjectId
+          date: { type: Date, required: true },
+        },
+      ],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
     notification: [{
         seen: { type: Boolean },
@@ -377,6 +433,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
+    about: {
+        about: { type: String },
+        skills: [{ type: String }],
+    },
 });
 
 usersSchema.pre('save', async function(next) {

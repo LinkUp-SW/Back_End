@@ -21,7 +21,6 @@ export const getProfileVisibility = async (req: Request, res: Response): Promise
     const userId = await validateUserIdFromRequest(req, res);
     if (!userId) return;
 
-    console.log(userId);
 
 
     // Retrieve the target user using the unique ID.

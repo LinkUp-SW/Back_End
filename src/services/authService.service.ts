@@ -45,7 +45,7 @@ export class AuthService {
     if (user) {
       const token = tokenFunctionalities.createToken({
         time: "1h",
-        userID: user.user_id, 
+        userID: user.user_id,
       });
       user.is_verified = true;
       await user.save();
