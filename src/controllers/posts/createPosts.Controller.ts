@@ -3,6 +3,7 @@ import { findUserByUserId } from '../../utils/database.helper.ts';
 import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
+import { mediaTypeEnum } from '../../models/posts.model.ts';
 
 
 /**
@@ -31,15 +32,23 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
             return res.status(400).json({message:'Required fields missing' })
         }
         let processedMedia: string[] | null = null;
-        if (mediaType == "none")  processedMedia = null;
-        else{
-            if (media){
-                const mediaArray = await processPostMediaArray(media);
-                processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
-            }
-
+        switch (mediaType) {
+            case mediaTypeEnum.none:
+                processedMedia = null;
+                break;
+            case mediaTypeEnum.link:
+                processedMedia=media;
+                break;
+            case mediaTypeEnum.post:
+                processedMedia=media;
+                break;
+            default:
+                if (media) {
+                    const mediaArray = await processPostMediaArray(media);
+                    processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
+                }
+                break;
         }
-
         const postRepository = new PostRepository;
         const newPost = await postRepository.create(
             user._id!.toString(),

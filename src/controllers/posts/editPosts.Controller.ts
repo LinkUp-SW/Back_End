@@ -3,6 +3,7 @@ import { findUserByUserId } from '../../utils/database.helper.ts';
 import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
+import { mediaTypeEnum } from '../../models/posts.model.ts';
 
 
 const editPost = async (req: Request, res: Response): Promise<Response | void> =>{
@@ -13,6 +14,8 @@ const editPost = async (req: Request, res: Response): Promise<Response | void> =
             content,
             mediaType,
             media,
+            commentsDisabled,
+            publicPost,
             taggedUsers
         } =req.body;
         const userId = await getUserIdFromToken(req,res);
@@ -23,11 +26,23 @@ const editPost = async (req: Request, res: Response): Promise<Response | void> =
             return res.status(400).json({message:'postId is required ' })
         }
         let processedMedia: string[] | null = null;
-        if (media){
-            const mediaArray = await processPostMediaArray(media);
-            processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
-            console.log(processedMedia);
-        }
+        switch (mediaType) {
+            case mediaTypeEnum.none:
+                processedMedia = null;
+                break;
+            case mediaTypeEnum.link:
+                processedMedia=media;
+                break;
+            case mediaTypeEnum.post:
+                processedMedia=media;
+                break;
+            default:
+                if (media) {
+                    const mediaArray = await processPostMediaArray(media);
+                    processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
+                }
+                break;
+                }
         const postRepository = new PostRepository;
         const post= await postRepository.findByPostId(postId);
         if (!post){
@@ -38,6 +53,8 @@ const editPost = async (req: Request, res: Response): Promise<Response | void> =
             content,
             processedMedia,
             mediaType,
+            commentsDisabled,
+            publicPost,
             taggedUsers
         );
         if (updatePost){await updatePost.save();}
