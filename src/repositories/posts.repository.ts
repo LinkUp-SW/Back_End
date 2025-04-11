@@ -25,22 +25,26 @@ export class PostRepository {
 
   async update(postId: string,content: string,
     mediaLink: string[] | null,
-    mediaType: string | null,
-    taggedUsers: string | null) {
-      const updateFields: any = {};
-      if (content) updateFields.content = content;
-      if (mediaLink || mediaType) {
-        updateFields.media = {
-          link: mediaLink,
-          media_type: mediaType,
-        };
-      }
-      if (taggedUsers) updateFields.tagged_users = taggedUsers;
-      
-      return posts.findOneAndUpdate(
-        { _id: postId },
-        { $set: updateFields },
-        { new: true, upsert: false }
+    mediaType: string | undefined,
+    commentsDisabled: string | null,
+    publicPost: boolean| null,
+    taggedUsers: string | null,
+  ) {
+    const updateFields: any = {};
+    if (content!== null) updateFields.content = content;
+    if (mediaLink !== null || mediaType !== undefined) {
+      updateFields.media = {};
+      if (mediaLink !== null) updateFields.media.link = mediaLink;
+      if (mediaType !== null) updateFields.media.media_type = mediaType;
+    }
+    if (commentsDisabled !== null) updateFields.comments_disabled = commentsDisabled;
+    if (publicPost !== null) updateFields.public_post = publicPost;
+    if (taggedUsers!== null) updateFields.tagged_users = taggedUsers;
+    
+    return posts.findOneAndUpdate(
+      { _id: postId },
+      { $set: updateFields },
+      { new: true, upsert: false }
     );
   }
 
