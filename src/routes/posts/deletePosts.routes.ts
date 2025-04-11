@@ -1,5 +1,5 @@
 import express from 'express';
-import { deletePost } from '../../controllers/posts/deletePosts.Controller.ts';
+import { deletePost } from '../../controllers/posts/deletePosts.controller.ts';
 const router = express.Router();
 
 

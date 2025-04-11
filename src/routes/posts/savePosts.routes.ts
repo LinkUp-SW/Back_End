@@ -1,6 +1,5 @@
 import express from 'express';
-import { createPost } from '../../controllers/posts/createPosts.Controller.ts';
-import { deleteSavedPost, displaySavedPosts, savePost } from '../../controllers/posts/savedPosts.Controller.ts';
+import { deleteSavedPost, displaySavedPosts, savePost } from '../../controllers/posts/savedPosts.controller.ts';
 const router = express.Router();
 
 

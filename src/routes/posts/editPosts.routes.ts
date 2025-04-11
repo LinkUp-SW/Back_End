@@ -1,5 +1,5 @@
 import express from 'express';
-import { editPost } from '../../controllers/posts/editPosts.Controller.ts';
+import { editPost } from '../../controllers/posts/editPosts.controller.ts';
 const router = express.Router();
 
 
