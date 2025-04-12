@@ -26,6 +26,11 @@ export enum invitationsEnum{
 
 }
 
+export interface aboutInterface {
+    about: string;
+    skills: string[];
+}
+
 export enum accountStatusEnum{
     public = "Public",
     private = "Private",
@@ -130,7 +135,9 @@ export interface usersInterface extends mongoose.Document{
         _id: string;
         name: string;
         endorsments: usersInterface[];
-        used_where: string[];
+        educations: string[];
+        experiences: string[];
+        licenses: string[];
     }[];
     liscence_certificates: {
         _id: string;
@@ -138,7 +145,7 @@ export interface usersInterface extends mongoose.Document{
         issuing_organization: organizationsInterface;
         issue_date: Date;
         expiration_date: Date;
-        credintial_id: number;
+        credintial_id: string;
         credintial_url: string;
         skills: string[];
         media: {
@@ -176,6 +183,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     };
+    savedPosts: postsInterface[];
     status: statusEnum; 
     blocked: ConnectionRequest[];
     unblocked_users: ConnectionRequest[];
@@ -199,6 +207,7 @@ export interface usersInterface extends mongoose.Document{
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
+    about?: aboutInterface;
 }
 
 const usersSchema = new mongoose.Schema<usersInterface>({
@@ -289,7 +298,9 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         _id: { type: String },
         name: { type: String },
         endorsments: [{ type: Schema.Types.ObjectId, ref: "users" }],
-        used_where: [{ type: Schema.Types.ObjectId, ref: "organizations" }],
+        educations: [{ type: String }],
+        experiences: [{ type: String }],
+        licenses: [{ type: String }],
     },],
     liscence_certificates: [
         {
@@ -298,7 +309,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             issuing_organization: { type: Schema.Types.ObjectId, ref: "organizations" },
             issue_date: { type: Date },
             expiration_date: { type: Date },
-            credintial_id: { type: Number },
+            credintial_id: { type: String },
             credintial_url: { type: String },
             skills: [{ type: String }],
             media: [
@@ -388,6 +399,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     },
+    savedPosts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [
         {
@@ -421,6 +433,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
+    about: {
+        about: { type: String },
+        skills: [{ type: String }],
+    },
 });
 
 usersSchema.pre('save', async function(next) {

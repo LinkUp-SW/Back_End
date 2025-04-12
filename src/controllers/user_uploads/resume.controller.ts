@@ -45,9 +45,14 @@ const uploadResume = async (req: Request, res: Response): Promise<void> => {
       resume: resumeUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error uploading resume:", error);
     res.status(500).json({ message: "Error uploading resume", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 
@@ -92,9 +97,14 @@ const updateResume = async (req: Request, res: Response): Promise<void> => {
       resume: newResumeUrl,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error updating resume:", error);
     res.status(500).json({ message: "Error updating resume", error: error instanceof Error ? error.message : "Unknown error" });
   }
+}
 };
 
 // Delete Resume
@@ -138,9 +148,14 @@ const deleteResume = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ message: "Resume deleted successfully" });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error deleting resume:", error);
     res.status(500).json({ message: "Error deleting resume", error });
   }
+}
 };
 
 // Get Resume
@@ -160,9 +175,14 @@ const getResume = async (req: Request, res: Response): Promise<void> => {
     // Return the resume URL
     res.status(200).json({ resume: targetUser.resume });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message,success:false });
+}
+  else{
     console.error("Error retrieving resume:", error);
     res.status(500).json({ message: "Error retrieving resume", error });
   }
+}
 };
 
 export { uploadResume, updateResume, deleteResume, getResume };

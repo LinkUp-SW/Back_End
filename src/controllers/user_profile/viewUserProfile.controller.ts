@@ -13,6 +13,7 @@ import { validateTokenAndUser } from "../../utils/helperFunctions.utils.ts";
 import Organization from "../../models/organizations.model.ts"; // Import the organization model
 import User from "../../models/users.model.ts"; // Import the user model
 import mongoose from "mongoose"; // Import mongoose
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
 
 export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -93,37 +94,82 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
   try {
     const result = await validateTokenAndUser(req, res);
     if (!result) return;
-     
+
     const { viewerId, targetUser: targetUser } = result;
-     
+
     // Retrieve the viewer's user document
     const viewerUser = await findUserByUserId(viewerId, res);
     if (!viewerUser) return;
 
-    // check if the target profile is public or private and if the viewer is connected to the target user
+    // Check if the target profile is public or private and if the viewer is connected to the target user
     const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
     if (!hasAccess) return;
 
     // Check if the viewer is the same as the user (is_me)
     const isMe = viewerId === targetUser.user_id;
 
+    // Find the education with the furthest end_date
+    const furthestEducation = targetUser.education.reduce((furthest: any, current: any) => {
+      if (!furthest || new Date(current.end_date) > new Date(furthest.end_date)) {
+        return current;
+      }
+      return furthest;
+    }, null);
+
+    let educationDetails = null;
+    if (furthestEducation && mongoose.isValidObjectId(furthestEducation.school)) {
+      const school = await Organization.findById(furthestEducation.school).select("_id name logo");
+      if (school) {
+        educationDetails = {
+            _id: school._id,
+            name: school.name,
+            logo: school.logo,
+        };
+      }
+    }
+
+    // Find the current work experience where is_current is true
+    const currentExperience = targetUser.work_experience.find((experience: any) => experience.is_current) 
+  || targetUser.work_experience.reduce((furthest: any, current: any) => {
+    if (!furthest || new Date(current.end_date) > new Date(furthest.end_date)) {
+      return current;
+    }
+    return furthest;
+  }, null);
+
+    let experienceDetails = null;
+    if (currentExperience && mongoose.isValidObjectId(currentExperience.organization)) {
+      const organization = await Organization.findById(currentExperience.organization).select("_id name logo");
+      if (organization) {
+        experienceDetails = {
+            _id: organization._id,
+            name: organization.name,
+            logo: organization.logo,
+
+        };
+      }
+    }
+
     if (isMe) {
-      // If the viewer is the same as the user, return full bio 
+      // If the viewer is the same as the user, return full bio
       const userBio = {
         is_me: true,
         bio: targetUser.bio,
         email: targetUser.email,
         profile_photo: targetUser.profile_photo || null,
+        is_default_profile_photo: targetUser.profile_photo === DEFAULT_IMAGE_URL,
+        is_defult_cover_photo: targetUser.cover_photo === DEFAULT_IMAGE_URL,
         cover_photo: targetUser.cover_photo || null,
         number_of_connections: targetUser.connections.length,
         contact_info: targetUser.bio.contact_info,
         isSubscribed: targetUser.subscription?.subscribed || false,
+        education: educationDetails,
+        work_experience: experienceDetails,
       };
 
       res.status(200).json(userBio);
       return;
     }
-
 
     // Find mutual connections
     const mutualConnections = findMutualConnections(
@@ -162,7 +208,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
 
     // Check if the user privacy settings allows invitations by email
     const isConnectByEmail = targetUser.privacy_settings?.flag_who_can_send_you_invitations === "email";
-     
+
     // Check if the user is premium
     const isSubscribed = targetUser.subscription?.subscribed || false;
 
@@ -171,6 +217,8 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       bio: targetUser.bio,
       email: targetUser.email,
       profile_photo: targetUser.profile_photo || null,
+      is_default_profile_photo: targetUser.profile_photo === DEFAULT_IMAGE_URL,
+      is_defult_cover_photo: targetUser.cover_photo === DEFAULT_IMAGE_URL,
       cover_photo: targetUser.cover_photo || null,
       number_of_connections: targetUser.connections.length,
       name_of_one_mutual_connection: nameOfOneMutualConnection,
@@ -182,20 +230,19 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       isInConnections: isInConnections,
       isAlreadyFollowing: isAlreadyFollowing,
       isConnectByEmail: isConnectByEmail,
-      
+      education: educationDetails,
+      work_experience: experienceDetails,
     };
 
     res.status(200).json(userBio);
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
-      res.status(401).json({ message: error.message,success:false });
-}
-  else{
-
-    console.error("Error fetching user bio:", error);
-    res.status(500).json({ message: "Error fetching user bio", error });
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error fetching user bio:", error);
+      res.status(500).json({ message: "Error fetching user bio", error });
+    }
   }
-}
 };
 
 export const getUserExperience = async (req: Request, res: Response): Promise<void> => {
@@ -223,7 +270,7 @@ export const getUserExperience = async (req: Request, res: Response): Promise<vo
       .map((experience: any) => experience.organization);
 
     // Fetch organization details for organizations that are ObjectIds
-    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id organization_name logo");
+    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id name logo");
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Map the work experience details
@@ -237,7 +284,7 @@ export const getUserExperience = async (req: Request, res: Response): Promise<vo
           organizationDetails = organization
             ? {
                 _id: organization._id,
-                name: organization.organization_name,
+                name: organization.name,
                 logo: organization.logo,
               }
             : null; // Handle cases where the organization is not found
@@ -301,7 +348,7 @@ export const getUserEducation = async (req: Request, res: Response): Promise<voi
       .map((education: any) => education.school);
 
     // Fetch organization details for schools that are ObjectIds
-    const organizations = await Organization.find({ _id: { $in: schoolIds } }).select("_id organization_name logo");
+    const organizations = await Organization.find({ _id: { $in: schoolIds } }).select("_id name logo");
     const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
 
     // Map the education details
@@ -315,7 +362,7 @@ export const getUserEducation = async (req: Request, res: Response): Promise<voi
           schoolDetails = organization
             ? {
                 _id: organization._id,
-                name: organization.organization_name,
+                name: organization.name,
                 logo: organization.logo,
               }
             : null; // Handle cases where the organization is not found
@@ -374,44 +421,76 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
     // Check if the viewer is the same as the user (is_me)
     const isMe = viewerId === targetUser.user_id;
 
-    // Extract all unique organization and endorser IDs
-    const organizationIds = [...new Set(targetUser.skills.flatMap((skill: any) => skill.used_where))];
-    const endorserIds = [...new Set(targetUser.skills.flatMap((skill: any) => skill.endorsments))];
-
-    // Fetch organization 
-    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id organization_name logo");
-    const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
-
-    // Fetch endorser details 
-    const endorsers = await User.find({ _id: { $in: endorserIds } }).select("_id bio.first_name bio.last_name profile_photo");
-    const endorserMap = new Map(endorsers.map((user: any) => [user._id.toString(), user]));
+    // Get fully populated user data to access related organizations
+    const populatedUser = await User.findById(targetUser._id)
+      .populate('education.school')
+      .populate('work_experience.organization')
+      .populate('liscence_certificates.issuing_organization')
+      .populate('skills.endorsments');
+    
+    if (!populatedUser) {
+      res.status(404).json({ message: 'User data not found' });
+      return;
+    }
 
     // Map the skills to include the required fields
-    const userSkills = targetUser.skills.map((skill: any) => ({
-      _id: skill._id,
-      name: skill.name,
-      total_endorsements: skill.endorsments.length, // Total number of endorsements
-      endorsements: skill.endorsments.map((endorsementId: any) => {
-        const endorser = endorserMap.get(endorsementId.toString());
-        return endorser
-          ? {
-              user_id: endorser._id,
-              name: `${endorser.bio.first_name} ${endorser.bio.last_name}`,
-              profilePicture: endorser.profile_photo || null,
-            }
-          : null; // Handle cases where the endorser is not found
-      }).filter((endorser: any) => endorser !== null), // Remove null entries
-      used_where: skill.used_where.map((organizationId: any) => {
-        const organization = organizationMap.get(organizationId.toString());
-        return organization
-          ? {
-              _id: organization._id,
-              name: organization.organization_name,
-              profilePicture: organization.logo,
-            }
-          : null; // Handle cases where the organization is not found
-      }).filter((org: any) => org !== null), // Remove null entries
-    }));
+    const userSkills = populatedUser.skills.map((skill: any) => {
+      // Process endorsements
+      const endorsements = skill.endorsments.map((endorser: any) => ({
+        user_id: endorser.user_id,
+        name: `${endorser.bio?.first_name || ''} ${endorser.bio?.last_name || ''}`.trim(),
+        profilePicture: endorser.profile_photo || null,
+      }));
+
+      // Process educations
+      const educationItems = skill.educations.map((educationId: string) => {
+        const edu = populatedUser.education.find((e: any) => e._id.toString() === educationId);
+        if (edu && edu.school) {
+          return {
+            _id: edu._id,
+            name: edu.school.name,
+            logo: edu.school.logo
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Process experiences
+      const experienceItems = skill.experiences.map((experienceId: string) => {
+        const exp = populatedUser.work_experience.find((e: any) => e._id.toString() === experienceId);
+        if (exp && exp.organization) {
+          return {
+            _id: exp._id,
+            name: exp.title,
+            logo: exp.organization.logo
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // Process licenses
+      const licenseItems = skill.licenses.map((licenseId: string) => {
+        const lic = populatedUser.liscence_certificates.find((l: any) => l._id.toString() === licenseId);
+        if (lic && lic.issuing_organization) {
+          return {
+            _id: lic._id,
+            name: lic.name,
+            logo: lic.issuing_organization.logo
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      return {
+        _id: skill._id,
+        name: skill.name,
+        total_endorsements: skill.endorsments.length,
+        endorsments: endorsements,
+        educations: educationItems,
+        experiences: experienceItems,
+        licenses: licenseItems
+      };
+    });
 
     const response = {
       is_me: isMe,
@@ -428,3 +507,82 @@ export const getUserSkills = async (req: Request, res: Response): Promise<void> 
     }
   }
 };
+
+
+export const getUserLicense = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and retrieve viewerId and targetUser
+    const result = await validateTokenAndUser(req, res);
+    if (!result) return;
+
+    const { viewerId, targetUser } = result;
+
+    // Retrieve the viewer's user document
+    const viewerUser = await findUserByUserId(viewerId, res);
+    if (!viewerUser) return;
+
+    // Check if the target profile is public or private and if the viewer is connected to the target user
+    const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
+    if (!hasAccess) return;
+
+    // Check if the viewer is the same as the user (is_me)
+    const isMe = viewerId === targetUser.user_id;
+
+    // Extract all unique issuing organization IDs that are ObjectIds
+    const organizationIds = targetUser.liscence_certificates
+      .filter((license: any) => mongoose.isValidObjectId(license.issuing_organization))
+      .map((license: any) => license.issuing_organization);
+
+    // Fetch organization details for issuing organizations
+    const organizations = await Organization.find({ _id: { $in: organizationIds } }).select("_id name logo");
+    const organizationMap = new Map(organizations.map((org: any) => [org._id.toString(), org]));
+
+    // Map the license certificates to include the required fields
+    const userLicenses = targetUser.liscence_certificates.map((license: any) => {
+      let issuingOrganizationDetails;
+      if (mongoose.isValidObjectId(license.issuing_organization)) {
+        // If the issuing organization is an ObjectId, fetch details from the organizationMap
+        const organization = organizationMap.get(license.issuing_organization.toString());
+        issuingOrganizationDetails = organization
+          ? {
+              _id: organization._id,
+              name: organization.name,
+              logo: organization.logo,
+            }
+          : null; // Handle cases where the organization is not found
+      } else {
+        // If the issuing organization is a string, return it as is
+        issuingOrganizationDetails = {
+          name: license.issuing_organization,
+        };
+      }
+
+      return {
+        _id: license._id,
+        name: license.name,
+        issuing_organization: issuingOrganizationDetails,
+        issue_date: license.issue_date,
+        expiration_date: license.expiration_date,
+        credintial_id: license.credintial_id,
+        credintial_url: license.credintial_url,
+        skills: license.skills || [],
+        media: license.media || [],
+      };
+    });
+
+    const response = {
+      is_me: isMe,
+      licenses: userLicenses,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    if (error instanceof Error && error.message === "Invalid or expired token") {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error fetching user licenses:", error);
+      res.status(500).json({ message: "Error fetching user licenses", error });
+    }
+  }
+};
+

@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
+import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType } from "../../utils/database.helper.ts";
 import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
-import organizations from "../../models/organizations.model.ts";
 
 const addWorkExperience = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -13,12 +12,13 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
         const { title, employee_type, organization, is_current, start_date, end_date, location, description, location_type, skills, media } = req.body;
 
         const processedMedia = await processMediaArray(media);
+        const experienceId = new ObjectId().toString();
 
         const newExperience = {
-            _id: new ObjectId().toString(),
+            _id: experienceId,
             title,
             employee_type,
-            organization: organization._id,
+            organization,
             is_current,
             start_date,
             end_date,
@@ -31,7 +31,7 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
 
         user.work_experience.push(newExperience);
         
-        updateUserSkills(user, skills, organization);
+        updateUserSkills(user, skills, experienceId, SkillSourceType.EXPERIENCE);
         
         await user.save();  
 
@@ -74,8 +74,8 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
             media: processedMedia,
         };
         
-        updateUserSkills(user, skills, organization);
-        handleRemovedSkills(user, oldSkills, skills, organization);
+        updateUserSkills(user, skills, experienceId, SkillSourceType.EXPERIENCE);
+        handleRemovedSkills(user, oldSkills, skills, experienceId, SkillSourceType.EXPERIENCE);
         
         await user.save();
 
@@ -106,7 +106,7 @@ const deleteWorkExperience = async (req: Request, res: Response, next: NextFunct
         
         user.work_experience.splice(experienceIndex, 1);
         
-        handleDeletedExperienceSkills(user, experienceSkills, organization);
+        handleDeletedSkills(user, experienceSkills, experienceId, SkillSourceType.EXPERIENCE);
 
         await user.save();
 

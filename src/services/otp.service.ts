@@ -6,7 +6,7 @@ export const generateOTPCode = (length = 6): string => {
   // Generate a random 6 digit OTP code
   let otp = '';
   for (let i = 0; i < length; i++) {
-    otp += Math.floor(Math.random() * 10);
+    otp += Math.floor(Math.random() * 10); // 
   }
   return otp; 
 };

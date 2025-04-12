@@ -10,15 +10,29 @@ export enum commentsEnum{
     connections_only = "Connections only",
     noone = "No one"
 }
-
+export enum mediaTypeEnum{
+    image = "image",
+    images = "images",
+    video = "video",
+    pdf = "pdf",
+    post = "post",
+    link = "link",
+    none = "none"
+}
 export interface postsInterface extends mongoose.Document{
     user_id: string;
     content: string;
     date: Date;
-    media: string[];
+    media: {
+        link:string[],
+        media_type:string
+    };
     comments_disabled: commentsEnum;
-    visibility: Boolean;
-    reacts: usersInterface[];
+    public_post: Boolean;
+    reacts: {
+        user_id:usersInterface,
+        react:string
+    }[];
     tagged_users: usersInterface[];
     comments: commentsInterface[];
 }
@@ -27,11 +41,17 @@ const postsSchema = new Schema<postsInterface>({
     user_id: { type: String },
     content: { type: String },
     date: { type: Date, default: Date.now },
-    media: [{ type: String }],
+    media: { 
+        link:[{type: String}],
+        media_type: {type: String}
+     },
     comments_disabled: { type: String, enum: Object.values(commentsEnum) },
-    visibility: { type: Boolean, default: true },
-    reacts: [{ type: String }],
-    tagged_users: [{ type: String }],
+    public_post: { type: Boolean, default: true },
+    reacts: [{ 
+        user_id:{ type: Schema.Types.ObjectId, ref: "users"},
+        react:{ type: String }
+     }],
+    tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
     comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
 });
 
