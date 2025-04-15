@@ -33,7 +33,8 @@ export interface conversationsInterface extends mongoose.Document {
     unread_count_user2: number;
     is_blocked_by_user1: boolean;
     is_blocked_by_user2: boolean;
-    type: string;
+    type: string[];
+
 }
 
 const MessageSchema = new Schema({
@@ -58,7 +59,7 @@ const conversationsSchema = new Schema<conversationsInterface>({
     unread_count_user2: { type: Number, default: 0 },
     is_blocked_by_user1: { type: Boolean, default: false },
     is_blocked_by_user2: { type: Boolean, default: false },
-    type : { type: String, enum: Object.values(conversationType), default: conversationType.unRead },
+    type : { type: [String], enum: Object.values(conversationType), default: [conversationType.unRead] },
 });
 
 const conversations = mongoose.model<conversationsInterface>('conversations', conversationsSchema);

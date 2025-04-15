@@ -122,11 +122,13 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
     // otherUser = userRepo.findByUserId(userId as string);
     return {
       conversationId: conversation._id,
+      conversationType: conversation.type,
       otherUser: {
         userId: otherUser.user_id,
         firstName: otherUser.bio?.first_name || '',
         lastName: otherUser.bio?.last_name || '',
-        profilePhoto: otherUser.profile_photo || ''
+        profilePhoto: otherUser.profile_photo || '',
+        onlineStatus: otherUser.online_status || false,
       },
       lastMessage: lastMessage ? {
         message: lastMessage.message,
