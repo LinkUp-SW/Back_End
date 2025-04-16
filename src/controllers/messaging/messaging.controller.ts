@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import asyncHandler from '../../middleware/asyncHandler.ts';
 import { CustomError } from '../../utils/customError.utils.ts';
-import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { conversationRepository } from '../../repositories/conversation.repository.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import mongoose from 'mongoose';
-import { use } from 'passport';
 
 const conversationRepo = new conversationRepository();
 const userRepo = new UserRepository();

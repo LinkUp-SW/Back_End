@@ -65,7 +65,7 @@ export class WebSocketService {
       });
 
       // Message handlers
-      socket.on("private_message", (data) => this.handlePrivateMessage(socket, data));
+      socket.on("private_message", (data) => this.handlePrivateMessage(socket, data)); // Send new message
       socket.on("react_to_message", this.handleMessageReaction.bind(this, socket));
       
       // Typing indicators
