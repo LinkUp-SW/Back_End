@@ -4107,7 +4107,394 @@ paths:
                   message:
                     type: string
                     example: "Error fetching user education details"
+  /api/v1/post/comment:
+    post:
+      tags:
+        - Comments
+      summary: Create a new comment
+      description: >
+        Creates a new comment on a post or as a reply to another comment.
+        Only allows one level of nesting (replies to comments but not replies to replies).
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                post_id:
+                  type: string
+                  description: ID of the post to comment on.
+                comment_id:
+                  type: string
+                  description: ID of the parent comment (if this is a reply).
+                content:
+                  type: string
+                  description: Text content of the comment.
+                media:
+                  type: string
+                  description: Media URL for the comment.
+                tagged_users:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs tagged in the comment.
+              required:
+                - post_id
+      responses:
+        '200':
+          description: Comment successfully created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "comment successfully created"
+                  commentId:
+                    type: string
+                    example: "6511b82172d92e69ee81c39b"
+        '400':
+          description: Required fields missing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Not allowed to comment on this post.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You are not allowed to comment on this post"
+        '404':
+          description: Post or parent comment not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
 
+    get:
+      tags:
+        - Comments
+      summary: Get comments for a post
+      description: >
+        Retrieves comments for a specific post with pagination support.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                post_id:
+                  type: string
+                  description: ID of the post to get comments for.
+                cursor:
+                  type: string
+                  description: Cursor for pagination.
+                limit:
+                  type: integer
+                  description: Maximum number of comments to return.
+              required:
+                - post_id
+                - limit
+      responses:
+        '200':
+          description: Comments retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        content:
+                          type: string
+                        user_id:
+                          type: string
+                        media:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        is_edited:
+                          type: boolean
+                        user:
+                          type: object
+                          properties:
+                            _id: 
+                              type: string
+                            name:
+                              type: string
+                            headline:
+                              type: string
+                            profile_picture:
+                              type: string
+                  nextCursor:
+                    type: string
+        '400':
+          description: Required fields missing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token.
+        '404':
+          description: Post not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "An error occurred while fetching comments"
+
+    patch:
+      tags:
+        - Comments
+      summary: Update a comment
+      description: >
+        Updates an existing comment's content, media, or tagged users.
+        Only the comment owner can update their comment.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                post_id:
+                  type: string
+                  description: ID of the post the comment belongs to.
+                comment_id:
+                  type: string
+                  description: ID of the comment to update.
+                content:
+                  type: string
+                  description: Updated text content of the comment.
+                media:
+                  type: string
+                  description: Updated media URL for the comment.
+                tagged_users:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of user IDs tagged in the comment.
+              required:
+                - post_id
+                - comment_id
+      responses:
+        '200':
+          description: Comment updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment updated successfully"
+                  comment:
+                    type: object
+        '400':
+          description: Required fields missing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Not authorized to update this comment.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to update this comment"
+        '404':
+          description: Post or comment not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment does not exist"
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+    delete:
+      tags:
+        - Comments
+      summary: Delete a comment
+      description: >
+        Deletes a comment and all its replies.
+        Only the comment owner can delete their comment.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment_id:
+                  type: string
+                  description: ID of the comment to delete.
+              required:
+                - comment_id
+      responses:
+        '200':
+          description: Comment deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Comment deleted successfully"
+                  deletedReplies:
+                    type: integer
+                    example: 3
+        '400':
+          description: Comment ID is required.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Comment ID is required"
+        '401':
+          description: Not authorized to delete this comment.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Not authorized to delete this comment"
+        '404':
+          description: Comment not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Comment does not exist"
+        '500':
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "An error occurred while deleting the comment"
 components:
   securitySchemes:
     bearerAuth:
