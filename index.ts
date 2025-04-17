@@ -38,6 +38,7 @@ import createPost from './src/routes/posts/createPosts.routes.ts';
 import deletePost from './src/routes/posts/deletePosts.routes.ts';
 import editPost from './src/routes/posts/editPosts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
+import comments from './src/routes/posts/comments.routes.ts';
 
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
@@ -57,7 +58,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Mahmoud-Amr-123' });
   console.log('Generated Token:', token);
 };
 
@@ -145,7 +146,8 @@ app.use('/api/v1/jobs',
     createPost,
     deletePost,
     editPost,
-    savePostRoutes
+    savePostRoutes,
+    comments
   );
 
 
