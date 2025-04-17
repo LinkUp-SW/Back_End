@@ -92,9 +92,13 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
     const isUser1 = conversation.user1_id.toString() === userId.toString();
     const user2 = isUser1 ? conversation.user2_id : conversation.user1_id; 
     
+    // console.log('user2:', user2);
+
     const otherUser = await userRepo.findByUserId(user2);
-    if (!otherUser) {
-      throw new CustomError('User not found', 404);
+
+    if (!otherUser) { // Check if other user exists
+      console.error(`User not found for user2 ID: ${user2}`);
+      throw new CustomError('User not found', 404); 
     }
 
     // Get last message and unread count
@@ -107,17 +111,8 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
     );
     
     const lastMessage = allMessages.length > 0 ? allMessages[0] : null;
-    // Define message interface
-    interface Message {
-      message: string;
-      timestamp: Date | string;
-      is_seen: boolean;
-      reacted?: string;
-      media?: any[];
-    }
     
     const unreadCount: number = receivedMessages.filter((msg) => !msg.is_seen).length;
-    // otherUser = userRepo.findByUserId(userId as string);
     return {
       conversationId: conversation._id,
       conversationType: conversation.type,

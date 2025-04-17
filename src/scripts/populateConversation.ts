@@ -61,79 +61,92 @@ const populateConversations = async () => {
         }
 
         // Create 20 sample conversations
-        // for (let i = 20; i < 23; i++) {
-        //     // Find or create other users
-        //     let otherUser = await users.findOne({ user_id: `User-${i}` });
+        for (let i = 0; i < 21; i++) {
+            // Find or create other users
+            let otherUser = await users.findOne({ user_id: `User-${i}` });
             
-        //     if (!otherUser) {
-        //         console.log(`Creating other user User-${i}...`);
-        //         const salt = await bcrypt.genSalt(10);
-        //         const hashedPassword = await bcrypt.hash("password123", salt);
+            if (!otherUser) {
+                console.log(`Creating other user User-${i}...`);
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash("password123", salt);
                 
-        //         otherUser = await users.create({
-        //             user_id: `User-${i}`,
-        //             email: `user${i}@example.com`,
-        //             password: "password123",
-        //             bio: {
-        //                 first_name: `User`,
-        //                 last_name: `${i}`,
-        //                 location: {
-        //                     country_region: "Country",
-        //                     city: "City"
-        //                 }
-        //             },
-        //             privacy_settings: {
-        //                 flag_account_status: accountStatusEnum.public,
-        //                 flag_who_can_send_you_invitations: invitationsEnum.everyone,
-        //                 flag_messaging_requests: true,
-        //                 messaging_read_receipts: true
-        //             },
-        //             is_verified: true,
-        //             is_student: false,
-        //             is_16_or_above: true
-        //         });
-        //         console.log(`User-${i} created successfully`);
-        //     }
+                otherUser = await users.create({
+                    user_id: `User-${i}`,
+                    email: `user${i}@example.com`,
+                    password: "password123",
+                    bio: {
+                        first_name: `User`,
+                        last_name: `${i}`,
+                        location: {
+                            country_region: "Country",
+                            city: "City"
+                        }
+                    },
+                    privacy_settings: {
+                        flag_account_status: accountStatusEnum.public,
+                        flag_who_can_send_you_invitations: invitationsEnum.everyone,
+                        flag_messaging_requests: true,
+                        messaging_read_receipts: true
+                    },
+                    is_verified: true,
+                    is_student: false,
+                    is_16_or_above: true,
+                    profile_photo: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1743174303/user_uploads/images/1743174231833-duck.jpg",
+                });
+                console.log(`User-${i} created successfully`);
+            }
 
-        //     // Now create the conversation
-        //     const conversation = await conversations.create({
-        //         user1_id: user.user_id, // Use the ObjectId instead of user_id string
-        //         user2_id: otherUser.user_id, // Use the ObjectId instead of user_id string
-        //         last_message_time: new Date(),
-        //         last_message_text: `Sample message ${i}`,
-        //         unread_count_user1: 0,
-        //         unread_count_user2: 0,
-        //         is_blocked_by_user1: false,
-        //         is_blocked_by_user2: false,
-        //     });
+            // Now create the conversation
+            const conversation = await conversations.create({
+                user1_id: user.user_id, // Use the ObjectId instead of user_id string
+                user2_id: otherUser.user_id, // Use the ObjectId instead of user_id string
+                last_message_time: new Date(),
+                last_message_text: `Sample message ${i}`,
+                unread_count_user1: 0,
+                unread_count_user2: 0,
+                is_blocked_by_user1: false,
+                is_blocked_by_user2: false,
+            });
 
-        //     // Add sample messages to the conversation
-        //     for (let j = 0; j < 5; j++) {
-        //         // Determine if user1 or user2 is sending this message
-        //         const isUser1Sending = j % 2 === 0;
-        //         const senderId = isUser1Sending ? user.user_id : otherUser.user_id;
+            let senderId = ''
+            // Add sample messages to the conversation
+            // for (let j = 0; j < 5; j++) {
+            //     // Determine if user1 or user2 is sending this message
+            //     const isUser1Sending = j % 2 === 0;
+            //     senderId = isUser1Sending ? user.user_id : otherUser.user_id;
                 
-        //         await conversations.updateOne(
-        //             { _id: conversation._id },
-        //             {
-        //                 $push: {
-        //                     [`user${isUser1Sending ? 1 : 2}_sent_messages`]: {
-        //                         // Added required fields from MessageInterface
-        //                         sender_id: senderId,
-        //                         messageId: new mongoose.Types.ObjectId().toString(), // Generate a unique ID
-        //                         message: `Sample message ${j} from ${senderId}`,
-        //                         media: [],
-        //                         media_type: [], // Optional array for media types
-        //                         timestamp: new Date(),
-        //                         reacted: "", // Changed from boolean to string
-        //                         is_seen: false
-        //                         // typing is optional and not needed for sample data
-        //                     },
-        //                 },
-        //             }
-        //         );
-        //     }
-        // }
+            //     await conversations.updateOne(
+            //         { _id: conversation._id },
+            //         {
+            //             $push: {
+            //                 [`user${isUser1Sending ? 1 : 2}_sent_messages`]: {
+            //                     // Added required fields from MessageInterface
+            //                     sender_id: senderId,
+            //                     messageId: new mongoose.Types.ObjectId().toString(), // Generate a unique ID
+            //                     message: `Sample message ${j} from ${senderId}`,
+            //                     media: [],
+            //                     media_type: [], // Optional array for media types
+            //                     timestamp: new Date(),
+            //                     reacted: "", // Changed from boolean to string
+            //                     is_seen: false
+            //                     // typing is optional and not needed for sample data
+            //                 },
+            //             },
+            //         }
+            //     );
+
+            //     console.log(`Added message ${j} to conversation between ${user.user_id} and ${otherUser.user_id}`);
+            // }
+
+            // await users.updateOne(
+            //     { user_id: senderId },
+            //     {
+            //         $push: {
+            //             conversations: conversation._id, // Add conversation ID to user's conversations
+            //         },
+            //     }
+            // );
+        }
 
         console.log("Conversations populated successfully");
     } catch (error) {
