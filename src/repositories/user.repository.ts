@@ -83,7 +83,6 @@ export class UserRepository {
       is_16_or_above: is16OrAbove,
     };
   
-    // Conditionally add education or work_experience based on isStudent
     if (isStudent) {
       userData.education = [
         {
