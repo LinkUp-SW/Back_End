@@ -86,6 +86,7 @@ export class UserRepository {
     if (isStudent) {
       userData.education = [
         {
+          _id : new mongoose.Types.ObjectId(),
           school: school,
           degree: null,
           field_of_study: null,
@@ -101,6 +102,7 @@ export class UserRepository {
     } else {
       userData.work_experience = [
         {
+          _id : new mongoose.Types.ObjectId(),
           title: jobTitle,
           employee_type: employmentType,
           organization: recentCompany,
