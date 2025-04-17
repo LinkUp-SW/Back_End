@@ -1,7 +1,7 @@
 import User from '../models/users.model.ts';
 import { jobTypeEnum, experienceLevelEnum } from '../models/jobs.model.ts';
 import { statusEnum, sexEnum, accountStatusEnum, invitationsEnum } from '../models/users.model.ts';
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, ObjectId } from "mongoose";
 import { ConnectionUserInterface} from "../models/users.model.ts";
 import Users from "../models/users.model.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
@@ -10,30 +10,30 @@ export class UserRepository {
   async create(userId: string, firstName: string, lastName: string, email: string, password: string,
     country: string,
     city: string,
-    isStudent: boolean | null,
+    isStudent: boolean,
     jobTitle: string | null,
-    school: string | null,
+    school: ObjectId | null,
     schoolStartYear: number | null,
     schoolEndYear: number | null,
     is16OrAbove: boolean | null,
     birthDate: Date | null,
     employmentType: string | null,
-    recentCompany: string | null
+    recentCompany: ObjectId | null
   ) {
-    return User.create({
+    const userData: any = {
       user_id: userId,
       email: email,
       password: password,
       bio: {
         first_name: firstName,
         last_name: lastName,
-        headline: "",  // Default empty headline
+        headline: "", // Default empty headline
         experience: [],
         education: [],
         website: "",
         location: {
           country_region: country,
-          city: city
+          city: city,
         },
         contact_info: {
           phone_number: null,
@@ -41,34 +41,9 @@ export class UserRepository {
           phone_type: null,
           address: null,
           birthday: birthDate,
-          website: null
-        }
+          website: null,
+        },
       },
-      education: [{
-        school: school,
-        degree: null,
-        field_of_study: null,
-        start_date: schoolStartYear ? new Date(schoolStartYear, 0) : null,
-        end_date: schoolEndYear ? new Date(schoolEndYear, 0) : null,
-        grade: null,
-        activites_and_socials: null,
-        skills: [],
-        description: null,
-        media: []
-      }],
-      work_experience: [{
-        title: jobTitle,
-        employee_type: employmentType,
-        organization: recentCompany,
-        is_current: true,
-        start_date: new Date(),
-        end_date: null,
-        location: null,
-        description: null,
-        location_type: null,
-        skills: [],
-        media: []
-      }],
       organizations: [],
       skills: [],
       liscence_certificates: [],
@@ -83,14 +58,14 @@ export class UserRepository {
         flag_account_status: accountStatusEnum.public,
         flag_who_can_send_you_invitations: invitationsEnum.everyone,
         flag_messaging_requests: true,
-        messaging_read_receipts: true
+        messaging_read_receipts: true,
       },
       activity: {
         posts: [],
         reposted_posts: [],
         reacted_posts: [],
         comments: [],
-        media: []
+        media: [],
       },
       status: statusEnum.finding_new_job,
       blocked: [],
@@ -101,12 +76,48 @@ export class UserRepository {
       sex: null,
       subscription: {
         subscribed: false,
-        subscription_started_at: null
+        subscription_started_at: null,
       },
       is_student: isStudent,
       is_verified: false,
-      is_16_or_above: is16OrAbove
-    });
+      is_16_or_above: is16OrAbove,
+    };
+  
+    // Conditionally add education or work_experience based on isStudent
+    if (isStudent) {
+      userData.education = [
+        {
+          school: school,
+          degree: null,
+          field_of_study: null,
+          start_date: schoolStartYear ? new Date(schoolStartYear, 0) : null,
+          end_date: schoolEndYear ? new Date(schoolEndYear, 0) : null,
+          grade: null,
+          activites_and_socials: null,
+          skills: [],
+          description: null,
+          media: [],
+        },
+      ];
+    } else {
+      userData.work_experience = [
+        {
+          title: jobTitle,
+          employee_type: employmentType,
+          organization: recentCompany,
+          is_current: true,
+          start_date: new Date(),
+          end_date: null,
+          location: null,
+          description: null,
+          location_type: null,
+          skills: [],
+          media: [],
+        },
+      ];
+    }
+  
+    return User.create(userData);
   }
 
   async update(userId: string, firstName: string, lastName: string, email: string, password: string,
