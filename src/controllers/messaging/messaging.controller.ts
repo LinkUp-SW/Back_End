@@ -4,6 +4,7 @@ import { CustomError } from '../../utils/customError.utils.ts';
 import { conversationRepository } from '../../repositories/conversation.repository.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import mongoose from 'mongoose';
+import { MongoGridFSChunkError } from 'mongodb';
 
 const conversationRepo = new conversationRepository();
 const userRepo = new UserRepository();
@@ -190,7 +191,8 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       timestamp: msg.timestamp,
       reacted: msg.reacted,
       isSeen: msg.is_seen,
-      isOwnMessage: isUser1
+      isOwnMessage: isUser1,
+      messageId: msg.messageId,
     });
   }
   
@@ -203,7 +205,8 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       timestamp: msg.timestamp,
       reacted: msg.reacted,
       isSeen: msg.is_seen,
-      isOwnMessage: isUser2
+      isOwnMessage: isUser2,
+      messageId: msg.messageId,
     });
   }
   
@@ -225,86 +228,9 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       profilePhoto: otherUser.profile_photo || ''
     },
     messages: allMessages
+
   });
 });
-
-/**
- * Block a user from sending messages
- * 
- * @route POST /api/v1/messages/block
- * @access Private - Requires authentication
- * @param {Request} req - Express request object with blockUserId in body
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
- * @returns {Promise<Response>} JSON success message
- * @throws {CustomError} 401 - If user is not authenticated
- * @throws {CustomError} 400 - If blockUserId is missing or user is already blocked
- * @throws {CustomError} 404 - If user to block or current user is not found
- */
-// const blockUser = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-//   const userId = req.user
-//   const { blockUserId } = req.body;
-  
-//   if (!userId) {
-//     throw new CustomError('User not authenticated', 401);
-//   }
-  
-//   if (!blockUserId) {
-//     throw new CustomError('User ID to block is required', 400);
-//   }
-  
-//   await conversationRepo.blockUser(userId as string, blockUserId);
-  
-//   return res.status(200).json({ message: 'User blocked successfully' });
-// });
-
-/**
- * Unblock a previously blocked user
- * 
- * @route POST /api/v1/messages/unblock
- * @access Private - Requires authentication
- * @param {Request} req - Express request object with unblockUserId in body
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
- * @returns {Promise<Response>} JSON success message
- * @throws {CustomError} 401 - If user is not authenticated
- * @throws {CustomError} 400 - If unblockUserId is missing or user is not blocked
- * @throws {CustomError} 404 - If current user is not found
- */
-// const unblockUser = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-//   let userId = req.user
-//   const { unblockUserId } = req.body;
-  
-//   if (!userId) {
-//     throw new CustomError('User not authenticated', 401);
-//   }
-
-  
-//   if (!unblockUserId) {
-//     throw new CustomError('User ID to unblock is required', 400);
-//   }
-
-
-//   // Get current user
-//   const currentUser = await userRepo.findByUserId(userId as string); 
-//   if (!currentUser) {
-//     throw new CustomError('Current user not found', 404);
-//   }
-  
-//   // Check if user was blocked
-//   if (!currentUser.blocked || !currentUser.blocked.includes(unblockUserId)) {
-//     throw new CustomError('User is not blocked', 400);
-//   }
-  
-//   // Use repository method to unblock user
-//   await conversationRepo.unblockUser(userId as string, unblockUserId);
-  
-//   // Remove from blocked list
-//   currentUser.blocked = currentUser.blocked.filter(id => id !== unblockUserId);
-//   await currentUser.save();
-  
-//   return res.status(200).json({ message: 'User unblocked successfully' });
-// });
 
 /**
  * Get count of unseen messages across all conversations
