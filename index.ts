@@ -44,6 +44,7 @@ import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchRoutes from './src/routes/organization.route.ts';
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
+import peopleYouMayKnowRoutes from './src/routes/my_network/people_you_may_know.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -57,7 +58,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Mahmoud-Amr-123' });
   console.log('Generated Token:', token);
 };
 
@@ -132,7 +133,8 @@ app.use('/api/v1/user',
     skillsRoutes,
     myNetwork,
     privacySettingsRoutes,
-    aboutUserRoutes,);
+    aboutUserRoutes,
+    peopleYouMayKnowRoutes,);
 
 // Mount Jobs Routes
 app.use('/api/v1/jobs', 
