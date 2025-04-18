@@ -21,6 +21,8 @@ export const getPeopleYouMayKnow = async (req: Request, res: Response): Promise<
       work_experience: viewerUser.work_experience || [], // Default to empty array if undefined
       connections: viewerUser.connections || [], // Default to empty array if undefined
       blocked: viewerUser.blocked || [], // Default to empty array if undefined
+      sent_connections: viewerUser.sent_connections || [], // Default to empty array if undefined
+      received_connections: viewerUser.received_connections || [], // Default to empty array if undefined
       // Add other properties from usersInterface as needed
     } as usersInterface & { _id: string };
 

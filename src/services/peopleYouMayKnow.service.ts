@@ -50,7 +50,7 @@ export const findPeopleYouMayKnow = async (
 
         query = {
             "education.school": currentField,
-            _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked] },
+            _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked, ...viewerUser.sent_connections, ...viewerUser.received_connections] },
             // This is the important fix:
             $and: [
               // Either the blocked field doesn't exist
@@ -85,7 +85,7 @@ export const findPeopleYouMayKnow = async (
           
             query = {
                 "work_experience.organization": currentField,
-                _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked] },
+                _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked, ...viewerUser.sent_connections, ...viewerUser.received_connections] },
                 // This is the important fix:
                 $and: [
                   // Either the blocked field doesn't exist
