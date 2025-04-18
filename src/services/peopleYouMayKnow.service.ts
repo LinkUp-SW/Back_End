@@ -48,10 +48,20 @@ export const findPeopleYouMayKnow = async (
             institutionName = 'Unknown School';
         }
 
-          query = {
+        query = {
             "education.school": currentField,
-            _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked] }, 
-            blocked: { $nin: [new mongoose.Types.ObjectId(viewerUser._id)] },
+            _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked] },
+            // This is the important fix:
+            $and: [
+              // Either the blocked field doesn't exist
+              { $or: [
+                { blocked: { $exists: false } },
+                { blocked: { $size: 0 } }
+              ]},
+              // Or the blocked field doesn't contain the viewer's ID
+              { "blocked._id": { $ne: new mongoose.Types.ObjectId(viewerUser._id) } },
+              { blocked: { $ne: new mongoose.Types.ObjectId(viewerUser._id) } }
+            ]
           };
       } else if (context === "work_experience") {
           if (!viewerUser.work_experience || viewerUser.work_experience.length === 0) {
@@ -73,11 +83,21 @@ export const findPeopleYouMayKnow = async (
               institutionName = 'Unknown Organization';
             }
           
-          query = {
-            "work_experience.organization": currentField,
-            _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked] },
-            blocked: { $nin: [new mongoose.Types.ObjectId(viewerUser._id)] },
-          };
+            query = {
+                "work_experience.organization": currentField,
+                _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked] },
+                // This is the important fix:
+                $and: [
+                  // Either the blocked field doesn't exist
+                  { $or: [
+                    { blocked: { $exists: false } },
+                    { blocked: { $size: 0 } }
+                  ]},
+                  // Or the blocked field doesn't contain the viewer's ID
+                  { "blocked._id": { $ne: new mongoose.Types.ObjectId(viewerUser._id) } },
+                  { blocked: { $ne: new mongoose.Types.ObjectId(viewerUser._id) } }
+                ]
+              };
       }
   
       // Add cursor-based pagination
