@@ -153,7 +153,13 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       secure: true,
       domain: ".linkup-egypt.tech",
     });
-    
+
+    res.clearCookie("linkup_user_data", {
+      secure: true,
+      sameSite: "none",
+      domain: ".linkup-egypt.tech",
+    });
+
     return res.status(200).json({ 
       message: 'Signup successful',
       user: { 
