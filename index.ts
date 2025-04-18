@@ -44,7 +44,7 @@ import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchRoutes from './src/routes/organization.route.ts';
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
-import peopleYouMayKnowRoutes from './src/routes/my_network/people_you_may_know.routes.ts';
+import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPeopleYouMayKnow } from '../../controllers/my_network/people_you_may_know.controller.ts';
+import { getPeopleYouMayKnow } from '../../controllers/my_network/peopleYouMayKnow.controller.ts';
 
 const router = express.Router();
 

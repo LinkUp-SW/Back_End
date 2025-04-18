@@ -2,7 +2,7 @@ import request from 'supertest';
 import express from 'express';
 import session from 'express-session';
 import mongoose from 'mongoose';
-import peopleYouMayKnowRoutes from '../../routes/my_network/people_you_may_know.routes.ts';
+import peopleYouMayKnowRoutes from '../../routes/my_network/peopleYouMayKnow.routes.ts';
 import users from '../../models/users.model.ts';
 import organizations from '../../models/organizations.model.ts';
 import tokenUtils from '../../utils/token.utils.ts';
