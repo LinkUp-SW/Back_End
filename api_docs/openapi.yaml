@@ -4108,6 +4108,117 @@ paths:
                     type: string
                     example: "Error fetching user education details"
 
+  /api/v1/user/people-you-may-know:
+    get:
+      tags:
+        - Invitation Manager
+      summary: Get People You May Know
+      description: >
+        Retrieves a list of people the user may know based on common education or work experience.
+        Results are filtered to exclude connections, blocked users, and users who have blocked the viewer.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+        - name: context
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [education, work_experience]
+          description: Context to find people by (education or work_experience)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results to return per page
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination (ID of the last item in previous page)
+      responses:
+        '200':
+          description: Successfully retrieved people you may know
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  institutionName:
+                    type: string
+                    description: Name of the school or organization
+                    example: "Tech Innovations Inc"
+                  people:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "67e6b39b6bf4f58c1fea6d20"
+                        user_id:
+                          type: string
+                          example: "Omar-Khaled-1234"
+                        bio:
+                          type: object
+                          properties:
+                            headline:
+                              type: string
+                              example: "Data Scientist"
+                        profile_photo:
+                          type: string
+                          nullable: true
+                          format: uri
+                          example: "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png"
+                        privacy_settings:
+                          type: object
+                          properties:
+                            flag_who_can_send_you_invitations:
+                              type: string
+                              example: "Everyone"
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: Cursor for fetching the next page of results
+                    example: null
+        '400':
+          description: Invalid context parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid context. Use 'education' or 'work_experience'."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching people you may know"    
+
 components:
   securitySchemes:
     bearerAuth:
@@ -4207,3 +4318,4 @@ components:
             industry:
               type: string
               example: "Information Technology"
+          
