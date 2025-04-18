@@ -4219,6 +4219,147 @@ paths:
                     type: string
                     example: "Error fetching people you may know"    
 
+  /api/v1/search/users:
+    get:
+      tags:
+        - Search
+      summary: Search for users
+      description: >
+        Searches for users based on name, company, industry, and connection degree.
+        Includes mutual connection information and various filtering options.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term to match against user profiles
+        - name: connectionDegree
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [1st, 2nd, 3rd+, all]
+            default: all
+          description: Filter results by connection relationship
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results per page
+      responses:
+        '200':
+          description: Successfully retrieved search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  people:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "jane-doe-1234"
+                        name:
+                          type: string
+                          example: "Jane Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at Tech Company"
+                        location:
+                          type: string
+                          example: "San Francisco, CA"
+                        profile_photo:
+                          type: string
+                          format: uri
+                          example: "https://res.cloudinary.com/dxxx/image/upload/profile.jpg"
+                        connection_degree:
+                          type: string
+                          enum: [1st, 2nd, 3rd+]
+                          example: "2nd"
+                          description: Relationship to the viewer
+                        mutual_connections:
+                          type: object
+                          properties:
+                            count:
+                              type: integer
+                              example: 3
+                              description: Number of mutual connections
+                            suggested_name:
+                              type: string
+                              example: "John Smith"
+                              description: Name of one mutual connection
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 45
+                        description: Total number of results
+                      page:
+                        type: integer
+                        example: 1
+                        description: Current page number
+                      limit:
+                        type: integer
+                        example: 10
+                        description: Results per page
+                      pages:
+                        type: integer
+                        example: 5
+                        description: Total number of pages
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error searching users"
+  
 components:
   securitySchemes:
     bearerAuth:
