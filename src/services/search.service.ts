@@ -88,7 +88,7 @@ import { Response } from 'express';
 interface SearchParams {
   query: string;
   filter?: 'name' | 'company' | 'industry' | 'all';
-  connectionDegree?: '1st' | '2nd' | 'all';
+  connectionDegree?: '1st' | '2nd' | '3rd+' | 'all';
   page?: number;
   limit?: number;
 }
@@ -215,19 +215,49 @@ export const searchUsers = async (
     // Add connection degree filter
     let connectionCondition = null;
     
-    if (connectionDegree !== 'all') {
-      if (connectionDegree === '1st') {
-        // First degree: Include only direct connections
-        connectionCondition = {
-          _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) }
-        };
-      } else if (connectionDegree === '2nd') {
-        // Second degree: Include only connections of connections (not direct connections)
-        connectionCondition = {
-          _id: { $in: Array.from(secondDegreeConnections).map(id => new mongoose.Types.ObjectId(id)) }
-        };
-      } 
+    // Fix the 3rd+ filtering condition
+if (connectionDegree !== 'all') {
+    console.log(`Filtering by connection degree: ${connectionDegree}`);
+    if (connectionDegree === '1st') {
+      // First degree: Include only direct connections
+      connectionCondition = {
+        _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) }
+      };
+    } else if (connectionDegree === '2nd') {
+      // Second degree: Include only connections of connections (not direct connections)
+      connectionCondition = {
+        _id: { $in: Array.from(secondDegreeConnections).map(id => new mongoose.Types.ObjectId(id)) }
+      };
+    } else if (connectionDegree === '3rd+') {
+      // Third degree+: Include users who are neither 1st nor 2nd degree connections
+      // Create combined array of IDs to exclude
+      const allNetworkConnectionIds = [
+        ...viewerConnections,
+        ...Array.from(secondDegreeConnections)
+      ];
+      
+      // Ensure we have valid MongoDB ObjectIds for the exclusion
+      const exclusionIds = allNetworkConnectionIds
+        .filter(id => id) // Remove any null/undefined values
+        .map(id => {
+          try {
+            return new mongoose.Types.ObjectId(id);
+          } catch (e) {
+            console.warn(`Invalid ID format for exclusion: ${id}`);
+            return null;
+          }
+        })
+        .filter(id => id); // Remove any failed conversions
+      
+      // Apply the exclusion filter
+      connectionCondition = {
+        _id: { $nin: exclusionIds }
+      };
+      
+      // Debug logging to verify what we're excluding
+      console.log(`Excluding ${exclusionIds.length} connections from 3rd+ results`);
     }
+  }
     
     // Search conditions based on filter
     let searchConditions = [];
@@ -305,6 +335,9 @@ export const searchUsers = async (
         connectionDegreeLabel = '1st';
       } else if (secondDegreeConnections.has(user._id.toString())) {
         connectionDegreeLabel = '2nd';
+      }
+      else {
+        connectionDegreeLabel = '3rd+';
       }
       
       // Extract user's connection IDs for mutual calculations

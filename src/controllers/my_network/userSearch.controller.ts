@@ -17,18 +17,26 @@ export const searchUsersController = async (req: Request, res: Response): Promis
     }
 
 
-    // Validate connection degree
-    const validConnectionDegrees = ['all', '1st', '2nd'];
-    const searchConnectionDegree = connectionDegree && 
-      typeof connectionDegree === 'string' && 
-      validConnectionDegrees.includes(connectionDegree)
-        ? connectionDegree as 'all' | '1st' | '2nd' 
-        : 'all';
+// Handle connection degree with more comprehensive normalization
+let searchConnectionDegree: 'all' | '1st' | '2nd' | '3rd+' = 'all';
+
+if (connectionDegree && typeof connectionDegree === 'string') {
+  // Normalize the connection degree string
+  const normalized = connectionDegree.trim();
+  
+  if (normalized === 'all' || normalized === '1st' || normalized === '2nd') {
+    searchConnectionDegree = normalized as 'all' | '1st' | '2nd';
+  } 
+  // Special handling for 3rd+ with any encoding variants
+  else if (normalized === '3rd+' || normalized.startsWith('3rd') || normalized.match(/^3rd[\s%+]/)) {
+    searchConnectionDegree = '3rd+';
+
+  }
+}
 
     // Parse pagination params
     const searchPage = page && !isNaN(Number(page)) ? Number(page) : 1;
     const searchLimit = limit && !isNaN(Number(limit)) ? Number(limit) : 10;
-
     const searchParams = {
       query,
       connectionDegree: searchConnectionDegree,
