@@ -89,15 +89,19 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
         userID: updatedUser.user_id,
       });
 
-      // Set cookies and return response
       res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
         httpOnly: JWT_CONFIG.HTTP_ONLY,
-        maxAge: 3600000, // 1 hour
+        maxAge: 3600000, // 1 hour,
+        sameSite: "none",
+        secure: true,
+        domain: ".linkup-egypt.tech",
       });
-
       res.cookie("linkup_user_id", updatedUser.user_id, {
         maxAge: 3600000,
         httpOnly: false,
+        sameSite: "none",
+        secure: true,
+        domain: ".linkup-egypt.tech",
       });
       
       return res.status(200).json({ 
@@ -135,15 +139,19 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       userID: newUser.user_id,
     });
 
-    // Set cookies and return response
     res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
       httpOnly: JWT_CONFIG.HTTP_ONLY,
-      maxAge: 3600000, // 1 hour
+      maxAge: 3600000, // 1 hour,
+      sameSite: "none",
+      secure: true,
+      domain: ".linkup-egypt.tech",
     });
-
     res.cookie("linkup_user_id", newUser.user_id, {
       maxAge: 3600000,
       httpOnly: false,
+      sameSite: "none",
+      secure: true,
+      domain: ".linkup-egypt.tech",
     });
     
     return res.status(200).json({ 
