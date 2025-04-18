@@ -35,7 +35,7 @@ router.delete('/messages/:conversationId/:messageId',authorizeMessaging,messageC
 router.delete('/conversations/:conversationId',authorizeMessaging,messageController.deleteConversation);
 
 // Edit a message
-router.patch('/messages/:messageId/edit',authorizeMessaging,messageController.editMessage);
+router.patch('/messages/:conversationId/:messageId/edit',authorizeMessaging,messageController.editMessage);
 
 // React to a message
 router.post('/messages/:messageId/react',authorizeMessaging,messageController.reactToMessage);
