@@ -29,7 +29,7 @@ router.put('/conversations/:conversationId/read',authorizeMessaging,messageContr
 router.put('/messages/:conversationId/seen',authorizeMessaging,messageController.markMessagesAsSeen);
 
 // Delete a message
-router.delete('/messages/:messageId',authorizeMessaging,messageController.deleteMessage);
+router.delete('/messages/:conversationId/:messageId',authorizeMessaging,messageController.deleteMessage);
 
 // Delete a conversation
 router.delete('/conversations/:conversationId',authorizeMessaging,messageController.deleteConversation);
