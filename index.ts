@@ -45,6 +45,7 @@ import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchRoutes from './src/routes/organization.route.ts';
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
+import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -151,7 +152,9 @@ app.use('/api/v1/jobs',
   );
 
 
-app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/search', 
+  userSearchRoutes,
+  searchRoutes );
 
 
 app.get('/', (req: Request, res: Response) => {
