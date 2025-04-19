@@ -12,11 +12,11 @@ router.post('/posts', (req,res) =>{
     createPost(req,res);
 });
 
-router.patch('/posts', (req,res) =>{
+router.patch('/posts/:postId', (req,res) =>{
     editPost(req,res);
 });
 
-router.delete('/posts', (req,res) =>{
+router.delete('/posts/:postId', (req,res) =>{
     deletePost(req,res);
 });
 
