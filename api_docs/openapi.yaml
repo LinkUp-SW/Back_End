@@ -3421,12 +3421,12 @@ paths:
                     type: string
                     example: "An error occurred while retrieving the user bio."
 
-  /api/v1/post/create-post:
+  /api/v1/posts:
     post:
       tags:
         - Posts
       summary: Create a new post
-      description: Creates a new post for a user and associates it with their activity.
+      description: Creates a new post associated with the authenticated user's activity
       parameters:
         - in: header
           name: Authorization
@@ -3443,34 +3443,40 @@ paths:
               properties:
                 content:
                   type: string
-                  description: Content of the post.
+                  description: Text content of the post
+                  example: "Excited to share my latest project!"
                 mediaType:
                   type: string
-                  description: Type of media (e.g., image, video).
+                  description: Type of media (none, image, video, document, link, post)
+                  enum: [none, image, video, document, link, post]
+                  example: "image"
                 media:
                   type: array
                   items:
                     type: string
-                  description: Array of media URLs.
+                  description: Array of media URLs or base64 encoded strings
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
                 commentsDisabled:
                   type: string
-                  description: Who can comment on the post.
+                  description: Who can comment on the post
+                  enum: [none, connections, all]
+                  example: "all"
                 publicPost:
                   type: boolean
-                  description: Whether the post is public.
+                  description: Whether the post is visible to all users or just connections
+                  example: true
                 taggedUsers:
                   type: array
                   items:
                     type: string
-                  description: Array of user IDs tagged in the post.
+                  description: Array of user IDs tagged in the post
+                  example: ["6457abc123def456", "6457abc123def457"]
               required:
-                - content
                 - commentsDisabled
                 - publicPost
-                - taggedUsers
       responses:
         '200':
-          description: Post successfully created.
+          description: Post created successfully
           content:
             application/json:
               schema:
@@ -3478,77 +3484,157 @@ paths:
                 properties:
                   message:
                     type: string
+                    example: "Post successfully created"
+                  postId:
+                    type: string
+                    example: "6458abc123def456"
         '400':
-          description: Required fields missing.
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
         '500':
-          description: Server error.
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
 
-  /api/v1/post/edit-post:
+  /api/v1/posts/{postId}:
     patch:
-      tags:
-        - Posts
-      summary: Edit an existing post
-      description: Updates the content, media, or tagged users of an existing post.
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-            example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                postId:
-                  type: string
-                  description: ID of the post to edit.
-                content:
-                  type: string
-                  description: Updated content of the post.
-                mediaType:
-                  type: string
-                  description: Updated type of media (e.g., image, video).
-                media:
-                  type: array
-                  items:
-                    type: string
-                  description: Updated array of media URLs.
-                taggedUsers:
-                  type: array
-                  items:
-                    type: string
-                  description: Updated array of user IDs tagged in the post.
-              required:
-                - postId
-      responses:
-        '200':
-          description: Post successfully updated.
-          content:
-            application/json:
+          tags:
+            - Posts
+          summary: Update an existing post
+          description: Modifies an existing post's content, media, or settings
+          parameters:
+            - in: header
+              name: Authorization
+              required: true
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-        '400':
-          description: Post does not exist or required fields missing.
-        '401':
-          description: Invalid or expired token.
-        '500':
-          description: Server error.
+                type: string
+                example: "Bearer jwt_token"
+            - in: path
+              name: postId
+              required: true
+              schema:
+                type: string
+                description: ID of the post to delete
+                example: "6458abc123def456"
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    content:
+                      type: string
+                      description: Updated text content of the post
+                      example: "Updated: Excited to share my latest project with new details!"
+                    mediaType:
+                      type: string
+                      description: Type of media (none, image, video, document, link, post)
+                      enum: [none, image, video, document, link, post]
+                      example: "image"
+                    media:
+                      type: array
+                      items:
+                        type: string
+                      description: Updated array of media URLs or base64 encoded strings
+                      example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg...", "https://example.com/image.jpg"]
+                    commentsDisabled:
+                      type: string
+                      description: Updated comment permission setting
+                      enum: [none, connections, all]
+                      example: "connections"
+                    publicPost:
+                      type: boolean
+                      description: Updated visibility setting
+                      example: false
+                    taggedUsers:
+                      type: array
+                      items:
+                        type: string
+                      description: Updated array of user IDs tagged in the post
+                      example: ["6457abc123def456"]
+                  required:
+                    - postId
+          responses:
+            '200':
+              description: Post updated successfully
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Post successfully updated"
+            '400':
+              description: Post ID is required or post does not exist
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "postId is required"
+            '401':
+              description: Invalid or expired token
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Invalid or expired token"
+                      success:
+                        type: boolean
+                        example: false
+            '500':
+              description: Server error
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Server error"
+                      error:
+                        type: object
 
-  /api/v1/post/delete-post:
     delete:
       tags:
         - Posts
       summary: Delete a post
-      description: Deletes a post and removes it from the user's activity.
+      description: Deletes a post and removes it from the user's activity
       parameters:
         - in: header
           name: Authorization
@@ -3556,21 +3642,16 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                postId:
-                  type: string
-                  description: ID of the post to delete.
-              required:
-                - postId
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to delete
+          example: "6458abc123def456"
       responses:
         '200':
-          description: Post successfully deleted.
+          description: Post deleted successfully
           content:
             application/json:
               schema:
@@ -3578,12 +3659,185 @@ paths:
                 properties:
                   message:
                     type: string
+                    example: "Post successfully deleted"
         '400':
-          description: Post does not exist or required fields missing.
+          description: Required fields missing or post does not exist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
         '500':
-          description: Server error.    
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
+    get:
+      tags:
+        - Posts
+      summary: Get a specific post
+      description: Retrieves detailed information about a post including author info and comments
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to retrieve
+          example: "6458abc123def456"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cursor:
+                  type: Integer
+                  description: Cursor for pagination of comments
+                  example: 11
+                limit:
+                  type: integer
+                  description: Number of comments to retrieve
+                  example: 10
+      responses:
+        '200':
+          description: Post retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post returned successfully"
+                  post:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6458abc123def456"
+                      user_id:
+                        type: string
+                        example: "6457abc123def456"
+                      content:
+                        type: string
+                        example: "Excited to share my latest project!"
+                      media:
+                        type: array
+                        items:
+                          type: string
+                        example: ["https://example.com/image1.jpg"]
+                      mediaType:
+                        type: string
+                        example: "image"
+                      commentsDisabled:
+                        type: string
+                        example: "all"
+                      publicPost:
+                        type: boolean
+                        example: true
+                      taggedUsers:
+                        type: array
+                        items:
+                          type: string
+                        example: ["6457abc123def457"]
+                      createdAt:
+                        type: string
+                        example: "2025-04-19T15:03:26.589Z"
+                      updatedAt:
+                        type: string
+                        example: "2025-04-19T15:03:26.589Z"
+                      author:
+                        type: object
+                        properties:
+                          username:
+                            type: string
+                            example: "johndoe"
+                          name:
+                            type: string
+                            example: "John Doe"
+                          headline:
+                            type: string
+                            example: "Software Engineer"
+                          profilePicture:
+                            type: string
+                            example: "https://example.com/profile.jpg"
+                          connectionDegree:
+                            type: string
+                            example: "3rd+"
+                  comments:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                      nextCursor:
+                        type: string
+                        example: "6458abc123def458"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Post not found or Post author not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object                   
   /api/v1/post/save-post:
     post:
       tags:
