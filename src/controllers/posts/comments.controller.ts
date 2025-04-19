@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import users from '../../models/users.model.ts';
 
 /**
- * Create new post under the user
+ * Create new comment under a post
  * Sends the appropriate response if post was created successfully.
  * 
  */
