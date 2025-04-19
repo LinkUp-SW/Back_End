@@ -3421,7 +3421,7 @@ paths:
                     type: string
                     example: "An error occurred while retrieving the user bio."
 
-  /api/v1/posts:
+  /api/v1/post/posts:
     post:
       tags:
         - Posts
@@ -3524,7 +3524,7 @@ paths:
                   error:
                     type: object
 
-  /api/v1/posts/{postId}:
+  /api/v1/post/posts/{postId}:
     patch:
           tags:
             - Posts
