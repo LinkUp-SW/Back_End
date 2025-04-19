@@ -44,6 +44,7 @@ import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchRoutes from './src/routes/organization/search.routes.ts';
 import companyProfileRoutes from "./src/routes/organization/companyProfile.routes.ts"
+import companySettingsRoutes from "./src/routes/organization/companySettings.routes.ts"
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 dotenv.config();
 
@@ -151,6 +152,7 @@ app.use('/api/v1/post',
 
 app.use('/api/v1/company',
     companyProfileRoutes,
+    companySettingsRoutes
 )
 
 
