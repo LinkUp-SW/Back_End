@@ -42,7 +42,7 @@ import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
-import searchRoutes from './src/routes/organization.route.ts';
+import searchRoutes from './src/routes/organization/search.routes.ts';
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 dotenv.config();
 

@@ -29,7 +29,12 @@ const populateOrganizationJobs = async () => {
             "Global Solutions Ltd", 
             "Future Academy", 
             "Digital Creations", 
-            "Smart Systems"
+            "Smart Systems",
+            "DataMinds Corp",
+            "CloudForce Technologies",
+            "AlphaCode Studios",
+            "Bright Knowledge University",
+            "Omega Business Solutions"
         ];
         
         const industries = [
@@ -37,7 +42,12 @@ const populateOrganizationJobs = async () => {
             "Consulting", 
             "Education", 
             "Design", 
-            "Software"
+            "Software",
+            "Data Analytics",
+            "Cloud Computing",
+            "Game Development",
+            "Higher Education",
+            "Business Services"
         ];
         
         const locations = [
@@ -45,13 +55,22 @@ const populateOrganizationJobs = async () => {
             "London, UK", 
             "Cairo, Egypt", 
             "Berlin, Germany", 
-            "Tokyo, Japan"
+            "Tokyo, Japan",
+            "San Francisco, USA",
+            "Toronto, Canada",
+            "Dubai, UAE",
+            "Sydney, Australia",
+            "Singapore"
         ];
 
-        for (let i = 0; i < 5; i++) {
+        // Create 10 organizations (8 companies, 2 education)
+        for (let i = 0; i < 10; i++) {
+            // Ensure indices 2 and 8 are education type, others are company
+            const categoryType = (i === 2 || i === 8) ? categoryTypeEnum.education : categoryTypeEnum.company;
+            
             const organization = await organizations.create({
                 name: organizationNames[i],
-                category_type: i % 2 === 0 ? categoryTypeEnum.company : categoryTypeEnum.education,
+                category_type: categoryType,
                 unique_url: organizationNames[i].toLowerCase().replace(/\s+/g, '-'),
                 website: `https://www.${organizationNames[i].toLowerCase().replace(/\s+/g, '')}.com`,
                 logo: `https://example.com/logos/${i + 1}.png`,
@@ -71,7 +90,7 @@ const populateOrganizationJobs = async () => {
             }) as organizationsInterface;
             
             organizationsArray.push(organization);
-            console.log(`Created organization: ${organization.name}`);
+            console.log(`Created organization: ${organization.name} (${categoryType})`);
         }
 
         // Create sample jobs for each organization
@@ -165,46 +184,49 @@ const populateOrganizationJobs = async () => {
             ["Competitive salary", "Performance bonuses", "Health and retirement benefits", "Professional certification support", "Work-life balance"]
         ];
 
+        // Distribute 30 jobs across 10 organizations (3 jobs per organization)
+        let jobCount = 0;
         for (const organization of organizationsArray) {
-            // Create 5 job listings for each organization (increased from 3)
-            for (let j = 0; j < 5; j++) {
-                const jobIndex = (j % jobTitles.length);
+            // Create 3 job listings for each organization
+            for (let j = 0; j < 3; j++) {
+                const jobIndex = (jobCount % jobTitles.length);
                 const job = await jobs.create({
                     organization_id: organization._id,
                     job_title: jobTitles[jobIndex],
                     location: organization.location,
-                    job_type: Object.values(jobTypeEnum)[j % Object.values(jobTypeEnum).length],
-                    workplace_type: Object.values(workplaceTypeEnum)[j % Object.values(workplaceTypeEnum).length],
+                    job_type: Object.values(jobTypeEnum)[jobCount % Object.values(jobTypeEnum).length],
+                    workplace_type: Object.values(workplaceTypeEnum)[jobCount % Object.values(workplaceTypeEnum).length],
                     organization_industry: [organization.industry],
-                    experience_level: Object.values(experienceLevelEnum)[j % Object.values(experienceLevelEnum).length],
+                    experience_level: Object.values(experienceLevelEnum)[jobCount % Object.values(experienceLevelEnum).length],
                     description: jobDescriptions[jobIndex],
                     qualifications: qualificationsList[jobIndex],
                     responsibilities: responsibilitiesList[jobIndex],
                     benefits: benefitsList[jobIndex],
                     targetted_skills: skills[jobIndex],
-                    receive_applicants_by: j % 2 === 0 ? receiveApplicantsByEnum.email : receiveApplicantsByEnum.external,
-                    receiving_method: j % 2 === 0 ? 
+                    receive_applicants_by: jobCount % 2 === 0 ? receiveApplicantsByEnum.email : receiveApplicantsByEnum.external,
+                    receiving_method: jobCount % 2 === 0 ? 
                         `jobs@${organization.unique_url}.com` : 
                         `https://careers.${organization.unique_url}.com/apply`,
                     screening_questions: {
                         questions: `Do you have experience with ${skills[jobIndex].join(', ')}?`,
                         answers: ["Yes, extensive experience", "Some experience", "Limited experience", "No experience"],
                         ideal_answer: "Yes, extensive experience",
-                        is_must_qualification: j % 3 === 0,
+                        is_must_qualification: jobCount % 3 === 0,
                         rejection_message: "We are looking for candidates with more relevant experience.",
                         is_filtererd: true
                     },
-                    how_did_you_hear_about_us: Object.values(howDidYouHearAboutUsEnum)[j % Object.values(howDidYouHearAboutUsEnum).length],
-                    salary: 50000 + (j * 15000) + (jobIndex * 5000),
+                    how_did_you_hear_about_us: Object.values(howDidYouHearAboutUsEnum)[jobCount % Object.values(howDidYouHearAboutUsEnum).length],
+                    salary: 50000 + (jobCount * 5000) + (jobIndex * 3000),
                     posted_time: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000), // Random date within last 30 days
                     applied_applications: []
                 }) as jobsInterface;
                 
-                console.log(`Created job: ${job.job_title} for ${organization.name}`);
+                console.log(`Created job #${jobCount+1}: ${job.job_title} for ${organization.name}`);
+                jobCount++;
             }
         }
 
-        console.log("Organizations and jobs populated successfully.");
+        console.log(`Successfully created ${organizationsArray.length} organizations and ${jobCount} jobs.`);
     } catch (error) {
         console.error("Error populating organizations and jobs:", error);
     } finally {

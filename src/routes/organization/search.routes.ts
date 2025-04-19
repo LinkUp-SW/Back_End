@@ -1,5 +1,5 @@
 import express from "express";
-import { searchCompanies, searchEducationalInstitutions, searchOrganizations } from "../controllers/organization/search.controller.ts";
+import { searchCompanies, searchEducationalInstitutions, searchOrganizations } from "../../controllers/organization/search.controller.ts";
 
 const router = express.Router();
 
