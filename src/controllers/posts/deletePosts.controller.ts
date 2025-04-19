@@ -14,9 +14,7 @@ import { PostRepository } from '../../repositories/posts.repository.ts';
 const deletePost = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
 
-        const {
-            postId
-        } =req.body;
+        const postId = req.params.Id;
         const userId = await getUserIdFromToken(req,res);
         if (!userId) return;
         const user = await findUserByUserId(userId,res);
