@@ -1,0 +1,21 @@
+import express from 'express';
+import * as companyProfileControllers from '../../controllers/organization/companyProfile.controller.ts';
+
+const router = express.Router();
+
+// Create company profile
+router.post('/create-company-profile', (req, res, next) => {
+    companyProfileControllers.createCompanyProfile(req, res, next);
+});
+
+// Update company profile
+router.put('/update-company-profile/:companyId', (req, res, next) => {
+    companyProfileControllers.updateCompanyProfile(req, res, next);
+});
+
+// Delete company profile
+router.delete('/delete-company-profile/:companyId', (req, res, next) => {
+    companyProfileControllers.deleteCompanyProfile(req, res, next);
+});
+
+export default router;

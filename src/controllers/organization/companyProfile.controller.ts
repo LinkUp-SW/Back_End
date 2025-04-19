@@ -1,0 +1,96 @@
+import { NextFunction, Request, Response } from "express";
+import organizations from "../../models/organizations.model.ts";
+import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
+import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
+
+export const createCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { name, category_type, unique_url, website, logo, description, industry, location, size, type } = req.body;
+
+        const newCompanyProfile = new organizations({
+            name,
+            category_type,
+            unique_url,
+            website,
+            logo,
+            description,
+            industry,
+            location,
+            size,
+            type,
+            admins: [user._id],
+        });
+
+        await newCompanyProfile.save();
+
+        res.status(201).json({ message: "Company profile created successfully", companyProfile: newCompanyProfile });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const updateCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { companyId } = req.params;
+        
+        // Get company profile and validate it exists
+        const companyProfile = await getCompanyProfileById(companyId, res);
+        if (!companyProfile) return;
+        
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(companyProfile, user._id, res);
+        if (!isAdmin) return;
+
+        const { name, category_type, unique_url, website, logo, description, industry, location, size, type } = req.body;
+
+        const updatedCompanyProfile = await organizations.findByIdAndUpdate(
+            companyId,
+            {
+                name,
+                category_type,
+                unique_url,
+                website,
+                logo,
+                description,
+                industry,
+                location,
+                size,
+                type,
+            },
+            { new: true }
+        );
+
+        res.status(200).json({ message: "Company profile updated successfully", companyProfile: updatedCompanyProfile });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const deleteCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { companyId } = req.params;
+        
+        // Get company profile and validate it exists
+        const companyProfile = await getCompanyProfileById(companyId, res);
+        if (!companyProfile) return;
+        
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(companyProfile, user._id, res);
+        if (!isAdmin) return;
+
+        await organizations.findByIdAndDelete(companyId);
+
+        res.status(200).json({ message: "Company profile deleted successfully" });
+    } catch (error) {
+        next(error);
+    }
+}
