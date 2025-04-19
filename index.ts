@@ -34,9 +34,7 @@ import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
-import createPost from './src/routes/posts/createPosts.routes.ts';
-import deletePost from './src/routes/posts/deletePosts.routes.ts';
-import editPost from './src/routes/posts/editPosts.routes.ts';
+import postRoutes from './src/routes/posts/posts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
 import comments from './src/routes/posts/comments.routes.ts';
 
@@ -143,9 +141,7 @@ app.use('/api/v1/jobs',
 
 
   app.use('/api/v1/post',
-    createPost,
-    deletePost,
-    editPost,
+    postRoutes,
     savePostRoutes,
     comments
   );
