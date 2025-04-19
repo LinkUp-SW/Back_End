@@ -4,7 +4,10 @@ import * as privacySettings from "../../controllers/user_profile/privacySettings
 const router = express.Router();
 
 
-router.get('/privacy-settings/profile-visibility/:user_id', privacySettings.getProfileVisibility);
-router.put('/privacy-settings/profile-visibility/:user_id', privacySettings.updateProfileVisibility);
+router.get('/privacy-settings/profile-visibility', privacySettings.getProfileVisibility);
+router.put('/privacy-settings/profile-visibility', privacySettings.updateProfileVisibility);
+
+
+
 
 export default router;
