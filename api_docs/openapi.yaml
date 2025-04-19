@@ -1511,19 +1511,19 @@ paths:
           description: Server error
   
   # Privacy Settings Endpoints
-  /api/v1/user/privacy-settings/profile-visibility/{user_id}:
+  /api/v1/user/privacy-settings/profile-visibility:
     get:
       tags:
         - Privacy Settings
       summary: Get profile visibility settings
       description: Retrieves the current profile visibility settings for a user
       parameters:
-        - name: user_id
-          in: path
+        - name : Authorization
+          in: header
           required: true
           schema:
             type: string
-          description: ID of the user
+          description: Bearer token for authentication.
       responses:
         '200':
           description: Privacy settings retrieved successfully
@@ -1532,7 +1532,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  profile_visibility:
+                  profileVisibility:
                     type: string
                     example: "public"
         '401':
@@ -1548,12 +1548,12 @@ paths:
       summary: Update profile visibility settings
       description: Updates the profile visibility settings for a user
       parameters:
-        - name: user_id
-          in: path
+        - name : Authorization
+          in: header
           required: true
           schema:
             type: string
-          description: ID of the user
+          description: Bearer token for authentication.
       requestBody:
         required: true
         content:
@@ -1564,7 +1564,7 @@ paths:
                 token:
                   type: string
                   description: Authentication token
-                profile_visibility:
+                profileVisibility:
                   type: string
                   enum: [public, connections, private]
                   description: Profile visibility level
