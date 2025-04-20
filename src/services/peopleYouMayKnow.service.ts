@@ -109,7 +109,7 @@ export const findPeopleYouMayKnow = async (
       const people = await User.find(query)
           .sort({ _id: 1 })
           .limit(limit + 1)
-          .select("user_id bio.headline profile_photo privacy_settings.flag_who_can_send_you_invitations");
+          .select("user_id bio.headline bio.first_name bio.last_name profile_photo cover_photo privacy_settings.flag_who_can_send_you_invitations");
   
       // Determine the next cursor
       const hasNextPage = people.length > limit;
