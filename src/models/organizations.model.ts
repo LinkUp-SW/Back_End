@@ -50,10 +50,7 @@ export interface organizationsInterface extends mongoose.Document{
     followers: usersInterface[];
     blocked: usersInterface[];
     conversations: conversationsInterface[];
-    admins:{
-        admin: usersInterface,
-        level: adminLevelEnum
-    }[]
+    admins: usersInterface[]
 }
 
 const organizationsSchema = new Schema<organizationsInterface>({
@@ -71,10 +68,7 @@ const organizationsSchema = new Schema<organizationsInterface>({
     followers: [{ type: Schema.Types.ObjectId, ref: "users" }],
     blocked: [{ type: Schema.Types.ObjectId, ref: "users" }],
     conversations: [{ type: Schema.Types.ObjectId, ref: "conversations" }],
-    admins:[{
-        admin:{ type: Schema.Types.ObjectId, ref: "users" },
-        level:{ type: String, enum: Object.values(adminLevelEnum) }
-    }]
+    admins:[{ type: Schema.Types.ObjectId, ref: "users" }]
 });
 
 const organizations = mongoose.model<organizationsInterface>('organizations', organizationsSchema);
