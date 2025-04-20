@@ -54,10 +54,9 @@ const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
 app.use(express.json({limit:"50mb"}));
 
-
-// Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
+// Generate a token with a 1-hour expiration and user_id "Mahmoud-Amr-123"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Jane-Smith-123' });
   console.log('Generated Token:', token);
 };
 
@@ -77,7 +76,6 @@ connectToDatabase()
 app.use(express.json());
 app.use(cors({ origin: process.env.CORS_URL ,credentials: true}));
 app.use(express.urlencoded({ extended: true }));
-
 
 // Cookie Parser Middleware
 app.use(cookieParser());
@@ -151,6 +149,8 @@ app.use('/api/v1/jobs',
 
 app.use('/api/v1/search', searchRoutes);
 
+// Privacy Settings Routes
+app.use('/api/v1/user', privacySettingsRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
