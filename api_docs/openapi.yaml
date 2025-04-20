@@ -1164,7 +1164,7 @@ paths:
                     type: string
                     example: "Cloudinary error"
 
-    get:
+  get:
       tags:
         - Resume
       summary: Get a resume
