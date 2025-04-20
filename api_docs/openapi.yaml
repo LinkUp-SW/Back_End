@@ -1439,7 +1439,7 @@ paths:
                   error:
                     type: string
                     example: "Cloudinary error"
-  get:
+    get:
       tags:
         - Resume
       summary: Get a resume
@@ -1625,7 +1625,6 @@ paths:
                   message:
                     type: string
                     example: "https://cloudinary.com/user/resume.pdf"
-
   
   # Add validate-token endpoint
   /api/v1/user/validate-token:

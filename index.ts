@@ -54,7 +54,6 @@ const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
 app.use(express.json({limit:"50mb"}));
 
-
 // Generate a token with a 1-hour expiration and user_id "Mahmoud-Amr-123"
 const generateStartupToken = () => {
   const token = tokenUtils.createToken({ time: '1000h', userID: 'Jane-Smith-123' });
