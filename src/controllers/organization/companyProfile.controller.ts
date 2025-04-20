@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import organizations from "../../models/organizations.model.ts";
+import users from "../../models/users.model.ts";
 import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
 import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
 
@@ -86,6 +87,13 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
         // Validate user is an admin
         const isAdmin = validateUserIsCompanyAdmin(companyProfile, user._id, res);
         if (!isAdmin) return;
+        
+        // Get all admins and remove organization from their organizations list
+        const adminIds = companyProfile.admins.map((admin: any) => admin.toString());
+        await users.updateMany(
+            { _id: { $in: adminIds } },
+            { $pull: { organizations: companyId } }
+        );
 
         await organizations.findByIdAndDelete(companyId);
 
