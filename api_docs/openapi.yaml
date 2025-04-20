@@ -1439,12 +1439,7 @@ paths:
                   error:
                     type: string
                     example: "Cloudinary error"
-<<<<<<< HEAD
-
   get:
-=======
-    get:
->>>>>>> d676fd6a30acc76849efecd2d4d345d47c66525f
       tags:
         - Resume
       summary: Get a resume
