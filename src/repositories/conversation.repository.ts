@@ -250,22 +250,51 @@ export class conversationRepository {
     if (!conversation) {
       throw new CustomError('Conversation not found', 404);
     }
-
-    // Determine if user is user1 or user2
-    const isUser1 = conversation.user1_id.toString() === userId;
-    
-    // Find the message in the appropriate array
-    const messageArray = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
-    const message = messageArray.find(msg => msg.messageId.toString() === messageId);
-    
+  
+    console.log('messageId: ', messageId, 'userId: ', userId);
+  
+    // Search for the message in both user1_sent_messages and user2_sent_messages
+    let message = conversation.user1_sent_messages.find(msg => msg.messageId.toString() === messageId);
+    if (!message) {
+      message = conversation.user2_sent_messages.find(msg => msg.messageId.toString() === messageId);
+    }
+  
+    console.log('Found message: ', message);
+  
     if (!message) {
       throw new CustomError('Message not found', 404);
     }
-
+  
+    // Update the reaction
     message.reacted = reaction;
-
+  
     await conversation.save();
     return conversation;
+  }
+
+  async removeReaction(conversationId: string, messageId: string, userId: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    
+    // Search for the message in both user1_sent_messages and user2_sent_messages
+    let message = conversation.user1_sent_messages.find(msg => msg.messageId.toString() === messageId);
+    if (!message) {
+      message = conversation.user2_sent_messages.find(msg => msg.messageId.toString() === messageId);
+    }
+  
+    if (!message) {
+      throw new CustomError('Message not found', 404);
+    }
+  
+    // Remove the reaction
+    message.reacted = '';
+  
+    await conversation.save();
+    return conversation;
+
   }
 
   async deleteConversation(conversationId: string) {

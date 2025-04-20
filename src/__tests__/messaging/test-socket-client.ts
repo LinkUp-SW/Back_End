@@ -12,9 +12,9 @@ const __dirname = path.dirname(__filename);
 const SERVER_URL = "http://localhost:3000";
 const JWT_SECRET = "3d9958c671ac65ef6a7de05337c862fb1bc347264dbd12a604a673ca9a69855cf1b15bda3bc6ceee92c85f643fc2be8caeb172a15be90a70080e6569c068aab1";
 const USER1_ID = "testUserId";
-const USER2_ID = "otherUserId";
-const TEST_CONVERSATION_ID = "67ec84c3a33cad665c1e860e";
-const TEST_MESSAGE_ID = "67ee04a8e9a71c78dd5faec9";
+const USER2_ID = "User-1";
+const TEST_CONVERSATION_ID = "67ff95e27b8a31cde8909569"; // user-1
+const TEST_MESSAGE_ID = "67ff95e47b8a31cde8909573";
 
 // Create valid test tokens
 const createToken = (userId: string) => {
