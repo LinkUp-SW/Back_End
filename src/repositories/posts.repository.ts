@@ -114,56 +114,64 @@ export const getComments = async (
   postId: string,
 ): Promise<{ count: number; comments: Record<string, any>; nextCursor: number | null }> => {
   try {
-    // Fetch root comments
-    const rootComments = await comments
-      .find({ post_id: postId, parentId: { $exists: false } })
-      .sort({ date: 1 })
-      .skip(cursor)
-      .limit(limit)
-      .lean()
-      .exec();
+    // Fetch root comments and count in a single aggregation
+    const [rootCommentResults, countResults] = await Promise.all([
+      comments
+        .find({ post_id: postId, parentId: { $exists: false } })
+        .sort({ date: 1 })
+        .skip(cursor)
+        .limit(limit)
+        .lean()
+        .exec(),
+      
+      comments.countDocuments({
+        post_id: postId,
+        parentId: { $exists: false }
+      })
+    ]);
+    
+    const rootComments = rootCommentResults;
+    const totalRootComments = countResults;
     
     if (rootComments.length === 0) {
       return { count: 0, comments: {}, nextCursor: null };
     }
     
-    // Extract all user IDs we need to fetch (both from root comments and replies)
-    const userIdsToFetch = new Set<string>();
-    for (const comment of rootComments) {
-      userIdsToFetch.add(comment.user_id.toString());
-    }
-    
-    // Gather all replies in one query instead of multiple queries
+    // Get all root comment IDs for reply fetching
     const rootCommentIds = rootComments.map(c => c._id.toString());
+    
+    // Fetch all replies in one query
     const allReplies = await comments
       .find({ parentId: { $in: rootCommentIds } })
       .sort({ date: 1 })
       .lean()
       .exec();
     
-    // Add reply author IDs to the set of IDs to fetch
+    // Collect all unique user IDs
+    const userIdsToFetch = new Set<string>();
+    for (const comment of rootComments) {
+      userIdsToFetch.add(comment.user_id.toString());
+    }
+    
     for (const reply of allReplies) {
       userIdsToFetch.add(reply.user_id.toString());
     }
     
-    // Helper function to format user info consistently
-    const formatAuthorInfo = (user: any) => {
-      if (!user) return null;
-      
-      return {
+    // Fetch all users in a single query
+    const userArray = Array.from(userIdsToFetch);
+    const allUsers = await users.find({ _id: { $in: userArray } }).lean();
+    
+    // Create user info map for quick lookups
+    const userInfoMap = new Map();
+    for (const user of allUsers) {
+      userInfoMap.set(user._id.toString(), {
         username: user.user_id,
-        name: user.name,
+        firstName: user.bio.first_name,
+        lastName: user.bio.last_name,
         headline: user.bio?.headline,
         profilePicture: user.profile_photo,
         connectionDegree: "3rd+"
-      };
-    };
-    
-    // Fetch all user info in one go (or batches if too many)
-    const userInfoMap = new Map();
-    for (const userId of userIdsToFetch) {
-      const user = await users.findById(userId);
-      userInfoMap.set(userId, formatAuthorInfo(user));
+      });
     }
     
     // Organize replies by parent comment ID
@@ -183,6 +191,17 @@ export const getComments = async (
       const rootId = rootComment._id.toString();
       const rootAuthorInfo = userInfoMap.get(rootComment.user_id.toString());
       
+      const transformedRootComment = {
+        ...rootComment,
+        media: rootComment.media ? {
+          link: rootComment.media,
+          mediaType: rootComment.media ? 'image' : 'none'
+        } : {
+          link: '',
+          mediaType: 'none'
+        }
+      };
+
       // Process replies for this root comment
       const repliesWithAuthors: Record<string, any> = {};
       const replies = repliesByParentId.get(rootId) || [];
@@ -193,24 +212,26 @@ export const getComments = async (
         
         repliesWithAuthors[replyId] = {
           ...reply,
+          media: reply.media ? {
+            link: reply.media,
+            mediaType: reply.media ? 'image' : 'none'
+          } : {
+            link: '',
+            mediaType: 'none'
+          },
           author: replyAuthorInfo
         };
       }
       
       // Add the root comment with its author and replies
       result[rootId] = {
-        ...rootComment,
+        ...transformedRootComment,
         author: rootAuthorInfo,
         children: repliesWithAuthors
       };
     }
     
     // Pagination calculation
-    const totalRootComments = await comments.countDocuments({
-      post_id: postId,
-      parentId: { $exists: false }
-    });
-    
     const hasNextPage = cursor + rootComments.length < totalRootComments;
     const nextCursor = hasNextPage ? cursor + limit : null;
     
