@@ -941,14 +941,14 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       if (!viewerUser) return;
   
       // Extract the blocked user IDs and dates
-      const blockedUsers = viewerUser.blocked.map((blocked: any) => ({
+      const blockedUsers = viewerUser.blocked.map((blocked: { _id: mongoose.Types.ObjectId; date: Date }) => ({
         _id: blocked._id.toString(), 
         date: blocked.date,
       }));
   
       // Format the blocked list
       const formattedBlockedList = await getFormattedUserList(
-        blockedUsers.map((blocked) => new mongoose.Types.ObjectId(blocked._id)),
+        blockedUsers.map((blocked: { _id: string; date: Date }) => new mongoose.Types.ObjectId(blocked._id)),
         res
       );
       if (!formattedBlockedList) return;
@@ -956,9 +956,13 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       // Add the block date to the formatted list
       const blockedListWithDates = formattedBlockedList.map((user) => {
 
-        const blockEntry = blockedUsers.find(
-          (blocked) => blocked._id === user._id?.toString() 
-
+        interface BlockedUser {
+          _id: string;
+          date: Date;
+        }
+        
+        const blockEntry: BlockedUser | undefined = blockedUsers.find(
+          (blocked: BlockedUser) => blocked._id === user._id?.toString() 
         );
         return {
           user_id: user.user_id, 
