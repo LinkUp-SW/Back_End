@@ -54,7 +54,7 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
             processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
         }
         const firstMedia = processedMedia && processedMedia.length > 0 ? processedMedia[0] : null;
-        if (comment_id) {
+        if (comment_id !== null) {
             const parentComment = await comments.findById(comment_id);
             if (!parentComment) {
                 return res.status(404).json({ message: 'Parent comment not found' });
@@ -167,11 +167,9 @@ const updateComments = async (req: Request, res: Response): Promise<Response | v
 };
 const getCommentsController = async (req: Request, res: Response) => {
     try {
-        const {
-            post_id,
-            cursor,
-            limit
-        } =req.body;
+        const post_id = req.query.post_id as string;
+        const cursor = parseInt(req.query.cursor as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
         
         let userId = await getUserIdFromToken(req,res);
         if (!userId) return;
