@@ -52,9 +52,28 @@ const populateUsers = async () => {
                 email: `${user.name.replace(" ", ".").toLowerCase()}@example.com`,
                 password: user.password,
                 profile_picture: `https://example.com/avatars/${user.name.replace(" ", "-").toLowerCase()}.png`, // Realistic profile picture URL
-                bio: user.is_student
-                    ? `Hello, I am ${user.name}, a student at Cairo University.`
-                    : `Hello, I am ${user.name}, currently working as a software engineer.`,
+                bio: {
+                    first_name: user.name.split(" ")[0],
+                    last_name: user.name.split(" ")[1],
+                    headline: user.is_student 
+                        ? "Student at Cairo University" 
+                        : "Software Engineer",
+                    experience: [],
+                    education: [],
+                    website: "www.example.com",
+                    contact_info: {
+                        phone_number: 1012345678,
+                        country_code: "+20",
+                        phone_type: "mobile",
+                        address: "12 Street, Cairo, Egypt",
+                        birthday: new Date("2000-01-01"),
+                        website: "www.example.com",
+                    },
+                    location: {
+                        country_region: "Egypt",
+                        city: user.is_student ? "Cairo" : "New Cairo",
+                    },
+                },
                 location: user.is_student ? "Cairo University, Egypt" : "Tech Park, Cairo, Egypt",
                 date_of_birth: new Date("2000-01-01"), // Default date of birth
                 is_student: user.is_student,
