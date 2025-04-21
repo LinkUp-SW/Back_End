@@ -4028,7 +4028,7 @@ paths:
                         example: "image"
                       commentsDisabled:
                         type: string
-                        example: "all"
+                        example: "Anyone"
                       publicPost:
                         type: boolean
                         example: true
@@ -4037,21 +4037,21 @@ paths:
                         items:
                           type: string
                         example: ["6457abc123def457"]
-                      createdAt:
-                        type: string
-                        example: "2025-04-19T15:03:26.589Z"
-                      updatedAt:
-                        type: string
-                        example: "2025-04-19T15:03:26.589Z"
+                      date:
+                        type: number
+                        example: "1745194451"
                       author:
                         type: object
                         properties:
                           username:
                             type: string
                             example: "johndoe"
-                          name:
+                          finstName:
                             type: string
-                            example: "John Doe"
+                            example: "John"
+                          lastName:
+                            type: string
+                            example: "doe"
                           headline:
                             type: string
                             example: "Software Engineer"
@@ -4062,15 +4062,72 @@ paths:
                             type: string
                             example: "3rd+"
                   comments:
-                    type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "68058fa5f67c3a130d2b0372"
+                        post_id: 
+                          type: string
+                          example: "68058dd3ca03555f929d0ecc"
+                        user_id:
+                          type: string
+                          exapmle: "67e6b2e1ef869d719662ca10"
+                        content:
+                          type: string
+                          example: "content will be written here"
+                        media:
                           type: object
-                      nextCursor:
-                        type: string
-                        example: "6458abc123def458"
+                          properties:
+                            link:
+                              type: string
+                              example: "https://example.com/media.jpg"
+                            mediaType:
+                              type: string
+                              example: "image"
+                        reacts:
+                          type: object
+                          properties:
+                            total: 
+                              type: number
+                              example: 100
+                            mostCommmon:
+                              type: object
+                        tagged_users:
+                          type: array
+                          example: ["67e6b2e1ef869d719662ca10"]
+                        is_edited:
+                          type: boolean
+                        date:
+                          type: number
+                          example: 1745194451
+                        author:
+                          type: object
+                          properties:
+                            username:
+                              type: string
+                              example: "johndoe"
+                            firstName:
+                              type: string
+                              example: "John"
+                            lastName:
+                              type: string
+                              example: "doe"
+                            headline:
+                              type: string
+                              example: "Software Engineer"
+                            profilePicture:
+                              type: string
+                              example: "https://example.com/profile.jpg"
+                            connectionDegree:
+                              type: string
+                              example: "3rd+"
+                        children:
+                          type: array
+                          items: 
+                            type: object
         '401':
           description: Invalid or expired token
           content:
@@ -4760,7 +4817,7 @@ paths:
                   type: string
                   description: ID of the post to get comments for.
                 cursor:
-                  type: string
+                  type: number
                   description: Cursor for pagination.
                 limit:
                   type: integer
@@ -4783,28 +4840,66 @@ paths:
                       properties:
                         _id:
                           type: string
-                        content:
+                          example: "68058fa5f67c3a130d2b0372"
+                        post_id: 
                           type: string
+                          example: "68058dd3ca03555f929d0ecc"
                         user_id:
                           type: string
+                          exapmle: "67e6b2e1ef869d719662ca10"
+                        content:
+                          type: string
+                          example: "content will be written here"
                         media:
-                          type: string
-                        created_at:
-                          type: string
-                          format: date-time
-                        is_edited:
-                          type: boolean
-                        user:
                           type: object
                           properties:
-                            _id: 
+                            link:
                               type: string
-                            name:
+                              example: "https://example.com/media.jpg"
+                            mediaType:
                               type: string
+                              example: "image"
+                        reacts:
+                          type: object
+                          properties:
+                            total: 
+                              type: number
+                              example: 100
+                            mostCommmon:
+                              type: object
+                        tagged_users:
+                          type: array
+                          example: ["67e6b2e1ef869d719662ca10"]
+                        is_edited:
+                          type: boolean
+                        date:
+                          type: number
+                          example: 1745194451
+                        author:
+                          type: object
+                          properties:
+                            username:
+                              type: string
+                              example: "johndoe"
+                            firstName:
+                              type: string
+                              example: "John"
+                            lastName:
+                              type: string
+                              example: "doe"
                             headline:
                               type: string
-                            profile_picture:
+                              example: "Software Engineer"
+                            profilePicture:
                               type: string
+                              example: "https://example.com/profile.jpg"
+                            connectionDegree:
+                              type: string
+                              example: "3rd+"
+                        children:
+                          type: array
+                          items: 
+                            type: object
                   nextCursor:
                     type: string
         '400':
