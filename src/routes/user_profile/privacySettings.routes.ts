@@ -13,5 +13,12 @@ router.put('/privacy-settings/invitations-requests', privacySettings.updateInvit
 router.get('/privacy-settings/follow-requests', privacySettings.getFollowSettings);
 router.put('/privacy-settings/follow-requests', privacySettings.updateFollowSettings);
 
+router.get('/privacy-settings/follow-primary', privacySettings.getFollowPrimarySetting);
+router.put('/privacy-settings/follow-primary', privacySettings.updateFollowPrimarySetting);
 
+router.get('/privacy-settings/messaging-requests', privacySettings.getMessagingRequestsSetting);
+router.put('/privacy-settings/messaging-requests', privacySettings.updateMessagingRequestsSetting);
+
+router.get('/privacy-settings/read-receipts', privacySettings.getReadReceiptsSetting);
+router.put('/privacy-settings/read-receipts', privacySettings.updateReadReceiptsSetting);
 export default router;
