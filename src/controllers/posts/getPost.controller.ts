@@ -1,0 +1,53 @@
+import { Request, Response } from 'express';
+import { findUserByUserId } from '../../utils/database.helper.ts';
+import { getComments, getSavedPostsCursorBased, PostRepository } from '../../repositories/posts.repository.ts';
+import { postsInterface } from '../../models/posts.model.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
+import users from '../../models/users.model.ts';
+
+
+
+const getPost = async (req: Request, res: Response): Promise<Response | void> =>{
+    try {
+
+        const postId = req.params.postId;
+        const {
+            cursor,
+            limit
+        } =req.body;
+        let userId = await getUserIdFromToken(req,res);
+        if (!userId) return;
+        const user = await findUserByUserId(userId,res);
+        if (!user) return;
+        const postsRepository = new PostRepository();
+        const post = await postsRepository.findByPostId(postId);
+        if (!post){
+            return res.status(404).json({message:'Post not found' });
+        }
+        const postAuthor = await users.findById(post.user_id).lean();
+        if (!postAuthor) {
+            return res.status(404).json({message: 'Post author not found'});
+        }
+        const authorInfo = {
+            username: postAuthor.user_id,
+            firstName: user.bio.first_name,
+            lastName: user.bio.last_name,
+            headline:postAuthor.bio.headline,
+            profilePicture: postAuthor.profile_photo,
+            connectionDegree:"3rd+"
+        };
+        const result = await getComments(cursor, limit, postId);
+        const plainPost = post.toObject ? post.toObject() : post;
+        return res.status(200).json({message:'Post returned successfully',post:{...plainPost, author:authorInfo},comments:result })
+    } catch (error) {
+        if (error instanceof Error && error.message === 'Invalid or expired token') {
+            return res.status(401).json({ message: error.message });
+        }
+        else{
+            res.status(500).json({ message: 'Server error', error });
+    
+        }
+    }
+}; 
+
+export {getPost};
