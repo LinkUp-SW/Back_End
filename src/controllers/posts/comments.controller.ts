@@ -48,10 +48,8 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
             return res.status(403).json({ message: 'You are not allowed to comment on this post' });
         }
         let processedMedia: string[] | null = null;
-        if (media) {
-            const preMediaArray = [media];
-            const mediaArray = await processPostMediaArray(preMediaArray);
-            processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
+        if (media && (!Array.isArray(media) || media.length > 0)) {
+            processedMedia = await processPostMediaArray(media);
         }
         const firstMedia = processedMedia && processedMedia.length > 0 ? processedMedia[0] : null;
         if (comment_id !== null) {
@@ -183,7 +181,7 @@ const getCommentsController = async (req: Request, res: Response) => {
         if (!post) {
             return res.status(404).json({ message: "Post does not exist" });
         }
-
+        console.log(post_id);
         // Call the getComments function
         const result = await getComments(cursor, limit, post_id);
     

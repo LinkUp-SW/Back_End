@@ -120,7 +120,7 @@ export const getComments = async (
     // Fetch root comments and count in a single aggregation
     const [rootCommentResults, countResults] = await Promise.all([
       comments
-        .find({ post_id: postId, parentId: { $exists: false } })
+        .find({ post_id: postId, parentId: null })
         .sort({ date: 1 })
         .skip(cursor)
         .limit(limit)
@@ -132,7 +132,6 @@ export const getComments = async (
         parentId: { $exists: false }
       })
     ]);
-    
     const rootComments = rootCommentResults;
     const totalRootComments = countResults;
     
