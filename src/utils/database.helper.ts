@@ -428,3 +428,26 @@ export const getTimeAgoStage = () => {
       }
   };
 };
+
+/**
+ * Transforms skill names into skill objects.
+ * @param user - The user object containing skills.
+ * @param skillNames - Array of skill names to transform.
+ * @returns An array of skill objects.
+ */
+export const transformSkillsToObjects = (user: any, skillNames: string[]): any[] => {
+  if (!skillNames || skillNames.length === 0) return [];
+  
+  return skillNames.map(skillName => {
+    const skillObj = user.skills.find((skill: any) => skill.name === skillName);
+    if (skillObj) {
+      return {
+        _id: skillObj._id,
+        name: skillObj.name
+      };
+    }
+    return {
+      name: skillName
+    };
+  }).filter(Boolean);
+};

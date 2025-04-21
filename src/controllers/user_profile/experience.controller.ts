@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType } from "../../utils/database.helper.ts";
+import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType, transformSkillsToObjects } from "../../utils/database.helper.ts";
 import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
 
 const addWorkExperience = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -33,9 +33,15 @@ const addWorkExperience = async (req: Request, res: Response, next: NextFunction
         
         updateUserSkills(user, skills, experienceId, SkillSourceType.EXPERIENCE);
         
-        await user.save();  
+        await user.save();
 
-        res.status(200).json({ message: 'Work experience added successfully', experience: newExperience });
+        // Transform skills to objects for response
+        const responseExperience = {
+            ...newExperience,
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'Work experience added successfully', experience: responseExperience });
     } catch (error) {
         next(error);
     }
@@ -79,7 +85,13 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
         
         await user.save();
 
-        res.status(200).json({ message: 'Work experience updated successfully', experience: user.work_experience[experienceIndex] });
+        // Transform skills to objects for response
+        const responseExperience = {
+            ...user.work_experience[experienceIndex],
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'Work experience updated successfully', experience: responseExperience });
     } catch (error) {
         next(error);
     }
