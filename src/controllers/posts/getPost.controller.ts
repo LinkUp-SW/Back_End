@@ -28,8 +28,8 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
         }
         const authorInfo = {
             username: postAuthor.user_id,
-            firstName: user.bio.first_name,
-            lastName: user.bio.last_name,
+            firstName: postAuthor.bio.first_name,
+            lastName: postAuthor.bio.last_name,
             headline:postAuthor.bio.headline,
             profilePicture: postAuthor.profile_photo,
             connectionDegree:"3rd+"
