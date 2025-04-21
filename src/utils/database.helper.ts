@@ -144,7 +144,7 @@ export const getUserPostsLimited = async (userId: string): Promise<any[]> => {
           model: 'posts', // Reference the posts collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { posts?: any[] } };
 
   if (!user || !user.activity || !user.activity.posts) return [];
   return user.activity.posts.slice(0, 10); // Return the 10 most recent posts with full data
@@ -164,7 +164,7 @@ export const getUserCommentsLimited = async (userId: string): Promise<any[]> => 
           model: 'comments', // Reference the comments collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { comments?: any[] } };
 
   if (!user || !user.activity || !user.activity.comments) return [];
   return user.activity.comments.slice(0, 10); // Return the 10 most recent comments with full data
@@ -185,7 +185,7 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
           model: 'posts', // Reference the posts collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { reacted_posts?: any[] } };
 
   if (!user || !user.activity || !user.activity.reacted_posts) return [];
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
