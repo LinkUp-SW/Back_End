@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType } from "../../utils/database.helper.ts";
+import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType, transformSkillsToObjects } from "../../utils/database.helper.ts";
 import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
 
 const addEducation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -34,7 +34,13 @@ const addEducation = async (req: Request, res: Response, next: NextFunction): Pr
         
         await user.save();
 
-        res.status(200).json({ message: 'Education entry added successfully', education: newEducation });
+        // Transform skills to objects for response
+        const responseEducation = {
+            ...newEducation,
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'Education entry added successfully', education: responseEducation });
     } catch (error) {
         next(error);
     }
@@ -77,7 +83,13 @@ const updateEducation = async (req: Request, res: Response, next: NextFunction):
         
         await user.save();
 
-        res.status(200).json({ message: 'Education entry updated successfully', education: user.education[educationIndex] });
+        // Transform skills to objects for response
+        const responseEducation = {
+            ...user.education[educationIndex],
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'Education entry updated successfully', education: responseEducation });
     } catch (error) {
         next(error);
     }
