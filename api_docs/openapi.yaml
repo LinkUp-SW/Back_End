@@ -4172,7 +4172,18 @@ paths:
                             headline:
                               type: string
                               example: "Data Scientist"
+                            first_name: 
+                              type: string
+                              example: "Omar"
+                            last_name:
+                              type: string
+                              example: "Khaled"
                         profile_photo:
+                          type: string
+                          nullable: true
+                          format: uri
+                          example: "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png"
+                        cover_photo:
                           type: string
                           nullable: true
                           format: uri
