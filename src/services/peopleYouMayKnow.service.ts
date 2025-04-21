@@ -4,7 +4,7 @@ import { handleProfileAccess } from "../repositories/user.repository.ts";
 import { findMutualConnections } from "../repositories/user.repository.ts";
 import { Response } from "express";
 import mongoose from "mongoose";
-import organizations from "../models/organizations.model.ts"; // Import the organizations model
+import organizations from "../models/organizations.model.ts"; 
 
 export const findPeopleYouMayKnow = async (
     viewerUser: usersInterface & { _id: string },
@@ -14,9 +14,39 @@ export const findPeopleYouMayKnow = async (
     res: Response
   ) => {
       try {
-      let query = {};
       let currentField = null;
       let institutionName = null;
+      
+      // Build the excluded IDs array 
+      const excludedIds = [
+        viewerUser._id,
+        ...(viewerUser.connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn),
+        ...(viewerUser.blocked || []).map(block => typeof block === 'object' && block._id ? block._id : block),
+        ...(viewerUser.sent_connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn),
+        ...(viewerUser.received_connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn)
+      ];
+
+      // Common blocked user conditions 
+      const blockedUserConditions = [
+        { $or: [
+          { blocked: { $exists: false } },
+          { blocked: { $size: 0 } }
+        ]},
+        { "blocked._id": { $ne: new mongoose.Types.ObjectId(viewerUser._id) } },
+        { blocked: { $ne: new mongoose.Types.ObjectId(viewerUser._id) } }
+      ];
+
+      // Define a type for MongoDB query conditions
+      type MongoQueryCondition = { [key: string]: any };
+      
+      // Base query parts for consitency 
+      let queryParts = {
+        conditions: {} as MongoQueryCondition,
+        exclusions: [
+          { _id: { $nin: excludedIds } }
+        ] as MongoQueryCondition[],
+        blockedConditions: blockedUserConditions as MongoQueryCondition[]
+      };
 
       if (context === "education") {
           if (!viewerUser.education || viewerUser.education.length === 0) {
@@ -38,30 +68,17 @@ export const findPeopleYouMayKnow = async (
   
           currentField = currentEducation.school;
           
+          // Look up the organization
+          const organization = await organizations.findById(currentField);
+          if (organization) {
+              institutionName = organization.name;
+          } else {
+              institutionName = 'Unknown School';
+          }
 
-        // Look up the organization
-        const organization = await organizations.findById(currentField);
-        if (organization) {
-
-            institutionName = organization.name;
-        } else {
-            institutionName = 'Unknown School';
-        }
-
-        query = {
-            "education.school": currentField,
-            _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked, ...viewerUser.sent_connections, ...viewerUser.received_connections] },
-            // This is the important fix:
-            $and: [
-              // Either the blocked field doesn't exist
-              { $or: [
-                { blocked: { $exists: false } },
-                { blocked: { $size: 0 } }
-              ]},
-              // Or the blocked field doesn't contain the viewer's ID
-              { "blocked._id": { $ne: new mongoose.Types.ObjectId(viewerUser._id) } },
-              { blocked: { $ne: new mongoose.Types.ObjectId(viewerUser._id) } }
-            ]
+          // Set education-specific conditions
+          queryParts.conditions = {
+            "education.school": currentField
           };
       } else if (context === "work_experience") {
           if (!viewerUser.work_experience || viewerUser.work_experience.length === 0) {
@@ -75,38 +92,36 @@ export const findPeopleYouMayKnow = async (
   
           currentField = currentWork.organization;
           
-            // Look up the organization
-            const organization = await organizations.findById(currentField);
-            if (organization) {
-              institutionName = organization.name;
-            } else {
-              institutionName = 'Unknown Organization';
-            }
+          // Look up the organization
+          const organization = await organizations.findById(currentField);
+          if (organization) {
+            institutionName = organization.name;
+          } else {
+            institutionName = 'Unknown Organization';
+          }
           
-            query = {
-                "work_experience.organization": currentField,
-                _id: { $ne: viewerUser._id, $nin: [...viewerUser.connections, ...viewerUser.blocked, ...viewerUser.sent_connections, ...viewerUser.received_connections] },
-                // This is the important fix:
-                $and: [
-                  // Either the blocked field doesn't exist
-                  { $or: [
-                    { blocked: { $exists: false } },
-                    { blocked: { $size: 0 } }
-                  ]},
-                  // Or the blocked field doesn't contain the viewer's ID
-                  { "blocked._id": { $ne: new mongoose.Types.ObjectId(viewerUser._id) } },
-                  { blocked: { $ne: new mongoose.Types.ObjectId(viewerUser._id) } }
-                ]
-              };
+          // Set work-specific conditions
+          queryParts.conditions = {
+            "work_experience.organization": currentField
+          };
       }
-  
-      // Add cursor-based pagination
+
+      // Add cursor condition to the exclusions if a cursor is provided
       if (cursor) {
-          query = { ...query, _id: { $gt: cursor } };
+        queryParts.exclusions.push({ _id: { $gt: new mongoose.Types.ObjectId(cursor) } });
       }
+
+      // Build the final query
+      const finalQuery = {
+        ...queryParts.conditions,
+        $and: [
+          ...queryParts.exclusions,
+          ...queryParts.blockedConditions
+        ]
+      };
   
       // Fetch people with pagination
-      const people = await User.find(query)
+      const people = await User.find(finalQuery)
           .sort({ _id: 1 })
           .limit(limit + 1)
           .select("user_id bio.headline bio.first_name bio.last_name profile_photo cover_photo privacy_settings.flag_who_can_send_you_invitations");
