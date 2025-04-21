@@ -7,12 +7,12 @@ const updateUserProfile = async (req: Request, res: Response, next: NextFunction
       const user = await validateTokenAndGetUser(req, res);
       if (!user) return;
   
-      const { bio, industry, profile_photo, cover_photo, resume, phone_number, country_code } = req.body;
+      const { bio } = req.body;
         
       const userId = user._id;
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { bio, industry, profile_photo, cover_photo, resume, phone_number, country_code },
+        { bio},
         { new: true, runValidators: true }
       );
   
@@ -20,7 +20,7 @@ const updateUserProfile = async (req: Request, res: Response, next: NextFunction
         return res.status(404).json({ message: 'User not found' });
       }
   
-      return res.status(200).json({ message: 'User profile updated successfully', user: updatedUser });
+      return res.status(200).json({ message: 'User profile updated successfully', user: updatedUser.bio });
     } catch (error) {
       next(error);
       return res.status(500).json({ message: 'Server error', error });
