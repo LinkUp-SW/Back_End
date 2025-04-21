@@ -43,6 +43,9 @@ export class PostRepository {
     if (commentsDisabled !== null) updateFields.comments_disabled = commentsDisabled;
     if (publicPost !== null) updateFields.public_post = publicPost;
     if (taggedUsers!== null) updateFields.tagged_users = taggedUsers;
+    if ( content!== null|| mediaLink !== null || mediaType !== undefined || commentsDisabled !== null || publicPost !== null || taggedUsers!== null){
+      updateFields.isEdited=true;
+    }
     
     return posts.findOneAndUpdate(
       { _id: postId },
