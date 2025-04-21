@@ -441,7 +441,7 @@ export const getPaginatedConnectionsFollowers = async (
 ): Promise<{ connections: any[]; nextCursor: string | null }> => {
   try {
     // Find the user by ID and retrieve the specified connection type
-    const user = await Users.findById(userId, { [connectionType]: 1 }).lean() as UserConnectionsDocument;
+    const user = await Users.findById(userId, { [connectionType]: 1 }).lean() ;
     if (!user || !user[connectionType]) {
       return { connections: [], nextCursor: null };
     }
