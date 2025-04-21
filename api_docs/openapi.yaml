@@ -5181,6 +5181,72 @@ paths:
                     type: object
                     description: Error details
 
+  /api/v1/admin/create-admin:
+    post:
+      tags:
+        - Admin
+      summary: Create a new admin
+      description: >
+        Creates a new admin user in the system. Only existing admins can create new admins.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "admin@gmail.com"
+                password:
+                  type: string
+                  format: password
+                  example: "admin123"
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Only admins can create new admins"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error creating admin"
+                  error:
+                    type: object
+                    description: Error details
+        
+
 components:
   securitySchemes:
     bearerAuth:
@@ -5280,3 +5346,5 @@ components:
             industry:
               type: string
               example: "Information Technology"
+
+  

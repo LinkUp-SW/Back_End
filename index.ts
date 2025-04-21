@@ -38,7 +38,7 @@ import createPost from './src/routes/posts/createPosts.routes.ts';
 import deletePost from './src/routes/posts/deletePosts.routes.ts';
 import editPost from './src/routes/posts/editPosts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
-
+import createAdminRoutes from './src/routes/admin/createAdmin.routes.ts';
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
@@ -57,7 +57,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1234' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'linkupadmin-1745248742877' });
   console.log('Generated Token:', token);
 };
 
@@ -151,6 +151,7 @@ app.use('/api/v1/jobs',
 
 app.use('/api/v1/search', searchRoutes);
 
+app.use('/api/v1/admin', createAdminRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
