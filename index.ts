@@ -45,6 +45,7 @@ import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchRoutes from './src/routes/organization/search.routes.ts';
 import companyProfileRoutes from "./src/routes/organization/companyProfile.routes.ts"
 import companySettingsRoutes from "./src/routes/organization/companySettings.routes.ts"
+import companyJobsRoutes from "./src/routes/organization/companyJobs.routes.ts"
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 dotenv.config();
 
@@ -59,7 +60,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Omar-Khaled-1234' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1745264577196' });
   console.log('Generated Token:', token);
 };
 
@@ -68,7 +69,7 @@ connectToDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
-      //generateStartupToken();
+      generateStartupToken();
     });
   })
   .catch(err => {
@@ -152,7 +153,8 @@ app.use('/api/v1/post',
 
 app.use('/api/v1/company',
     companyProfileRoutes,
-    companySettingsRoutes
+    companySettingsRoutes,
+    companyJobsRoutes
 )
 
 
