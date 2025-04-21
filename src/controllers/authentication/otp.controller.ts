@@ -37,7 +37,7 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
       throw new CustomError('Session not found', 500, 'SESSION_ERROR');
   }
 
-  return res.status(200).json({ message: 'OTP has been sent to your email' , otp: otpCode });
+  return res.status(200).json({ message: 'OTP has been sent to your email' });
 });
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {

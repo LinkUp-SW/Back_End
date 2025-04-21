@@ -75,7 +75,7 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       schoolStartYear,
       schoolEndYear,
       is16OrAbove,
-      birthDate ? new Date(birthDate) : null,
+      birthDate,
       employeeType,
       recentCompany
     );
@@ -125,7 +125,7 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       schoolStartYear,
       schoolEndYear,
       is16OrAbove,
-      birthDate ? new Date(birthDate) : null,
+      birthDate ,
       employeeType,
       recentCompany
     );

@@ -9,8 +9,8 @@ import { mediaTypeEnum } from '../../models/posts.model.ts';
 const editPost = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
 
+        const postId = req.params.postId;
         const {
-            postId,
             content,
             mediaType,
             media,
