@@ -26,6 +26,7 @@ export const validateUserId = (user_id: string, res: Response): string | null =>
  * Returns the user_id if valid; otherwise sends an error response and returns null.
  */
 export const validateUserIdFromRequest = async (req: Request, res: Response): Promise<string | null> => {
+    try{
     const {user_id} = req.params; // Assuming the user_id is passed in the URL as a parameter
     if (!user_id) {
         res.status(400).json({ message: "User ID is required in the URL" });
@@ -38,6 +39,12 @@ export const validateUserIdFromRequest = async (req: Request, res: Response): Pr
         }
     
     return user_id;
+      }
+      catch (error) {
+        console.error("Error validating user ID:", error);
+        res.status(500).json({ message: "Error validating user ID", error });
+        return null;
+      }
 };
 
 
