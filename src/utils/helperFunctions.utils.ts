@@ -49,6 +49,7 @@ export const validateTokenAndUser = async (req: Request, res: Response): Promise
 };
 
 export const getUserIdFromToken = async (req: Request, res: Response): Promise<string | null> => {
+  try{
   // Validate token and extract user ID from the token
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
@@ -60,6 +61,10 @@ export const getUserIdFromToken = async (req: Request, res: Response): Promise<s
     const viewerId = decodedToken.userId;
   
     return viewerId;
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error",success:false });
+    return null;
+  }
 };
 
 export const validateFileUpload = (req: Request, res: Response): string | null => {

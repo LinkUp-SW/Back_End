@@ -22,7 +22,7 @@ export enum mediaTypeEnum{
 export interface postsInterface extends mongoose.Document{
     user_id: string;
     content: string;
-    date: Date;
+    date: number; // Changed to number type for Unix timestamp
     media: {
         link:string[],
         media_type:string
@@ -35,12 +35,16 @@ export interface postsInterface extends mongoose.Document{
     }[];
     tagged_users: usersInterface[];
     comments: commentsInterface[];
-}
+    isEdited:boolean;
+} 
 
 const postsSchema = new Schema<postsInterface>({
     user_id: { type: String },
     content: { type: String },
-    date: { type: Date, default: Date.now },
+    date: { 
+        type: Number, 
+        default: () => Math.floor(Date.now() / 1000) // Unix timestamp in seconds
+    },
     media: { 
         link:[{type: String}],
         media_type: {type: String}
@@ -53,6 +57,7 @@ const postsSchema = new Schema<postsInterface>({
      }],
     tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
     comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
+    isEdited:{type:Boolean,default:false}
 });
 
 const posts = mongoose.model<postsInterface>('posts', postsSchema);
