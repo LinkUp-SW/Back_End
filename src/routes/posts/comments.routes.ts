@@ -10,7 +10,7 @@ router.post('/comment', (req,res) =>{
     createComment(req,res);
 });
 
-router.get('/comment', (req,res) =>{
+router.get('/comment/:postId', (req,res) =>{
     getCommentsController(req,res);
 });
 

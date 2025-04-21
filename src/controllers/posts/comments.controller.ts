@@ -167,7 +167,7 @@ const updateComments = async (req: Request, res: Response): Promise<Response | v
 };
 const getCommentsController = async (req: Request, res: Response) => {
     try {
-        const post_id = req.query.post_id as string;
+        const post_id =req.params.postId;
         const cursor = parseInt(req.query.cursor as string) || 0;
         const limit = parseInt(req.query.limit as string) || 10;
         
@@ -175,7 +175,6 @@ const getCommentsController = async (req: Request, res: Response) => {
         if (!userId) return;
         const user = await findUserByUserId(userId,res);
         if (!user) return;
-        // Validate postId
         if (!post_id || !limit) {
             return res.status(400).json({ error: "Required fields missing" });
         }
