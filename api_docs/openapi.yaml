@@ -1776,19 +1776,19 @@ paths:
           description: Server error
   
   # Privacy Settings Endpoints
-  /api/v1/user/privacy-settings/profile-visibility/{user_id}:
+  /api/v1/user/privacy-settings/profile-visibility:
     get:
       tags:
         - Privacy Settings
       summary: Get profile visibility settings
       description: Retrieves the current profile visibility settings for a user
       parameters:
-        - name: user_id
-          in: path
+        - name : Authorization
+          in: header
           required: true
           schema:
             type: string
-          description: ID of the user
+          description: Bearer token for authentication.
       responses:
         '200':
           description: Privacy settings retrieved successfully
@@ -1797,7 +1797,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  profile_visibility:
+                  profileVisibility:
                     type: string
                     example: "public"
         '401':
@@ -1813,12 +1813,12 @@ paths:
       summary: Update profile visibility settings
       description: Updates the profile visibility settings for a user
       parameters:
-        - name: user_id
-          in: path
+        - name : Authorization
+          in: header
           required: true
           schema:
             type: string
-          description: ID of the user
+          description: Bearer token for authentication.
       requestBody:
         required: true
         content:
@@ -1826,10 +1826,7 @@ paths:
             schema:
               type: object
               properties:
-                token:
-                  type: string
-                  description: Authentication token
-                profile_visibility:
+                profileVisibility:
                   type: string
                   enum: [public, connections, private]
                   description: Profile visibility level
@@ -4373,6 +4370,816 @@ paths:
                   message:
                     type: string
                     example: "Error fetching user education details"
+
+  # Invitation Settings Endpoints
+  /api/v1/user/privacy-settings/invitations-requests:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get invitation settings
+      description: >
+        Retrieves the current setting for who can send connection invitations to the user.
+        This controls whether everyone can send invitations or only people with the user's email.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Invitation settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invitationSetting:
+                    type: string
+                    enum: [Everyone, email]
+                    example: "Everyone"
+                    description: Current setting for who can send invitations
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving invitation settings"
+                  error:
+                    type: object
+                    description: Error details
+    
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update invitation settings
+      description: >
+        Updates who can send connection invitations to the user.
+        Can be set to allow everyone to send invitations or restrict to only people with the user's email.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - invitationSetting
+              properties:
+                invitationSetting:
+                  type: string
+                  enum: [Everyone, email]
+                  example: "Everyone"
+                  description: Setting for who can send invitations
+            examples:
+              Everyone:
+                value:
+                  invitationSetting: "Everyone"
+              Email:
+                value:
+                  invitationSetting: "email"
+      responses:
+        '200':
+          description: Invitation settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invitation settings updated successfully"
+                  invitationSetting:
+                    type: string
+                    enum: [Everyone, email]
+                    example: "Everyone"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid invitation setting"
+                  allowedValues:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Everyone", "email"]
+                  example:
+                    type: object
+                    properties:
+                      invitationSetting:
+                        type: string
+                        example: "Everyone"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found or user does not have privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating invitation settings"
+                  error:
+                    type: object
+                    description: Error details
+    # Follow Settings Endpoints
+  /api/v1/user/privacy-settings/follow-requests:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get follow settings
+      description: >
+        Retrieves the current setting for who can follow the user.
+        This controls whether everyone can follow the user or only connections.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Follow settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  followSetting:
+                    type: string
+                    enum: [Everyone, Connections only]
+                    example: "Everyone"
+                    description: Current setting for who can follow the user
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving follow settings"
+                  error:
+                    type: object
+                    description: Error details
+    
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update follow settings
+      description: >
+        Updates who can follow the user.
+        Can be set to allow everyone to follow or restrict to only connections.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - followSetting
+              properties:
+                followSetting:
+                  type: string
+                  enum: [Everyone, Connections only]
+                  example: "Everyone"
+                  description: Setting for who can follow the user
+            examples:
+              Everyone:
+                value:
+                  followSetting: "Everyone"
+              ConnectionsOnly:
+                value:
+                  followSetting: "Connections only"
+      responses:
+        '200':
+          description: Follow settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Follow settings updated successfully"
+                  followSetting:
+                    type: string
+                    enum: [Everyone, Connections only]
+                    example: "Everyone"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid follow setting"
+                  allowedValues:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Everyone", "Connections only"]
+                  example:
+                    type: object
+                    properties:
+                      followSetting:
+                        type: string
+                        example: "Everyone"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found or user does not have privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating follow settings"
+                  error:
+                    type: object
+                    description: Error details
+
+  # Follow Primary Settings Endpoints
+  /api/v1/user/privacy-settings/follow-primary:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get follow primary setting
+      description: >
+        Retrieves whether "Follow" is set as the primary action instead of "Connect".
+        When enabled, the follow button will be more prominent in the UI.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Follow primary setting retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isFollowPrimary:
+                    type: boolean
+                    example: false
+                    description: Whether follow is set as the primary action
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving follow primary setting"
+                  error:
+                    type: object
+                    description: Error details
+    
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update follow primary setting
+      description: >
+        Updates whether "Follow" is set as the primary action instead of "Connect".
+        When enabled, the follow button will be more prominent in the UI.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - isFollowPrimary
+              properties:
+                isFollowPrimary:
+                  type: boolean
+                  example: true
+                  description: Whether to set follow as the primary action
+            examples:
+              Enable:
+                value:
+                  isFollowPrimary: true
+              Disable:
+                value:
+                  isFollowPrimary: false
+      responses:
+        '200':
+          description: Follow primary setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Follow primary setting updated successfully"
+                  isFollowPrimary:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid follow primary setting"
+                  allowedValues:
+                    type: array
+                    items:
+                      type: boolean
+                    example: [true, false]
+                  example:
+                    type: object
+                    properties:
+                      isFollowPrimary:
+                        type: boolean
+                        example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found or user does not have privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating follow primary setting"
+                  error:
+                    type: object
+                    description: Error details
+
+  # Messaging Requests Settings Endpoints
+  /api/v1/user/privacy-settings/messaging-requests:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get messaging requests setting
+      description: >
+        Retrieves the current setting for whether to allow messaging requests.
+        This controls whether users who are not connections can send messages to the user.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Messaging requests setting retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messagingRequests:
+                    type: boolean
+                    example: true
+                    description: Whether messaging requests are enabled
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving messaging requests setting"
+                  error:
+                    type: object
+                    description: Error details
+    
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update messaging requests setting
+      description: >
+        Updates whether to allow messaging requests from users who are not connections.
+        When enabled, users who are not connections can send message requests.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - messagingRequests
+              properties:
+                messagingRequests:
+                  type: boolean
+                  example: true
+                  description: Whether to allow messaging requests
+            examples:
+              Enable:
+                value:
+                  messagingRequests: true
+              Disable:
+                value:
+                  messagingRequests: false
+      responses:
+        '200':
+          description: Messaging requests setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Messaging requests setting updated successfully"
+                  messagingRequests:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid messaging requests setting"
+                  allowedValues:
+                    type: array
+                    items:
+                      type: boolean
+                    example: [true, false]
+                  example:
+                    type: object
+                    properties:
+                      messagingRequests:
+                        type: boolean
+                        example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found or user does not have privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating messaging requests setting"
+                  error:
+                    type: object
+                    description: Error details
+
+  # Read Receipts Settings Endpoints
+  /api/v1/user/privacy-settings/read-receipts:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get read receipts setting
+      description: >
+        Retrieves the current setting for read receipts in messaging.
+        This controls whether other users can see when you've read their messages.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      responses:
+        '200':
+          description: Read receipts setting retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  readReceipts:
+                    type: boolean
+                    example: true
+                    description: Whether read receipts are enabled
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving read receipts setting"
+                  error:
+                    type: object
+                    description: Error details
+    
+    put:
+      tags:
+        - Privacy Settings
+      summary: Update read receipts setting
+      description: >
+        Updates whether to enable read receipts for messages.
+        When enabled, other users can see when you've read their messages.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - readReceipts
+              properties:
+                readReceipts:
+                  type: boolean
+                  example: true
+                  description: Whether to enable read receipts
+            examples:
+              Enable:
+                value:
+                  readReceipts: true
+              Disable:
+                value:
+                  readReceipts: false
+      responses:
+        '200':
+          description: Read receipts setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Read receipts setting updated successfully"
+                  readReceipts:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid read receipts setting"
+                  allowedValues:
+                    type: array
+                    items:
+                      type: boolean
+                    example: [true, false]
+                  example:
+                    type: object
+                    properties:
+                      readReceipts:
+                        type: boolean
+                        example: true
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found or user does not have privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User does not have privacy settings"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error updating read receipts setting"
+                  error:
+                    type: object
+                    description: Error details
 
 components:
   securitySchemes:
