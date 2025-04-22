@@ -80,7 +80,7 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
         await user.save();
         post.comments.push(comment);
         await post.save();
-        return res.status(200).json({message:'comment successfully created', commentId:comment._id });
+        return res.status(200).json({message:'comment successfully created', comment:comment});
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message,success:false });
@@ -181,7 +181,6 @@ const getCommentsController = async (req: Request, res: Response) => {
         if (!post) {
             return res.status(404).json({ message: "Post does not exist" });
         }
-        console.log(post_id);
         // Call the getComments function
         const result = await getComments(cursor, limit, post_id);
     
