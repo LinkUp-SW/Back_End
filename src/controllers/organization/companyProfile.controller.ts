@@ -103,7 +103,7 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
     }
 }
 
-export const getCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getCompanyUserView = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { companyId } = req.params;
         
@@ -117,6 +117,39 @@ export const getCompanyProfile = async (req: Request, res: Response, next: NextF
     }
 }
 
+export const getCompanyAdminView = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        // Get user from token
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { companyId } = req.params;
+        
+        // Get company profile and validate it exists
+        const companyProfile = await getCompanyProfileById(companyId, res);
+        if (!companyProfile) return;
+        
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(companyProfile, user._id, res);
+        if (!isAdmin) return;
+        
+        // Format company info with follower count
+        const companyInfo = {
+            _id: companyProfile._id,
+            name: companyProfile.name,
+            logo: companyProfile.logo,
+            followerCount: companyProfile.followers ? companyProfile.followers.length : 0
+        };
+
+        res.status(200).json({ 
+            message: "Company basic info retrieved successfully", 
+            company: companyInfo 
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export const getUserAdminOrganizations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         // Get user from token
@@ -124,22 +157,13 @@ export const getUserAdminOrganizations = async (req: Request, res: Response, nex
         if (!user) return;
 
         // Find organizations where the user is an admin
-        // Include the followers field to calculate its length
         const userOrganizations = await organizations.find(
             { admins: user._id },
-            { name: 1, logo: 1, followers: 1 } // Add followers to projection
+            { name: 1, logo: 1 } // Project only name and logo fields
         );
 
-        // Map the results to include follower count
-        const orgsWithFollowerCount = userOrganizations.map(org => ({
-            _id: org._id,
-            name: org.name,
-            logo: org.logo,
-            followerCount: org.followers ? org.followers.length : 0
-        }));
-
         res.status(200).json({ 
-            organizations: orgsWithFollowerCount
+            organizations: userOrganizations
         });
     } catch (error) {
         next(error);
