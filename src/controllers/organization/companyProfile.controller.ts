@@ -103,6 +103,20 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
     }
 }
 
+export const getCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { companyId } = req.params;
+        
+        // Get company profile and validate it exists
+        const companyProfile = await getCompanyProfileById(companyId, res);
+        if (!companyProfile) return;
+
+        res.status(200).json({ message: "Company profile retrieved successfully", companyProfile });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export const getUserAdminOrganizations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         // Get user from token
@@ -110,16 +124,24 @@ export const getUserAdminOrganizations = async (req: Request, res: Response, nex
         if (!user) return;
 
         // Find organizations where the user is an admin
+        // Include the followers field to calculate its length
         const userOrganizations = await organizations.find(
             { admins: user._id },
-            { name: 1, logo: 1 } // Project only name and logo fields
+            { name: 1, logo: 1, followers: 1 } // Add followers to projection
         );
 
+        // Map the results to include follower count
+        const orgsWithFollowerCount = userOrganizations.map(org => ({
+            _id: org._id,
+            name: org.name,
+            logo: org.logo,
+            followerCount: org.followers ? org.followers.length : 0
+        }));
+
         res.status(200).json({ 
-            organizations: userOrganizations
+            organizations: orgsWithFollowerCount
         });
     } catch (error) {
         next(error);
     }
 }
-
