@@ -94,9 +94,9 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
 
 const updateComments = async (req: Request, res: Response): Promise<Response | void> => {
     try {
+        const post_id =req.params.postId;
+        const comment_id =req.params.commentId;
         const {
-            post_id,
-            comment_id,
             content,
             media,
             tagged_users
@@ -195,17 +195,22 @@ const getCommentsController = async (req: Request, res: Response) => {
 
     const deleteComment = async (req: Request, res: Response) => {
         try {
-            const { comment_id } = req.body;
+            const post_id =req.params.postId;
+            const comment_id =req.params.commentId;
             
             let userId = await getUserIdFromToken(req, res);
             if (!userId) return;
             const user = await findUserByUserId(userId, res);
             if (!user) return;
             
-            if (!comment_id) {
-                return res.status(400).json({ error: "Comment ID is required" });
+            if (!comment_id || !post_id) {
+                return res.status(400).json({ error: "Required parameters are missing" });
             }
-            
+            const postRepository = new PostRepository;
+            const post = await postRepository.findByPostId(post_id);
+            if (!post) {
+                return res.status(404).json({ message: 'Post does not exist' });
+            }
             const comment = await comments.findById(comment_id);
             if (!comment) {
                 return res.status(404).json({ error: "Comment does not exist" });
@@ -218,14 +223,13 @@ const getCommentsController = async (req: Request, res: Response) => {
             // Get all direct reply IDs (only one level)
             const replyIds = await getAllCommentChildrenIds(comment_id);
             
-            const postId = comment.post_id;            
             await posts.updateOne(
-                { _id: postId },
+                { _id: post_id },
                 { $pull: { comments: comment_id } }
             );
             if (replyIds.length > 0) {
                 await posts.updateOne(
-                    { _id: postId },
+                    { _id: post_id },
                     { $pull: { comments:  { $in: replyIds }  } }
                 );
             }

@@ -14,11 +14,11 @@ router.get('/comment/:postId', (req,res) =>{
     getCommentsController(req,res);
 });
 
-router.patch('/comment', (req,res) =>{
+router.patch('/comment/:postId/:commentId', (req,res) =>{
     updateComments(req,res);
 });
 
-router.delete('/comment', (req,res) =>{
+router.delete('/comment/:postId/:commentId', (req,res) =>{
     deleteComment(req,res);
 });
 
