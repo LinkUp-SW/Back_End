@@ -92,22 +92,22 @@ export class WebSocketService {
     
     const user = await this.userRepo.findByUserId(userId);
     if (!user) {
-      throw new CustomError("User not found", 404);
+    throw new CustomError("User not found", 404);
     }
-
-    // Update online status
-    this.handleOnlineStatus(socket, true);
-
+    
+    // Update online status - AWAIT THIS CALL
+    await this.handleOnlineStatus(socket, true);
+    
     // Send initial data
     const [unreadCount, unreadConversations] = await Promise.all([
-      this.getUnseenMessagesCount(userId),
-      this.conversationRepo.getUnreadConversations(userId)
+    this.getUnseenMessagesCount(userId),
+    this.conversationRepo.getUnreadConversations(userId)
     ]);
-
+    
     socket.emit("authenticated", { userId });
     socket.emit("unread_messages_count", { count: unreadCount });
     socket.emit("unread_conversations", { conversations: unreadConversations });
-  }
+    }
 
   private async handlePrivateMessage(socket: Socket, data: { to: string; message: string; media?: string[] }) {
     try {
@@ -220,6 +220,7 @@ export class WebSocketService {
           const participantSocketId = this.userSockets.get(participantId.toString());
           if (participantSocketId) {
             this.io.to(participantSocketId).emit("message_reacted", { 
+              conversationId: conversationId,
               messageId, 
               reaction,
               reactedBy: userId
