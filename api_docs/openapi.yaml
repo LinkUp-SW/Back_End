@@ -642,7 +642,7 @@ paths:
           description: Server error
                     example: "Server error"
 
-  /profile/profile-picture/{user_id}:
+  /api/v1/user/profile/profile-picture/{user_id}:
     post:
       tags:
         - Profile Picture
@@ -923,7 +923,7 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /profile/cover-photo/{user_id}:
+  /api/v1/user/profile/cover-photo/{user_id}:
     post:
       tags:
         - Cover Photo
@@ -1209,7 +1209,7 @@ paths:
                   error:
                     type: string
                     example: "Database error"
-  /profile/resume/{user_id}:
+  /api/v1/user/profile/resume/{user_id}:
     post:
       tags:
         - Resume
