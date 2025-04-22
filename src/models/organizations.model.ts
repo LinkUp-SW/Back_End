@@ -39,9 +39,18 @@ export interface organizationsInterface extends mongoose.Document{
     unique_url: string;
     website: string;
     logo: string;
+    tagline: string;
     description: string;
     industry: string;
-    location: string;
+    location: {
+        country: string;
+        address: string;
+        city: string;
+        state: string;
+        postal_code: string;
+        location_name: string;
+    };
+    phone: string;
     size: organizationSizeEnum;
     type: organizationTypeEnum;
     posts: postsInterface[];

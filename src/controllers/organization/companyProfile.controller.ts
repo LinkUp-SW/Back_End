@@ -48,7 +48,7 @@ export const updateCompanyProfile = async (req: Request, res: Response, next: Ne
         const isAdmin = validateUserIsCompanyAdmin(companyProfile, user._id, res);
         if (!isAdmin) return;
 
-        const { name, category_type, unique_url, website, logo, description, industry, location, size, type } = req.body;
+        const { name, category_type, unique_url, website, logo, description, industry, location, tagline, size, type } = req.body;
 
         const updatedCompanyProfile = await organizations.findByIdAndUpdate(
             companyId,
@@ -61,6 +61,7 @@ export const updateCompanyProfile = async (req: Request, res: Response, next: Ne
                 description,
                 industry,
                 location,
+                tagline,
                 size,
                 type,
             },
@@ -103,7 +104,7 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
     }
 }
 
-export const getCompanyUserView = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getCompany = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { companyId } = req.params;
         

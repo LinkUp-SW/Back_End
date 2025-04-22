@@ -18,6 +18,11 @@ router.delete('/delete-company-profile/:companyId', (req, res, next) => {
     companyProfileControllers.deleteCompanyProfile(req, res, next);
 });
 
+// Get company profile by ID (All view)
+router.get('/get-company-all-view/:companyId', (req, res, next) => {
+    companyProfileControllers.getCompany(req, res, next);
+});
+
 // Get company profile by ID (Admin view)
 router.get('/get-company-admin-view/:companyId', (req, res, next) => {
     companyProfileControllers.getCompanyAdminView(req, res, next);
