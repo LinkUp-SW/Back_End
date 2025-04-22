@@ -5,6 +5,7 @@ import { conversationRepository } from "../repositories/conversation.repository.
 import tokenUtils from "../utils/token.utils.ts";
 import { CustomError } from "../utils/customError.utils.ts";
 import {uploadMedia} from "../utils/helper.ts";
+import { on } from "events";
 
 export class WebSocketService {
   private io: SocketIOServer;
@@ -13,10 +14,13 @@ export class WebSocketService {
   private userRepo: UserRepository;
   private conversationRepo: conversationRepository;
 
+  public onlineUsers: Map<string, string> = new Map(); // userId -> socketId
+  public onlineUsersCount: number = 0; // Count of online users
+
   constructor(
     server: Server, 
     userRepo: UserRepository = new UserRepository(), 
-    conversationRepo: conversationRepository = new conversationRepository()
+    conversationRepo: conversationRepository = new conversationRepository(),
   ) {
     this.io = new SocketIOServer(server, {
       cors: {
@@ -31,6 +35,7 @@ export class WebSocketService {
     });
     this.userRepo = userRepo;
     this.conversationRepo = conversationRepo;
+    this.userSockets = new Map(); // Initialize userSockets
     
     this.setupSocketListeners();
   }
@@ -91,11 +96,7 @@ export class WebSocketService {
     }
 
     // Update online status
-    user.online_status = true;
-    await user.save();
-
-    // Notify user's connections
-    this.notifyPresenceChange(userId, true);
+    this.handleOnlineStatus(socket, true);
 
     // Send initial data
     const [unreadCount, unreadConversations] = await Promise.all([
@@ -343,13 +344,31 @@ export class WebSocketService {
     }
   }
 
+  
+
   private async handleOnlineStatus(socket: Socket, isOnline: boolean) {
     try {
       const userId = await this.getUserIdFromSocket(socket.id);
       if (!userId) return;
 
       const user = await this.userRepo.findByUserId(userId);
-      if (!user) return;
+      if (!user)
+        {
+          console.error("User not found:", userId);
+          return;
+        };
+      if (user.online_status === isOnline) return; // No change in status
+
+      if (isOnline) {
+        this.userSockets.set(userId, socket.id);
+        this.onlineUsers.set(userId, socket.id);
+        this.onlineUsersCount++;
+      }
+      else {
+        this.userSockets.delete(userId);
+        this.onlineUsers.delete(userId);
+        this.onlineUsersCount--;
+      }
 
       user.online_status = isOnline;
       await user.save();
