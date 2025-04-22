@@ -106,13 +106,18 @@ export const searchUsers = async (
       page = 1, 
       limit = 10 
     } = searchParams;
-    const skip = (page - 1) * limit;
+
+    // Sanitize pagination parameters to ensure they're positive
+    const safePage = Math.max(1, Number(page) || 1); // Ensure page is at least 1
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 10)); // Ensure limit is between 1 and 100
+
+    const skip = (safePage - 1) * safeLimit;
     
     // Convert viewerUserId to ObjectId
     const viewerObjectId = new mongoose.Types.ObjectId(viewerUserId);
     
     // First, get the viewer's connections
-    const viewerUser = await users.findById(viewerUserId, { connections: 1 }).lean();
+    const viewerUser = await users.findById(viewerUserId, { connections: 1 , blocked: 1 }).lean();
     
     if (!viewerUser) {
       throw new Error('Viewer user not found');
@@ -337,7 +342,7 @@ if (connectionDegree !== 'all') {
         { $sort: { user_id: 1 as 1 } },
       // Pagination
       { $skip: skip },
-      { $limit: limit }
+      { $limit: safeLimit }
     ];
     
     // Count total results 
@@ -430,8 +435,8 @@ if (connectionDegree !== 'all') {
       people: formattedResults,
       pagination: {
         total,
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         pages: Math.ceil(total / limit)
       }
     };
