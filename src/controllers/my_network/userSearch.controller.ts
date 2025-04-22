@@ -9,36 +9,41 @@ export const searchUsersController = async (req: Request, res: Response): Promis
     const viewerUser = await validateTokenAndGetUser(req, res);
     if (!viewerUser) return;
 
-    const { query, connectionDegree,page, limit } = req.query;
+    const { query, connectionDegree, page, limit } = req.query;
 
-    if (!query || typeof query !== 'string') {
-      res.status(400).json({ message: 'Search query is required' });
+    // Allow empty query when filtering by connection degree
+    // Only require query if no connection degree filter is specified
+    if ((!query || typeof query !== 'string') && 
+        (!connectionDegree || connectionDegree === 'all')) {
+      res.status(400).json({ message: 'Search query is required when not filtering by connection degree' });
       return;
     }
 
+    // Default to empty string if query is not provided but connection degree is
+    const searchQuery = typeof query === 'string' ? query : '';
 
-// Handle connection degree with more comprehensive normalization
-let searchConnectionDegree: 'all' | '1st' | '2nd' | '3rd+' = 'all';
+    // Handle connection degree with more comprehensive normalization
+    let searchConnectionDegree: 'all' | '1st' | '2nd' | '3rd+' = 'all';
 
-if (connectionDegree && typeof connectionDegree === 'string') {
-  // Normalize the connection degree string
-  const normalized = connectionDegree.trim();
-  
-  if (normalized === 'all' || normalized === '1st' || normalized === '2nd') {
-    searchConnectionDegree = normalized as 'all' | '1st' | '2nd';
-  } 
-  // Special handling for 3rd+ with any encoding variants
-  else if (normalized === '3rd+' || normalized.startsWith('3rd') || normalized.match(/^3rd[\s%+]/)) {
-    searchConnectionDegree = '3rd+';
-
-  }
-}
+    if (connectionDegree && typeof connectionDegree === 'string') {
+      // Normalize the connection degree string
+      const normalized = connectionDegree.trim();
+      
+      if (normalized === 'all' || normalized === '1st' || normalized === '2nd') {
+        searchConnectionDegree = normalized as 'all' | '1st' | '2nd';
+      } 
+      // Special handling for 3rd+ with any encoding variants
+      else if (normalized === '3rd+' || normalized.startsWith('3rd') || normalized.match(/^3rd[\s%+]/)) {
+        searchConnectionDegree = '3rd+';
+      }
+    }
 
     // Parse pagination params
     const searchPage = page && !isNaN(Number(page)) ? Number(page) : 1;
     const searchLimit = limit && !isNaN(Number(limit)) ? Number(limit) : 10;
+    
     const searchParams = {
-      query,
+      query: searchQuery,
       connectionDegree: searchConnectionDegree,
       page: searchPage,
       limit: searchLimit
@@ -62,3 +67,4 @@ if (connectionDegree && typeof connectionDegree === 'string') {
   }
 }
 };
+
