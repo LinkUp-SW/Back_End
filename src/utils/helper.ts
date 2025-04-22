@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import tokenUtils from "../utils/token.utils.ts";
-import { validateUserIdFromRequest, findUserByUserId } from "../utils/database.helper.ts";
 import cloudinary from "../../config/cloudinary.ts";
+import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
+import Organization, { categoryTypeEnum } from "../models/organizations.model.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization || "";
@@ -16,7 +17,8 @@ export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const user = await findUserByUserId(decodedToken.userId, res);
     return user;
 };
-export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string, userId: string, user: any } | null> => {
+export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string,  targetUser: any } | null> => {
+  try{
   // Validate token and extract user ID from the token
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
@@ -33,11 +35,15 @@ export const validateTokenAndUser = async (req: Request, res: Response): Promise
   const userId = await validateUserIdFromRequest(req, res);
   if (!userId) return null;
 
-  // Retrieve the user document
-  const user = await findUserByUserId(userId, res);
-  if (!user) return null;
+  // Retrieve the target user document
+  const targetUser = await findUserByUserId(userId, res);
+  if (!targetUser) return null;
 
-  return { viewerId, userId, user };
+
+  return { viewerId, targetUser };
+} catch (error) {
+  throw error;
+}
 };
 
 export const getUserIdFromToken = async (req: Request, res: Response): Promise<string | null> => {
@@ -71,6 +77,7 @@ export const validateFileUpload = (req: Request, res: Response): string | null =
   return profilePictureUrl;
 };
 
+
 export const uploadMedia = async (file: string, folder = 'messaging_app') => {
   try {
     const result = await cloudinary.uploader.upload(file, {
@@ -84,3 +91,27 @@ export const uploadMedia = async (file: string, folder = 'messaging_app') => {
     throw new Error('Failed to upload media');
   }
 };
+/**
+ * Search for organizations of a specific category type
+ * @param query The search query
+ * @param categoryType The category type to search within
+ * @returns Array of matching organizations
+ */
+export const searchOrganizationsByType = async (query: string, categoryType: categoryTypeEnum) => {
+  return await Organization.find({
+    category_type: categoryType,
+    name: { $regex: query, $options: 'i' }
+  }).select('_id name logo').limit(10);
+};
+
+/**
+ * Search for organizations across all category types
+ * @param query The search query
+ * @returns Array of matching organizations
+ */
+export const searchAllOrganizations = async (query: string) => {
+  return await Organization.find({
+    name: { $regex: query, $options: 'i' }
+  }).select('_id name logo category_type').limit(10);
+};
+

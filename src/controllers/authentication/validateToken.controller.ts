@@ -8,19 +8,20 @@ const tokenValidation = async (req: Request, res: Response): Promise<Response | 
 
         const userId = await getUserIdFromToken(req, res);
         if (!userId) return;
-        let user;
-        if (userId){
-            user = await findUserByUserId(userId,res);
+        const user = await findUserByUserId(userId,res);
+        if (!user) return;
+        if (!user.is_verified){
+            return res.status(401).json({ message:"User not verified",success:false });
         }
         if (user){
-            res.status(200).json({ message: 'Validate token successful',success:true });
+           return res.status(200).json({ message: 'Validate token successful',success:true });
         }
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message,success:false });
         }
         else{
-            res.status(500).json({ message: 'Server error', error });
+            return res.status(500).json({ message: 'Server error', error });
     
         }
     }

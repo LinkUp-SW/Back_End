@@ -36,7 +36,7 @@ export enum adminLevelEnum{
     analyst = "Analyst"
 }
 export interface organizationsInterface extends mongoose.Document{
-    organization_name: string;
+    name: string;
     category_type: categoryTypeEnum;
     unique_url: string;
     website: string;
@@ -57,7 +57,7 @@ export interface organizationsInterface extends mongoose.Document{
 }
 
 const organizationsSchema = new Schema<organizationsInterface>({
-    organization_name: { type: String },
+    name: { type: String },
     category_type: { type: String, enum: Object.values(categoryTypeEnum) },
     unique_url: { type: String },
     website: { type: String},

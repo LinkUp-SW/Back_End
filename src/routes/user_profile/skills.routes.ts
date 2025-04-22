@@ -11,12 +11,17 @@ router.post('/add-skill', (req, res, next) => {
 
 // PUT /api/v1/user/update-skill/:skillId
 router.put('/update-skill/:skillId', (req, res, next) => {
-    skillsControllers.updateSkill(req, res, next);
+    skillsControllers.updateSkill(req, res, next);  
 });
 
 // DELETE /api/v1/user/delete-skill/:skillId
 router.delete('/delete-skill/:skillId', (req, res, next) => {
     skillsControllers.deleteSkill(req, res, next);
+});
+
+// GET /api/v1/user/get-user-sections
+router.get('/get-user-sections', (req, res, next) => {
+    skillsControllers.getUserSections(req, res, next);
 });
 
 export default router;

@@ -35,7 +35,7 @@ describe('organizations Model Test', () => {
         });
         const savedorganization = await validorganization.save();
         expect(savedorganization._id).toBeDefined();
-        expect(savedorganization.organization_name).toBe(validorganization.organization_name);
+        expect(savedorganization.name).toBe(validorganization.name);
         expect(savedorganization.category_type).toBe(validorganization.category_type);
         expect(savedorganization.unique_url).toBe(validorganization.unique_url);
         expect(savedorganization.website).toBe(validorganization.website);

@@ -1,104 +1,409 @@
 import { Request, Response } from "express";
-import { validateUserId, findUserByUserId,  checkProfileAccess, validateUserIdFromRequest } from "../../utils/database.helper.ts";
-import privacy_settings, { accountStatusEnum } from "../../models_to_delete/privacy_settings.model.ts";
-import tokenValidation from "../../utils/token.utils.ts";
-
+import { accountStatusEnum , invitationsEnum, followEnum }  from "../../models/users.model.ts";
+import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
 
 // GET Profile Visibility
 export const getProfileVisibility = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Validate token to ensure the request is authenticated.
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
 
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const userIdFromToken = tokenValidation.validateToken(token) as { userId: string };
-
-    if (!userIdFromToken || !userIdFromToken.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    const userId = await validateUserIdFromRequest(req, res);
-    if (!userId) return;
-
-    console.log(userId);
-
-
-    // Retrieve the target user using the unique ID.
-    const targetUser = await findUserByUserId(userId, res);
-    if (!targetUser) {
-      return;
-    }
-
-
-    // Return the profile visibility setting.
-    res.status(200).json({ profileVisibility: targetUser.privacy_settings.flag_account_status });
+    // Return the profile visibility setting
+    res.status(200).json({ profileVisibility: viewerUser.privacy_settings.flag_account_status });
   } catch (error) {
-    console.error("Error retrieving privacy settings:", error);
-    res.status(500).json({ message: "Error retrieving privacy settings", error });
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving privacy settings:", error);
+      res.status(500).json({ message: "Error retrieving privacy settings", error });
+    }
   }
 };
 
-
-/// UPDATE Profile Visibility
+// UPDATE Profile Visibility
 export const updateProfileVisibility = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Validate token and extract current user ID.
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const userIdFromToken = tokenValidation.validateToken(token) as { userId: string };
-    
-    if (!userIdFromToken.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
 
-    // Extract the user_id from the URL parameters.
-    const userIdFromUrl = await validateUserIdFromRequest(req, res);
-    if (!userIdFromUrl) return;
 
-    // Ensure that the user_id from the token matches the user_id in the URL.
-    if (userIdFromToken.userId !== userIdFromUrl) {
-      res.status(403).json({ message: "User is not authorized to update this profile" });
-      return;
-    }
-
-    // Validate the user ID format.
-    const validUserId = validateUserId(userIdFromToken.userId, res);
-    if (!validUserId) return;
-
-    // Retrieve the user document using the validated user_id.
-    const user = await findUserByUserId(validUserId, res);
-    if (!user) {
-      return;
-    }
-
-    // Ensure the user has privacy settings.
-    if (!user.privacy_settings) {
+    // Ensure the user has privacy settings
+    if (!viewerUser.privacy_settings) {
       res.status(404).json({ message: "User does not have privacy settings" });
       return;
     }
 
-    // Extract the updated profile visibility from the request body.
+    // Extract the updated profile visibility from the request body
     const { profileVisibility } = req.body;
 
-    // Validate that the provided profile visibility is one of the allowed values.
+    // Validate that the provided profile visibility is one of the allowed values
     const allowedValues = Object.values(accountStatusEnum);
     if (!profileVisibility || !allowedValues.includes(profileVisibility)) {
-      res.status(400).json({ message: "Invalid profile visibility setting" });
+      res.status(400).json({ 
+        message: "Invalid profile visibility setting", 
+        allowedValues: allowedValues,
+        example: {
+          profileVisibility: "Public" // or "Private" or "Connections only"
+        }
+      });
       return;
     }
 
-    // Update the user's profile visibility.
-    user.privacy_settings.flag_account_status = profileVisibility;
-    await user.save();
+    // Update the user's profile visibility
+    viewerUser.privacy_settings.flag_account_status = profileVisibility;
+    await viewerUser.save();
 
     res.status(200).json({
       message: "Profile visibility updated successfully",
-      profileVisibility: user.privacy_settings.flag_account_status,
+      profileVisibility: viewerUser.privacy_settings.flag_account_status,
     });
   } catch (error) {
-    console.error("Error updating profile visibility:", error);
-    res.status(500).json({ message: "Error updating profile visibility", error });
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error updating profile visibility:", error);
+      res.status(500).json({ message: "Error updating profile visibility", error });
+    }
+  }
+};
+
+
+// GET Who Can Send Invitations Setting
+export const getInvitationSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Return the invitation settings
+    res.status(200).json({ 
+      invitationSetting: viewerUser.privacy_settings.flag_who_can_send_you_invitations 
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving invitation settings:", error);
+      res.status(500).json({ message: "Error retrieving invitation settings", error });
+    }
+  }
+};
+
+// UPDATE Who Can Send Invitations Setting
+export const updateInvitationSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Ensure the user has privacy settings
+    if (!viewerUser.privacy_settings) {
+      res.status(404).json({ message: "User does not have privacy settings" });
+      return;
+    }
+
+    // Extract the updated invitation setting from the request body
+    const { invitationSetting } = req.body;
+
+    // Validate that the provided setting is one of the allowed values
+    const allowedValues = Object.values(invitationsEnum);
+    if (!invitationSetting || !allowedValues.includes(invitationSetting)) {
+      res.status(400).json({ 
+        message: "Invalid invitation setting", 
+        allowedValues: allowedValues,
+        example: {
+          invitationSetting: "Everyone" // or "email"
+        }
+      });
+      return;
+    }
+
+    // Update the user's invitation settings
+    viewerUser.privacy_settings.flag_who_can_send_you_invitations = invitationSetting;
+    await viewerUser.save();
+
+    res.status(200).json({
+      message: "Invitation settings updated successfully",
+      invitationSetting: viewerUser.privacy_settings.flag_who_can_send_you_invitations,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error updating invitation settings:", error);
+      res.status(500).json({ message: "Error updating invitation settings", error });
+    }
+  }
+};
+
+
+// GET Who Can Follow You Setting
+export const getFollowSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Return the follow settings
+    res.status(200).json({ 
+      followSetting: viewerUser.privacy_settings.Who_can_follow_you 
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving follow settings:", error);
+      res.status(500).json({ message: "Error retrieving follow settings", error });
+    }
+  }
+};
+
+// UPDATE Who Can Follow You Setting
+export const updateFollowSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Ensure the user has privacy settings
+    if (!viewerUser.privacy_settings) {
+      res.status(404).json({ message: "User does not have privacy settings" });
+      return;
+    }
+
+    // Extract the updated follow setting from the request body
+    const { followSetting } = req.body;
+
+    // Validate that the provided setting is one of the allowed values
+    const allowedValues = Object.values(followEnum);
+    if (!followSetting || !allowedValues.includes(followSetting)) {
+      res.status(400).json({ 
+        message: "Invalid follow setting", 
+        allowedValues: allowedValues,
+        example: {
+          followSetting: "Everyone" // or "Connections only"
+        }
+      });
+      return;
+    }
+
+    // Update the user's follow settings
+    viewerUser.privacy_settings.Who_can_follow_you = followSetting;
+    await viewerUser.save();
+
+    res.status(200).json({
+      message: "Follow settings updated successfully",
+      followSetting: viewerUser.privacy_settings.Who_can_follow_you,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error updating follow settings:", error);
+      res.status(500).json({ message: "Error updating follow settings", error });
+    }
+  }
+};
+
+// GET Messaging Read Receipts Setting
+export const getReadReceiptsSetting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Return the read receipts setting
+    res.status(200).json({ 
+      readReceipts: viewerUser.privacy_settings.messaging_read_receipts 
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving read receipts setting:", error);
+      res.status(500).json({ message: "Error retrieving read receipts setting", error });
+    }
+  }
+};
+
+// UPDATE Messaging Read Receipts Setting
+export const updateReadReceiptsSetting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Ensure the user has privacy settings
+    if (!viewerUser.privacy_settings) {
+      res.status(404).json({ message: "User does not have privacy settings" });
+      return;
+    }
+
+    // Extract the updated read receipts setting from the request body
+    const { readReceipts } = req.body;
+
+    // Validate that the provided setting is a boolean
+    if (typeof readReceipts !== 'boolean') {
+      res.status(400).json({ 
+        message: "Invalid read receipts setting", 
+        allowedValues: [true, false],
+        example: {
+          readReceipts: true // or false
+        }
+      });
+      return;
+    }
+
+    // Update the user's read receipts setting
+    viewerUser.privacy_settings.messaging_read_receipts = readReceipts;
+    await viewerUser.save();
+
+    res.status(200).json({
+      message: "Read receipts setting updated successfully",
+      readReceipts: viewerUser.privacy_settings.messaging_read_receipts,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error updating read receipts setting:", error);
+      res.status(500).json({ message: "Error updating read receipts setting", error });
+    }
+  }
+};
+
+// GET Follow Primary Setting
+export const getFollowPrimarySetting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Return the follow primary setting
+    res.status(200).json({ 
+      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary 
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving follow primary setting:", error);
+      res.status(500).json({ message: "Error retrieving follow primary setting", error });
+    }
+  }
+};
+
+// UPDATE Follow Primary Setting
+export const updateFollowPrimarySetting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Ensure the user has privacy settings
+    if (!viewerUser.privacy_settings) {
+      res.status(404).json({ message: "User does not have privacy settings" });
+      return;
+    }
+
+    // Extract the updated follow primary setting from the request body
+    const { isFollowPrimary } = req.body;
+
+    // Validate that the provided setting is a boolean
+    if (typeof isFollowPrimary !== 'boolean') {
+      res.status(400).json({ 
+        message: "Invalid follow primary setting", 
+        allowedValues: [true, false],
+        example: {
+          isFollowPrimary: true // or false
+        }
+      });
+      return;
+    }
+
+    // Update the user's follow primary setting
+    viewerUser.privacy_settings.make_follow_primary = isFollowPrimary;
+    await viewerUser.save();
+
+    res.status(200).json({
+      message: "Follow primary setting updated successfully",
+      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error updating follow primary setting:", error);
+      res.status(500).json({ message: "Error updating follow primary setting", error });
+    }
+  }
+};
+
+// GET Messaging Requests Setting
+export const getMessagingRequestsSetting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Return the messaging requests setting
+    res.status(200).json({ 
+      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests 
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving messaging requests setting:", error);
+      res.status(500).json({ message: "Error retrieving messaging requests setting", error });
+    }
+  }
+};
+
+// UPDATE Messaging Requests Setting
+export const updateMessagingRequestsSetting = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Ensure the user has privacy settings
+    if (!viewerUser.privacy_settings) {
+      res.status(404).json({ message: "User does not have privacy settings" });
+      return;
+    }
+
+    // Extract the updated messaging requests setting from the request body
+    const { messagingRequests } = req.body;
+
+    // Validate that the provided setting is a boolean
+    if (typeof messagingRequests !== 'boolean') {
+      res.status(400).json({ 
+        message: "Invalid messaging requests setting", 
+        allowedValues: [true, false],
+        example: {
+          messagingRequests: true // or false
+        }
+      });
+      return;
+    }
+
+    // Update the user's messaging requests setting
+    viewerUser.privacy_settings.flag_messaging_requests = messagingRequests;
+    await viewerUser.save();
+
+    res.status(200).json({
+      message: "Messaging requests setting updated successfully",
+      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error updating messaging requests setting:", error);
+      res.status(500).json({ message: "Error updating messaging requests setting", error });
+    }
   }
 };

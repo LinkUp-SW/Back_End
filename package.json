@@ -9,7 +9,7 @@
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
     "serve": "node --loader ts-node/esm server.ts",
     "dev": "tsx watch index.ts",
-    "build": "tsc",
+    "build": "tsc && cp -r api_docs dist/",
     "start": "node dist/index.js"
   },
   "ts-node": {

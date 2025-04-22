@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import { updateUserSkills, handleRemovedSkills, handleDeletedExperienceSkills } from "../../utils/database.helper.ts";
+import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType, transformSkillsToObjects } from "../../utils/database.helper.ts";
 import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
 
 const addLicense = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -12,9 +12,10 @@ const addLicense = async (req: Request, res: Response, next: NextFunction): Prom
         const { name, issuing_organization, issue_date, expiration_date, credintial_id, credintial_url, skills, media } = req.body;
 
         const processedMedia = await processMediaArray(media);
+        const licenseId = new ObjectId().toString();
 
         const newLicense = {
-            _id: new ObjectId().toString(),
+            _id: licenseId,
             name,
             issuing_organization,
             issue_date,
@@ -31,11 +32,17 @@ const addLicense = async (req: Request, res: Response, next: NextFunction): Prom
         
         user.liscence_certificates.push(newLicense);
         
-        updateUserSkills(user, skills, issuing_organization);
+        updateUserSkills(user, skills, licenseId, SkillSourceType.LICENSE);
         
         await user.save();
 
-        res.status(200).json({ message: 'License/Certificate added successfully', license: newLicense });
+        // Transform skills to objects for response
+        const responseLicense = {
+            ...newLicense,
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'License/Certificate added successfully', license: responseLicense });
     } catch (error) {
         next(error);
     }
@@ -75,12 +82,18 @@ const updateLicense = async (req: Request, res: Response, next: NextFunction): P
             media: processedMedia,
         };
         
-        updateUserSkills(user, skills, issuing_organization);
-        handleRemovedSkills(user, oldSkills, skills, issuing_organization);
+        updateUserSkills(user, skills, licenseId, SkillSourceType.LICENSE);
+        handleRemovedSkills(user, oldSkills, skills, licenseId, SkillSourceType.LICENSE);
         
         await user.save();
 
-        res.status(200).json({ message: 'License/Certificate updated successfully', license: user.liscence_certificates[licenseIndex] });
+        // Transform skills to objects for response
+        const responseLicense = {
+            ...user.liscence_certificates[licenseIndex],
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'License/Certificate updated successfully', license: responseLicense });
     } catch (error) {
         next(error);
     }
@@ -104,7 +117,6 @@ const deleteLicense = async (req: Request, res: Response, next: NextFunction): P
         }
         
         const licenseSkills = user.liscence_certificates[licenseIndex].skills || [];
-        const organization = user.liscence_certificates[licenseIndex].issuing_organization;
         
         const mediaObjects = user.liscence_certificates[licenseIndex].media || [];
         const mediaUrls = mediaObjects.map(media => media.media);
@@ -113,7 +125,7 @@ const deleteLicense = async (req: Request, res: Response, next: NextFunction): P
         
         user.liscence_certificates.splice(licenseIndex, 1);
         
-        handleDeletedExperienceSkills(user, licenseSkills, organization);
+        handleDeletedSkills(user, licenseSkills, licenseId, SkillSourceType.LICENSE);
 
         await user.save();
 
