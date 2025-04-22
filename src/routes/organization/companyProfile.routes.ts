@@ -18,4 +18,8 @@ router.delete('/delete-company-profile/:companyId', (req, res, next) => {
     companyProfileControllers.deleteCompanyProfile(req, res, next);
 });
 
+router.get('/get-user-comapanies', (req, res, next) => {
+    companyProfileControllers.getUserAdminOrganizations(req, res, next);
+});
+
 export default router;

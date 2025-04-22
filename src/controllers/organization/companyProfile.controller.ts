@@ -102,3 +102,24 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
         next(error);
     }
 }
+
+export const getUserAdminOrganizations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        // Get user from token
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        // Find organizations where the user is an admin
+        const userOrganizations = await organizations.find(
+            { admins: user._id },
+            { name: 1, logo: 1 } // Project only name and logo fields
+        );
+
+        res.status(200).json({ 
+            organizations: userOrganizations
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+

@@ -9,12 +9,12 @@ export enum organizationSizeEnum {
     small_11_50 = "11-50 employees",
     medium_51_200 = "51-200 employees",
     medium_201_500 = "201-500 employees",
-    large_501_1000 = "501-1,000 employees",
-    large_1001_5000 = "1,001-5,000 employees",
-    large_5001_10000 = "5,001-10,000 employees",
-    enterprise_10001_plus = "10,001+ employees",
+    large_501_1000 = "501-1000 employees",
+    large_1001_5000 = "1001-5000 employees",
+    large_5001_10000 = "5001-10000 employees",
+    enterprise_10001_plus = "10001+ employees",
   }
-  
+
 export enum organizationTypeEnum{
     public_organization = "Public company",
     self_employed = "Private company",
