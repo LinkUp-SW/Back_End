@@ -1748,36 +1748,6 @@ paths:
           description: User not found
         '500':
           description: Server error
-
-  # View User Profile Endpoint
-  /api/v1/user/profile/{user_id}:
-    get:
-      tags:
-        - User Profile
-      summary: Get user profile
-      description: Retrieves a user's profile information
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the user
-      responses:
-        '200':
-          description: User profile retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    type: object
-                    # Additional user properties would be described here
-        '404':
-          description: User not found
-        '500':
-          description: Server error
   
   # Privacy Settings Endpoints
   /api/v1/user/privacy-settings/profile-visibility:
