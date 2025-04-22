@@ -262,12 +262,42 @@ if (connectionDegree !== 'all') {
     // Search conditions based on filter
     let searchConditions = [];
     
+    // Fix name search to handle full names correctly
     if (filter === 'name' || filter === 'all') {
-      searchConditions.push(
-        { 'bio.first_name': { $regex: query, $options: 'i' } },
-        { 'bio.last_name': { $regex: query, $options: 'i' } },
-        { 'user_id': { $regex: query, $options: 'i' } }
-      );
+      // Split the query into words for name searching
+      const queryWords = query.trim().split(/\s+/);
+      
+      if (queryWords.length === 1) {
+        // Single word search - search in first name, last name, or user_id
+        searchConditions.push(
+          { 'bio.first_name': { $regex: query, $options: 'i' } },
+          { 'bio.last_name': { $regex: query, $options: 'i' } },
+          { 'user_id': { $regex: query, $options: 'i' } }
+        );
+      } else {
+        // Multi-word search (like "John Doe")
+        // Try different combinations of the words
+        
+        // Option 1: First word matches first name, second+ words match last name
+        searchConditions.push({
+          $and: [
+            { 'bio.first_name': { $regex: queryWords[0], $options: 'i' } },
+            { 'bio.last_name': { $regex: queryWords.slice(1).join(' '), $options: 'i' } }
+          ]
+        });
+        
+        // Option 2: Any word matches either first or last name
+        const wordConditions = queryWords.map(word => ({
+          $or: [
+            { 'bio.first_name': { $regex: word, $options: 'i' } },
+            { 'bio.last_name': { $regex: word, $options: 'i' } }
+          ]
+        }));
+        searchConditions.push({ $and: wordConditions });
+        
+        // Option 3: Full query matches user_id
+        searchConditions.push({ 'user_id': { $regex: query, $options: 'i' } });
+      }
     }
     
     if (filter === 'company' || filter === 'all') {
