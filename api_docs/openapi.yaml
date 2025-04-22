@@ -10,15 +10,11 @@ servers:
     description: Development server
 paths:
   /auth/login:
-  /auth/login:
     post:
       tags:
         - Auth
       summary: Logs in a user (Local)
-      summary: Logs in a user (Local)
       description: >
-        Authenticates a user using email and password. On successful authentication, a JWT token is generated,
-        set as an HTTP-only cookie, and user details are returned.
         Authenticates a user using email and password. On successful authentication, a JWT token is generated,
         set as an HTTP-only cookie, and user details are returned.
       requestBody:
@@ -5245,6 +5241,712 @@ paths:
                   error:
                     type: object
                     description: Error details
+    /api/v1/messages/conversations:
+    get:
+      summary: Get all conversations for authenticated user
+      description: Retrieves all conversations where the authenticated user is a participant
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        conversationId:
+                          type: string
+                        otherUser:
+                          type: object
+                          properties:
+                            userId:
+                              type: string
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            profilePhoto:
+                              type: string
+                        lastMessage:
+                          type: object
+                          nullable: true
+                          properties:
+                            message:
+                              type: string
+                            timestamp:
+                              type: string
+                              format: date-time
+                            isOwnMessage:
+                              type: boolean
+                        unreadCount:
+                          type: integer
+        '401':
+          description: User not authenticated
+          
+  /api/v1/messages/conversations/{conversationId}:
+    get:
+      summary: Get a specific conversation
+      description: Retrieves a single conversation by ID with complete message history
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation to retrieve
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationId:
+                    type: string
+                  otherUser:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      profilePhoto:
+                        type: string
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        senderId:
+                          type: string
+                        senderName:
+                          type: string
+                        message:
+                          type: string
+                        media:
+                          type: array
+                          items:
+                            type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        reacted:
+                          type: boolean
+                        isSeen:
+                          type: boolean
+                        isOwnMessage:
+                          type: boolean
+        '400':
+          description: Invalid conversation ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to the conversation
+        '404':
+          description: Conversation not found
+          
+  /api/v1/messages/block:
+    post:
+      summary: Block a user from messaging
+      description: Adds a user to the authenticated user's block list
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - blockUserId
+              properties:
+                blockUserId:
+                  type: string
+                  description: ID of the user to block
+      responses:
+        '200':
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User blocked successfully
+        '400':
+          description: User ID to block is missing or user is already blocked
+        '401':
+          description: User not authenticated
+        '404':
+          description: User to block or current user not found
+          
+  /api/v1/messages/unblock:
+    post:
+      summary: Unblock a previously blocked user
+      description: Removes a user from the authenticated user's block list
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - unblockUserId
+              properties:
+                unblockUserId:
+                  type: string
+                  description: ID of the user to unblock
+      responses:
+        '200':
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User unblocked successfully
+        '400':
+          description: User ID to unblock is missing or user is not blocked
+        '401':
+          description: User not authenticated
+        '404':
+          description: Current user not found
+  /api/v1/conversation/unread-conversations:
+    get:
+      summary: Get unread conversations
+      description: Retrieves all conversations with unread messages for the authenticated user
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        conversationId:
+                          type: string
+                        otherUser:
+                          type: object
+                          properties:
+                            userId:
+                              type: string
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            profilePhoto:
+                              type: string
+                        lastMessage:
+                          type: object
+                          nullable: true
+                          properties:
+                            message:
+                              type: string
+                            timestamp:
+                              type: string
+                              format: date-time
+                            isOwnMessage:
+                              type: boolean
+                        unreadCount:
+                          type: integer
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to the conversation
+        '404':
+          description: Conversation not found
+        '500':
+          description: Server error
+  /api/v1/messages/conversations/{conversationId}/unread-messages:
+    get:
+      summary: Get unread messages in a conversation
+      description: Retrieves all unread messages in a specific conversation
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation to retrieve unread messages from
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        senderId:
+                          type: string
+                        senderName:
+                          type: string
+                        message:
+                          type: string
+                        media:
+                          type: array
+                          items:
+                            type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        reacted:
+                          type: boolean
+                        isSeen:
+                          type: boolean
+                        isOwnMessage:
+                          type: boolean
+        '400':
+          description: Invalid conversation ID or no unread messages found
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to the conversation
+        '404':
+          description: Conversation not found
+        '500':
+          description: Server error
+  /api/v1/messages/unseen-count:
+    get:
+      summary: Get unseen messages count
+      description: Retrieves the count of unread messages across all conversations
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unseenCount:
+                    type: integer
+        '401':
+          description: User not authenticated
+          
+  /api/v1/messages/conversations/{conversationId}/read:
+    put:
+      summary: Mark conversation as read
+      description: Marks all messages in a conversation as read
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation to mark as read
+      responses:
+        '200':
+          description: Conversation marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Conversation marked as read
+        '400':
+          description: Invalid conversation ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to the conversation
+        '404':
+          description: Conversation not found
+  /api/v1/messages/conversations:
+    post:
+      summary: Start a new conversation
+      description: Creates a new conversation between the authenticated user and another user
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: user2ID
+          required: true
+          schema:
+            type: string
+          description: ID of the user to start a conversation with
+      responses:
+        '200':
+          description: Conversation already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationId:
+                    type: string
+        '201':
+          description: New conversation created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationId:
+                    type: string
+        '400':
+          description: User ID is required
+        '401':
+          description: User not authenticated
+        '403':
+          description: You cannot send messages to this user
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+          
+  # Send Message Endpoint
+  /api/v1/messages/conversations/{conversationId}/send-message:
+    post:
+      summary: Send a message
+      description: Sends a new message in the specified conversation
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: Message content
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs
+                mediaTypes:
+                  type: array
+                  items:
+                    type: string
+                  description: Types of media (image, video, etc.)
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId:
+                    type: object
+                    properties:
+                      senderId:
+                        type: string
+                      senderName:
+                        type: string
+                      message:
+                        type: string
+                      media:
+                        type: array
+                        items:
+                          type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                      reacted:
+                        type: string
+                      isSeen:
+                        type: boolean
+                      isOwnMessage:
+                        type: boolean
+        '400':
+          description: Invalid conversation ID or message is required
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to the conversation
+        '404':
+          description: Conversation not found
+        '500':
+          description: Failed to send message
+          
+  # Mark Messages as Seen Endpoint
+  /api/v1/messages/conversations/{conversationId}/mark-seen:
+    put:
+      summary: Mark messages as seen
+      description: Marks all messages in a conversation as seen for the authenticated user
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation
+      responses:
+        '200':
+          description: Messages marked as seen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Messages marked as seen"
+        '400':
+          description: Invalid conversation ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to the conversation
+        '404':
+          description: Conversation not found
+          
+  # Delete Message Endpoint
+  /api/v1/messages/conversations/{conversationId}/message/{messageId}:
+    delete:
+      summary: Delete a message
+      description: Deletes a specific message from a conversation
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+          description: ID of the message to delete
+      responses:
+        '200':
+          description: Message deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Message deleted successfully"
+        '400':
+          description: Invalid conversation ID or message ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to delete this message
+        '404':
+          description: Conversation or message not found
+          
+  # Delete Conversation Endpoint
+  /api/v1/messages/conversations/{conversationId}:
+    delete:
+      summary: Delete a conversation
+      description: Deletes an entire conversation
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation to delete
+      responses:
+        '200':
+          description: Conversation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Conversation deleted successfully"
+        '400':
+          description: Invalid conversation ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to delete this conversation
+        '404':
+          description: Conversation not found
+          
+  # Edit Message Endpoint
+  /api/v1/messages/conversations/{conversationId}/message/{messageId}/edit:
+    patch:
+      summary: Edit a message
+      description: Edits the content of an existing message
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+          description: ID of the message to edit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: New message content
+      responses:
+        '200':
+          description: Message edited successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Message edited successfully"
+        '400':
+          description: Invalid conversation ID or message ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to edit this message
+        '404':
+          description: Conversation or message not found
+          
+  # React to Message Endpoint
+  /api/v1/messages/conversations/{conversationId}/message/{messageId}/react:
+    post:
+      summary: React to a message
+      description: Adds a reaction to a message
+      tags:
+        - Messaging
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: ID of the conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+          description: ID of the message to react to
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reaction
+              properties:
+                reaction:
+                  type: string
+                  description: Type of reaction (like, love, etc.)
+      responses:
+        '200':
+          description: Reaction added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reaction added successfully"
+        '400':
+          description: Invalid conversation ID or message ID
+        '401':
+          description: User not authenticated
+        '403':
+          description: User does not have access to react to this message
+        '404':
+          description: Conversation or message not found
         
 
 components:

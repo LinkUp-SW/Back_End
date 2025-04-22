@@ -207,6 +207,7 @@ export interface usersInterface extends mongoose.Document{
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
+    online_status: boolean;
     is_admin: boolean;
     about?: aboutInterface;
 }
@@ -455,6 +456,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
+    online_status: { type: Boolean },
     about: {
         about: { type: String },
         skills: [{ type: String }],

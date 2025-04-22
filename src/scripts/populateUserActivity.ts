@@ -72,4 +72,6 @@ const populateUserActivity = async () => {
     }
 };
 
+
+
 populateUserActivity();
