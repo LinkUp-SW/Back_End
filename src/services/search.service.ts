@@ -419,7 +419,9 @@ if (connectionDegree !== 'all') {
           '',
         name: `${user.bio?.first_name || ''} ${user.bio?.last_name || ''}`.trim(),
         headline: user.bio?.headline || '',
-        profile_photo: user.profile_photo,
+        profile_photo: !user.profile_photo || user.profile_photo === '' ? 
+          'https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png' :  // Default image path
+          user.profile_photo,
         connection_degree: connectionDegreeLabel,
         mutual_connections: {
           count: mutualCount,
