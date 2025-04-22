@@ -27,6 +27,7 @@ export const authorizeUpload = async (req: Request, res: Response, next: NextFun
     res.status(500).json({ message: "Authorization error", error });
   }
 };
+}
 
 // auth middleware function for messaging routes
 export const authorizeMessaging = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
