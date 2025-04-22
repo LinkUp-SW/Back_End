@@ -5,24 +5,27 @@ import { conversationsInterface } from "./conversations.model.ts";
 
 
 export enum organizationSizeEnum {
-    small_0_1 = "0 - 1 employees",
-    small_2_10 = "2-10 employees",
+    small_1_10 = "1-10 employees",
     small_11_50 = "11-50 employees",
     medium_51_200 = "51-200 employees",
     medium_201_500 = "201-500 employees",
     large_501_1000 = "501-1,000 employees",
     large_1001_5000 = "1,001-5,000 employees",
     large_5001_10000 = "5,001-10,000 employees",
-    enterprise_10000_plus = "10,000+ employees",
+    enterprise_10001_plus = "10,001+ employees",
   }
+  
 export enum organizationTypeEnum{
-    public_organization = "Public organization",
-    self_employed = "Self-employed",
+    public_organization = "Public company",
+    self_employed = "Private company",
     government_agency = "Government agency",
     nonprofit = "Nonprofit",
-    sole_proprietorship = "Sole proprietorship",
-    privately_held = "Privately held",
-    partnership = "Partnership"
+    partnership = "Partnership",
+    university = "University",
+    college = "College",
+    high_school = "High School",
+    middle_school = "Middle School",
+    elementary_school = "Elementary School"
 }
 
 export enum categoryTypeEnum{
@@ -30,11 +33,6 @@ export enum categoryTypeEnum{
     education = "education"
 }
 
-export enum adminLevelEnum{
-    super_admin = "Super admin",
-    content_admin = "Content admin",
-    analyst = "Analyst"
-}
 export interface organizationsInterface extends mongoose.Document{
     name: string;
     category_type: categoryTypeEnum;
