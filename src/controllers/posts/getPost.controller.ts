@@ -11,10 +11,8 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
     try {
 
         const postId = req.params.postId;
-        const {
-            cursor,
-            limit
-        } =req.body;
+        const cursor = parseInt(req.query.cursor as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
         let userId = await getUserIdFromToken(req,res);
         if (!userId) return;
         const user = await findUserByUserId(userId,res);
@@ -30,8 +28,8 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
         }
         const authorInfo = {
             username: postAuthor.user_id,
-            firstName: user.bio.first_name,
-            lastName: user.bio.last_name,
+            firstName: postAuthor.bio.first_name,
+            lastName: postAuthor.bio.last_name,
             headline:postAuthor.bio.headline,
             profilePicture: postAuthor.profile_photo,
             connectionDegree:"3rd+"

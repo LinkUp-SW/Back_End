@@ -274,7 +274,9 @@ const updateSkill = async (req: Request, res: Response, next: NextFunction): Pro
         }).filter(Boolean);
 
         const responseSkill = {
-            ...user.skills[skillIndex],
+            _id: skillId,
+            name: currentName,
+            endorsments: currentEndorsments,
             educations: educationObjects,
             experiences: experienceObjects,
             licenses: licenseObjects

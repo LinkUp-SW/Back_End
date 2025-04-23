@@ -87,7 +87,17 @@ const updateWorkExperience = async (req: Request, res: Response, next: NextFunct
 
         // Transform skills to objects for response
         const responseExperience = {
-            ...user.work_experience[experienceIndex],
+            _id: experienceId,
+            title,
+            employee_type,
+            organization: organization._id,
+            is_current,
+            start_date,
+            end_date,
+            location,
+            description,
+            location_type,
+            media: processedMedia,
             skills: transformSkillsToObjects(user, skills)
         };
 

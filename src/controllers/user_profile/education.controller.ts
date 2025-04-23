@@ -85,7 +85,16 @@ const updateEducation = async (req: Request, res: Response, next: NextFunction):
 
         // Transform skills to objects for response
         const responseEducation = {
-            ...user.education[educationIndex],
+            _id: educationId,
+            school,
+            degree,
+            field_of_study,
+            start_date,
+            end_date,
+            grade,
+            activites_and_socials,
+            description,
+            media: processedMedia,
             skills: transformSkillsToObjects(user, skills)
         };
 

@@ -3,8 +3,6 @@ import * as profile from '../../controllers/user_profile/viewUserProfile.control
 
 const router = express.Router();
 
-// Route to get user profile
-router.get('/profile/:user_id', profile.getUserProfile);
 
 // Route to get user bio
 router.get('/profile/bio/:user_id', profile.getUserBio);
