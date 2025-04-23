@@ -82,3 +82,23 @@ export const handleStripeWebhook = async (req: Request, res: Response): Promise<
     }
 };
 
+async function handleCheckoutSessionCompleted(session: any) {
+  const userId = session.metadata.userId;
+  if (!userId) return;
+
+  const user = await users.findOne({ user_id: userId });
+  if (!user) return;
+
+  if (!user.subscription) user.subscription = {} as any;
+  user.subscription.customer_id = session.customer;
+  await user.save();
+}
+
+async function handleSubscriptionCreated(subscription: any) {
+  await updateUserSubscription(subscription);
+}
+
+async function handleSubscriptionUpdated(subscription: any) {
+  await updateUserSubscription(subscription);
+}
+
