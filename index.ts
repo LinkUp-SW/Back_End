@@ -49,6 +49,8 @@ import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
 import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts';
 
 
+import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
+import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -140,7 +142,8 @@ app.use('/api/v1/user',
     skillsRoutes,
     myNetwork,
     privacySettingsRoutes,
-    aboutUserRoutes,);
+    aboutUserRoutes,
+    peopleYouMayKnowRoutes,);
 
 // Mount Jobs Routes
 app.use('/api/v1/jobs', 
@@ -158,7 +161,9 @@ app.use('/api/v1/jobs',
 // Add after your other middleware
 app.use('/api/v1/user/subscription', subscriptionRoutes);
 
-app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/search', 
+  userSearchRoutes,
+  searchRoutes );
 
 app.use('/api/v1/admin', createAdminRoutes);
 
