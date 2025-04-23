@@ -184,3 +184,88 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
     await user.save();
   }
 
+// Cancel subscription
+export const cancelSubscription = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await validateTokenAndGetUser(req, res);
+    if (!user) return;
+
+    // Check if user has an active subscription
+    if (!user.subscription?.subscription_id || user.subscription?.plan !== 'premium') {
+      return res.status(400).json({ message: 'No active premium subscription found' });
+    }
+
+    // Cancel subscription at period end in Stripe
+    await stripe.subscriptions.update(user.subscription.subscription_id, {
+      cancel_at_period_end: true
+    });
+
+    // Update user record
+    user.subscription.cancel_at_period_end = true;
+    user.subscription.status = 'canceled';
+    user.subscription.subscribed = false;
+    await user.save();
+
+    res.status(200).json({ message: 'Subscription will be canceled at the end of the billing period' });
+  } catch (error) {
+    console.error('Error canceling subscription:', error);
+    next(error);
+  }
+};
+
+// Resume canceled subscription
+export const resumeSubscription = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await validateTokenAndGetUser(req, res);
+    if (!user) return;
+
+    // Check if user has a canceled subscription that's not yet expired
+    if (!user.subscription?.subscription_id || !user.subscription?.cancel_at_period_end) {
+      return res.status(400).json({ message: 'No canceled subscription found' });
+    }
+
+    // Resume subscription in Stripe
+    await stripe.subscriptions.update(user.subscription.subscription_id, {
+      cancel_at_period_end: false
+    });
+
+    // Update user record
+    user.subscription.cancel_at_period_end = false;
+    await user.save();
+
+    res.status(200).json({ message: 'Subscription resumed successfully' });
+  } catch (error) {
+    console.error('Error resuming subscription:', error);
+    next(error);
+  }
+};
+
+// Get user's invoice history
+export const getInvoiceHistory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = await validateTokenAndGetUser(req, res);
+    if (!user) return;
+
+    if (!user.subscription?.customer_id) {
+      return res.status(400).json({ message: 'No subscription history found' });
+    }
+
+    const invoices = await stripe.invoices.list({
+      customer: user.subscription.customer_id,
+      limit: 10
+    });
+
+    res.status(200).json({
+      invoices: invoices.data.map(invoice => ({
+        id: invoice.id,
+        amount_paid: invoice.amount_paid / 100, // Convert from cents
+        status: invoice.status,
+        created: new Date(invoice.created * 1000),
+        invoice_pdf: invoice.invoice_pdf
+      }))
+    });
+  } catch (error) {
+    console.error('Error getting invoice history:', error);
+    next(error);
+  }
+};
