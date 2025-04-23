@@ -5955,7 +5955,218 @@ paths:
                   error:
                     type: object
                     description: Error details
-        
+  /api/v1/post/react/{postId}:
+    post:
+      tags:
+        - Reactions
+      summary: Add a reaction to a post or comment
+      description: >
+        Adds or updates a user's reaction to a post or comment.
+        If the user has already reacted, it will update their reaction.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to react to
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_type
+                - reaction
+              properties:
+                comment_id:
+                  type: string
+                  description: Required when reacting to a comment
+                  example: "60d5ec69c5d019ab15c55789"
+                target_type:
+                  type: string
+                  enum: [Post, Comment]
+                  example: "Post"
+                reaction:
+                  type: string
+                  enum: [like, celebrate, support, love, insightful, funny]
+                  example: "like"
+            examples:
+              postReaction:
+                summary: Example of reacting to a post
+                value:
+                  target_type: "Post"
+                  reaction: "love"
+              commentReaction:
+                summary: Example of reacting to a comment
+                value:
+                  comment_id: "60d5ec69c5d019ab15c55789"
+                  target_type: "Comment"
+                  reaction: "insightful"
+      responses:
+        '200':
+          description: Reaction added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reaction added successfully"
+                  reaction:
+                    type: object
+                  topReactions:
+                    type: array
+                  totalCount:
+                    type: integer
+    delete:
+      tags:
+        - Reactions
+      summary: Remove a reaction from a post or comment
+      description: >
+        Removes the authenticated user's reaction from a post or comment.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post containing the reaction
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_type
+              properties:
+                comment_id:
+                  type: string
+                  description: Required when removing a reaction from a comment
+                target_type:
+                  type: string
+                  enum: [Post, Comment]
+                  example: "Post"
+            examples:
+              postReaction:
+                summary: Example of removing a reaction to a post
+                value:
+                  target_type: "Post"
+              commentReaction:
+                summary: Example of removing a reaction to a comment
+                value:
+                  comment_id: "60d5ec69c5d019ab15c55789"
+                  target_type: "Comment"
+      responses:
+        '200':
+          description: Reaction removed successfully
+        '400':
+          description: Required fields missing
+        '401':
+          description: Invalid or expired token
+        '404':
+          description: Post or comment not found
+        '500':
+          description: Server error
+    
+    get:
+      tags:
+        - Reactions
+      summary: Get reactions for a post or comment
+      description: >
+        Retrieves paginated reactions for a post or comment, with options to filter by reaction type.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: commentId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID of the comment (required when target_type is 'Comment')
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 10
+          description: Number of results per page
+        - name: targetType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment]
+          description: The type of content to get reactions for
+        - name: specificReaction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [like, celebrate, support, love, insightful, funny]
+          description: Filter by specific reaction type, if nothing is sent all reactions will be returned
+      responses:
+        '200':
+          description: Reactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  reactions:
+                    type: object
+                    properties:
+                      reactions:
+                        type: array
+                      totalCount:
+                        type: integer
+                      reactionCounts:
+                        type: object
+                      nextCursor:
+                        type: integer
+                        nullable: true
+        '400':
+          description: Required fields missing
+        '401':
+          description: Invalid or expired token
+        '404':
+          description: Post or comment not found
+        '500':
+          description: Server error
 
 components:
   securitySchemes:
