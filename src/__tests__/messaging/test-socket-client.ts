@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 // Configuration
 // IMPORTANT: Ensure these match your server setup and database data
 const SERVER_URL = "http://localhost:3000"; // Make sure this matches your server's port
-const JWT_SECRET = "3d9958c671ac65ef6a7de05337c862fb1bc347264dbd12a604a673ca9a69855cf1b15bda3bc6ceee92c85f643fc2be8caeb172a15be90a70080e6569c068aab1"; // Use the same secret as your server
+const JWT_SECRET = process.env.JWT_SECRET || '' // Use the same secret as your server
 const USER1_ID = "testUserId"; // Use an actual user ID from your database
 const USER2_ID = "User-1"; // Use another actual user ID
 const USER3_ID = "User-2"; // <-- Add a third user ID
