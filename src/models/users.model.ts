@@ -200,9 +200,17 @@ export interface usersInterface extends mongoose.Document{
     applied_jobs: jobsInterface[];
     saved_jobs: jobsInterface[];
     sex: sexEnum;
-    subscription:{
-        subscribed: boolean,
-        subscription_started_at: Date
+    subscription: {
+        status: string;  // 'active', 'canceled', 'trialing', 'past_due'
+        plan: string;    // 'free', 'premium'
+        subscription_id: string;  // Stripe subscription ID
+        customer_id: string;      // Stripe customer ID
+        current_period_start: Date;
+        current_period_end: Date;
+        canceled_at?: Date;
+        cancel_at_period_end: boolean;
+        subscription_started_at?: Date;
+        subscribed: boolean;
     };
     is_student: boolean;
     is_verified: boolean;
@@ -449,8 +457,16 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
-        subscribed: { type: Boolean },
+        status: { type: String, enum: ['active', 'canceled', 'trialing', 'past_due'], default: 'active' },
+        plan: { type: String, enum: ['free', 'premium'], default: 'free' },
+        subscription_id: { type: String },
+        customer_id: { type: String },
+        current_period_start: { type: Date },
+        current_period_end: { type: Date },
+        canceled_at: { type: Date },
+        cancel_at_period_end: { type: Boolean, default: false },
         subscription_started_at: { type: Date },
+        subscribed: { type: Boolean, default: false },
     },
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
