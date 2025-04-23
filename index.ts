@@ -47,6 +47,8 @@ import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchRoutes from './src/routes/organization.route.ts';
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
+import notificationRoutes from './src/routes/notification/notification.routes.ts';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -103,7 +105,7 @@ app.use(
 const server = http.createServer(app);
 
 // Initialize WebSocket service
-const webSocketService = new WebSocketService(server);
+export const webSocketService = new WebSocketService(server);
 
 // Passport Initialization
 app.use(passport.initialize());
@@ -166,8 +168,14 @@ app.use('/api/v1/admin', createAdminRoutes);
 // Messaging Routes
 app.use('/api/v1', messageRoutes);
 
+app.use('/api/v1/notifications', notificationRoutes);
+
 app.get('/google-auth', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
+});
+
+app.get('/', (req: Request, res: Response) => {
+  res.send('Welcome to the API!');
 });
 
 // Error Handler Middleware should be the last middleware added

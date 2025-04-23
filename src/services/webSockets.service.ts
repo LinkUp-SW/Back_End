@@ -5,7 +5,10 @@ import { conversationRepository } from "../repositories/conversation.repository.
 import tokenUtils from "../utils/token.utils.ts";
 import { CustomError } from "../utils/customError.utils.ts";
 import {uploadMedia} from "../utils/helper.ts";
-import { on } from "events";
+import { NotificationRepository } from '../repositories/notification.repository.ts';
+import { NotificationType } from '../models/notifications.model.ts';
+import mongoose from 'mongoose';
+
 
 export class WebSocketService {
   private io: SocketIOServer;
@@ -13,6 +16,7 @@ export class WebSocketService {
   private typingUsers: Map<string, NodeJS.Timeout> = new Map(); // conversationId_userId -> timeout
   private userRepo: UserRepository;
   private conversationRepo: conversationRepository;
+  private notificationRepo: NotificationRepository;
 
   public onlineUsers: Map<string, string> = new Map(); // userId -> socketId
   public onlineUsersCount: number = 0; // Count of online users
@@ -36,6 +40,7 @@ export class WebSocketService {
     this.userRepo = userRepo;
     this.conversationRepo = conversationRepo;
     this.userSockets = new Map(); // Initialize userSockets
+    this.notificationRepo = new NotificationRepository();
     
     this.setupSocketListeners();
   }
@@ -84,6 +89,17 @@ export class WebSocketService {
       socket.on("disconnect", () => this.handleDisconnect(socket));
       socket.on("online", () => this.handleOnlineStatus(socket, true));
       socket.on("offline", () => this.handleOnlineStatus(socket, false));
+
+      socket.on("mark_notification_read", (data) => this.handleMarkNotificationRead(socket, data));
+      socket.on("mark_all_notifications_read", () => this.handleMarkAllNotificationsRead(socket));
+    
+
+      socket.on("error", (error) => {
+        console.error("Socket error:", error);
+        socket.emit("socket_error", { message: "An error occurred" });
+      });
+
+
     });
   }
 
@@ -107,7 +123,21 @@ export class WebSocketService {
     socket.emit("authenticated", { userId });
     socket.emit("unread_messages_count", { count: unreadCount });
     socket.emit("unread_conversations", { conversations: unreadConversations });
+
+    try {
+      const unreadCount = await this.notificationRepo.getUnreadNotificationsCount(userId);
+      
+      // Send the unread notifications count
+      console.log(`Sending unread_notifications_count to ${userId}: ${unreadCount}`);
+      socket.emit("unread_notifications_count", { count: unreadCount });
+
+      await this.notificationCounts(userId, socket.id);
+      console.log(`Initial notification counts sent to ${userId}`);
+    } catch (error) {
+      console.error("Error sending initial notification counts:", error);
     }
+  }
+
 
   private async handlePrivateMessage(socket: Socket, data: { to: string; message: string; media?: string[] }) {
     try {
@@ -176,7 +206,16 @@ export class WebSocketService {
       const receiverSocketId = this.userSockets.get(receiverId);
       if (receiverSocketId) {
         this.io.to(receiverSocketId).emit("new_message", messageObj);
-  
+        
+        // Send message notification if user is online but in different conversation
+        await this.sendNotification(
+          receiverId,
+          senderId,
+          NotificationType.MESSAGE,
+          conversation.id,
+          message.length > 30 ? `${message.substring(0, 30)}...` : message
+        );
+        
         // Update unread count
         const unreadCount = await this.getUnseenMessagesCount(receiverId);
         this.io.to(receiverSocketId).emit("unread_messages_count", { count: unreadCount });
@@ -423,4 +462,127 @@ export class WebSocketService {
       return 0;
     }
   }
+
+  private async handleMarkNotificationRead(socket: Socket, data: { notificationId: string }) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) throw new CustomError("Unauthorized", 401);
+
+      const { notificationId } = data;
+      await this.notificationRepo.markAsRead(notificationId, userId);
+
+      // Send updated unread count
+      const unreadCount = await this.notificationRepo.getUnreadNotificationsCount(userId);
+      socket.emit("unread_notifications_count", { count: unreadCount });
+    } catch (error) {
+      console.error("Mark notification read error:", error);
+      socket.emit("notification_error", {
+        message: error instanceof CustomError ? error.message : "Failed to mark notification as read"
+      });
+    }
+  }
+
+  private async handleMarkAllNotificationsRead(socket: Socket) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) throw new CustomError("Unauthorized", 401);
+
+      await this.notificationRepo.markAllAsRead(userId);
+      
+      // Send updated count (which should be 0)
+      socket.emit("unread_notifications_count", { count: 0 });
+    } catch (error) {
+      console.error("Mark all notifications read error:", error);
+      socket.emit("notification_error", {
+        message: error instanceof CustomError ? error.message : "Failed to mark notifications as read"
+      });
+    }
+  }
+
+  public async sendNotification(
+    recipientId: string,
+    senderId: string,
+    type: NotificationType,
+    referenceId?: mongoose.Types.ObjectId,
+    content?: string
+  ) {
+    try {
+      // Create notification in database
+      const notification = await this.notificationRepo.createNotification(
+        recipientId,
+        senderId,
+        type,
+        referenceId,
+        content
+      );
+
+      if (!notification) {
+        throw new CustomError("Failed to create notification", 500);
+      }
+
+      console.log("Notification created:", notification);
+
+      // Get sender information
+      const sender = await this.userRepo.findByUserId(senderId);
+      
+      // Prepare notification object for socket
+      const notificationObj = {
+        id: notification._id,
+        type: notification.type,
+        senderId: senderId,
+        senderName: sender ? `${sender.bio?.first_name || ''} ${sender.bio?.last_name || ''}` : '',
+        senderPhoto: sender ? sender.profile_photo : null,
+        content: notification.content,
+        createdAt: notification.created_at,
+        referenceId: notification.reference_id
+      };
+      
+      // Send notification to user if online
+      const recipientSocketId = this.userSockets.get(recipientId);
+      if (recipientSocketId) {
+        this.io.to(recipientSocketId).emit("new_notification", notificationObj);
+        console.log(`[WebSocketService] userSockets:`, Array.from(this.userSockets.entries()));
+        console.log(`[WebSocketService] Emitting new_notification to recipientId: ${recipientId}, socketId: ${recipientSocketId}`);
+
+        // Update unread count
+        const unreadCount = await this.notificationRepo.getUnreadNotificationsCount(recipientId);
+        this.io.to(recipientSocketId).emit("unread_notifications_count", { count: unreadCount });
+      }
+
+      console.log(`[WebSocketService] Sending notification to ${recipientId} from ${senderId} of type ${type}`);
+      
+      return notification;
+    } catch (error) {
+      console.error("Send notification error:", error);
+      throw error;
+    }
+  }
+
+  private async notificationCounts(userId: string, socketId: string) {
+    try {
+      const unreadNotificationsCount = await this.notificationRepo.getUnreadNotificationsCount(userId);
+      this.io.to(socketId).emit("unread_notifications_count", { count: unreadNotificationsCount });
+    } catch (error) {
+      console.error("Error sending initial counts:", error);
+    }
+  }
+
+  public async sendUnreadNotificationCount(userId: string): Promise<void> {
+    try {
+      const socketId = this.userSockets.get(userId);
+      if (!socketId) {
+        return; // User not online
+      }
+      
+      const notificationRepo = new NotificationRepository();
+      const count = await notificationRepo.getUnreadNotificationsCount(userId);
+      
+      this.io.to(socketId).emit("unread_notifications_count", { count });
+      console.log(`Sent unread_notifications_count to ${userId}: ${count}`);
+    } catch (error) {
+      console.error("Error sending notification count:", error);
+    }
+  }
+
+
 }
