@@ -1,8 +1,7 @@
 import mongoose, { Schema } from "mongoose";
-import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { usersInterface } from "./users.model.ts";
 import { commentsInterface } from "./comments.model.ts";
-import { reactsInterface } from "../models_to_delete/reactions.model.ts";
+import { reactsInterface } from "./reactions.model.ts";
 
 
 export enum commentsEnum{
@@ -29,10 +28,7 @@ export interface postsInterface extends mongoose.Document{
     };
     comments_disabled: commentsEnum;
     public_post: Boolean;
-    reacts: {
-        user_id:usersInterface,
-        react:string
-    }[];
+    reacts: reactsInterface[];
     tagged_users: usersInterface[];
     comments: commentsInterface[];
     isEdited:boolean;
@@ -51,10 +47,7 @@ const postsSchema = new Schema<postsInterface>({
      },
     comments_disabled: { type: String, enum: Object.values(commentsEnum) },
     public_post: { type: Boolean, default: true },
-    reacts: [{ 
-        user_id:{ type: Schema.Types.ObjectId, ref: "users"},
-        react:{ type: String }
-     }],
+    reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
     tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
     comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
     isEdited:{type:Boolean,default:false}
