@@ -5956,7 +5956,359 @@ paths:
                     type: object
                     description: Error details
         
+  # Add these paths to your openapi.yaml file
+  /api/v1/user/subscription/status:
+    get:
+      tags:
+        - Subscription
+      summary: Get subscription status
+      description: >
+        Retrieves the current subscription status for the authenticated user.
+        Returns details about the subscription plan, status, billing dates, and other subscription metadata.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Subscription status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription:
+                    type: object
+                    properties:
+                      plan:
+                        type: string
+                        enum: [free, premium]
+                        example: "premium"
+                      status:
+                        type: string
+                        enum: [active, canceled, trialing, past_due]
+                        example: "active"
+                      subscription_id:
+                        type: string
+                        example: "sub_1RGiGGH6stw1zTOOg5cwzl9G"
+                      customer_id:
+                        type: string
+                        example: "cus_SB4cRWFLSnzZ6y"
+                      current_period_start:
+                        type: string
+                        format: date-time
+                        example: "2023-04-01T00:00:00Z"
+                      current_period_end:
+                        type: string
+                        format: date-time
+                        example: "2023-05-01T00:00:00Z"
+                      subscribed:
+                        type: boolean
+                        example: true
+                      cancel_at_period_end:
+                        type: boolean
+                        example: false
+                      canceled_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: null
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving subscription status"
+      security:
+        - bearerAuth: []
 
+  /api/v1/user/subscription/checkout:
+    post:
+      tags:
+        - Subscription
+      summary: Create subscription checkout session
+      description: >
+        Creates a checkout session for purchasing a premium subscription.
+        Returns a URL that redirects to the Stripe checkout page.
+        Prevents duplicate subscriptions by checking if the user already has an active or pending subscription.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: "https://checkout.stripe.com/c/pay/cs_test_a1b2c3..."
+        '400':
+          description: Bad request - User already has an active subscription
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You already have an existing subscription"
+                  subscription_status:
+                    type: string
+                    example: "active"
+                  manage_url:
+                    type: string
+                    example: "http://localhost:3000/subscription/manage"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error creating checkout session"
+      security:
+        - bearerAuth: []
+
+  /api/v1/user/subscription/cancel:
+    post:
+      tags:
+        - Subscription
+      summary: Cancel premium subscription
+      description: >
+        Cancels the user's premium subscription at the end of the current billing period.
+        The subscription remains active until the end of the paid period, then automatically expires.
+        User account will revert to the free plan after the current billing period ends.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Subscription cancellation scheduled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Subscription will be canceled at the end of the billing period"
+        '400':
+          description: No active subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No active premium subscription found"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error canceling subscription"
+      security:
+        - bearerAuth: []
+
+  /api/v1/user/subscription/resume:
+    post:
+      tags:
+        - Subscription
+      summary: Resume canceled subscription
+      description: >
+        Resumes a previously canceled subscription that has not yet expired.
+        Removes the cancellation request so the subscription will automatically renew
+        at the end of the current billing period.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Subscription resumed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Subscription resumed successfully"
+        '400':
+          description: No canceled subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No canceled subscription found"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error resuming subscription"
+      security:
+        - bearerAuth: []
+
+  /api/v1/user/subscription/invoices:
+    get:
+      tags:
+        - Subscription
+      summary: Get invoice history
+      description: >
+        Retrieves the user's subscription invoice history from Stripe.
+        Returns up to 10 most recent invoices with payment status, amount, and download link.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Invoice history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "in_1RGjGhH6stw1zTOOfYQD6Vbn"
+                        amount_paid:
+                          type: number
+                          format: float
+                          example: 9.99
+                        status:
+                          type: string
+                          enum: [paid, open, void, uncollectible]
+                          example: "paid"
+                        created:
+                          type: string
+                          format: date-time
+                          example: "2023-04-15T14:32:21Z"
+                        invoice_pdf:
+                          type: string
+                          format: uri
+                          example: "https://invoice.stripe.com/i/acct_1RGhjbH6stw1zTOO/test_1RGjGhkRMbFP3X3HfYr9J5bO"
+        '400':
+          description: No subscription history found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No subscription history found"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error getting invoice history"
+      security:
+        - bearerAuth: []     
 components:
   securitySchemes:
     bearerAuth:
