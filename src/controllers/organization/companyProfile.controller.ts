@@ -9,12 +9,11 @@ export const createCompanyProfile = async (req: Request, res: Response, next: Ne
         const user = await validateTokenAndGetUser(req, res);
         if (!user) return;
 
-        const { name, category_type, unique_url, website, logo, description, industry, location, size, type } = req.body;
+        const { name, category_type, website, logo, description, industry, location, size, type } = req.body;
 
         const newCompanyProfile = new organizations({
             name,
             category_type,
-            unique_url,
             website,
             logo,
             description,
@@ -48,14 +47,13 @@ export const updateCompanyProfile = async (req: Request, res: Response, next: Ne
         const isAdmin = validateUserIsCompanyAdmin(companyProfile, user._id, res);
         if (!isAdmin) return;
 
-        const { name, category_type, unique_url, website, logo, description, industry, location, tagline, size, type, phone } = req.body;
+        const { name, category_type, website, logo, description, industry, location, tagline, size, type, phone } = req.body;
 
         const updatedCompanyProfile = await organizations.findByIdAndUpdate(
             companyId,
             {
                 name,
                 category_type,
-                unique_url,
                 website,
                 logo,
                 description,

@@ -36,7 +36,6 @@ export enum categoryTypeEnum{
 export interface organizationsInterface extends mongoose.Document{
     name: string;
     category_type: categoryTypeEnum;
-    unique_url: string;
     website: string;
     logo: string;
     tagline: string;
@@ -63,7 +62,6 @@ export interface organizationsInterface extends mongoose.Document{
 const organizationsSchema = new Schema<organizationsInterface>({
     name: { type: String },
     category_type: { type: String, enum: Object.values(categoryTypeEnum) },
-    unique_url: { type: String },
     website: { type: String},
     logo: { type: String},
     tagline: { type: String},
