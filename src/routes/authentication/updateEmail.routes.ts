@@ -3,8 +3,8 @@ import {updateEmail}  from '../../controllers/authentication/updateEmail.control
 
 const router = express.Router();
 
-// POST /api/v1/user/update-email
-router.put('/update-email', (req,res,next) => {
+// PATCH /api/v1/user/update-email
+router.patch('/update-email', (req,res,next) => {
     updateEmail(req ,res,next);
 });
 
