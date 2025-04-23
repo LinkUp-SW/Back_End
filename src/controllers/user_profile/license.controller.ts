@@ -89,7 +89,14 @@ const updateLicense = async (req: Request, res: Response, next: NextFunction): P
 
         // Transform skills to objects for response
         const responseLicense = {
-            ...user.liscence_certificates[licenseIndex],
+            _id: licenseId,
+            name,
+            issuing_organization,
+            issue_date,
+            expiration_date,
+            credintial_id,
+            credintial_url,
+            media: processedMedia,
             skills: transformSkillsToObjects(user, skills)
         };
 
