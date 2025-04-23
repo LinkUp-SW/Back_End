@@ -26,6 +26,7 @@ export const validateUserId = (user_id: string, res: Response): string | null =>
  * Returns the user_id if valid; otherwise sends an error response and returns null.
  */
 export const validateUserIdFromRequest = async (req: Request, res: Response): Promise<string | null> => {
+    try{
     const {user_id} = req.params; // Assuming the user_id is passed in the URL as a parameter
     if (!user_id) {
         res.status(400).json({ message: "User ID is required in the URL" });
@@ -38,6 +39,12 @@ export const validateUserIdFromRequest = async (req: Request, res: Response): Pr
         }
     
     return user_id;
+      }
+      catch (error) {
+        console.error("Error validating user ID:", error);
+        res.status(500).json({ message: "Error validating user ID", error });
+        return null;
+      }
 };
 
 
@@ -137,7 +144,7 @@ export const getUserPostsLimited = async (userId: string): Promise<any[]> => {
           model: 'posts', // Reference the posts collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { posts?: any[] } };
 
   if (!user || !user.activity || !user.activity.posts) return [];
   return user.activity.posts.slice(0, 10); // Return the 10 most recent posts with full data
@@ -157,7 +164,7 @@ export const getUserCommentsLimited = async (userId: string): Promise<any[]> => 
           model: 'comments', // Reference the comments collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { comments?: any[] } };
 
   if (!user || !user.activity || !user.activity.comments) return [];
   return user.activity.comments.slice(0, 10); // Return the 10 most recent comments with full data
@@ -178,7 +185,7 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
           model: 'posts', // Reference the posts collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { reacted_posts?: any[] } };
 
   if (!user || !user.activity || !user.activity.reacted_posts) return [];
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
@@ -420,4 +427,27 @@ export const getTimeAgoStage = () => {
           }
       }
   };
+};
+
+/**
+ * Transforms skill names into skill objects.
+ * @param user - The user object containing skills.
+ * @param skillNames - Array of skill names to transform.
+ * @returns An array of skill objects.
+ */
+export const transformSkillsToObjects = (user: any, skillNames: string[]): any[] => {
+  if (!skillNames || skillNames.length === 0) return [];
+  
+  return skillNames.map(skillName => {
+    const skillObj = user.skills.find((skill: any) => skill.name === skillName);
+    if (skillObj) {
+      return {
+        _id: skillObj._id,
+        name: skillObj.name
+      };
+    }
+    return {
+      name: skillName
+    };
+  }).filter(Boolean);
 };

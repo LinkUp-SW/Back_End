@@ -232,6 +232,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       isConnectByEmail: isConnectByEmail,
       education: educationDetails,
       work_experience: experienceDetails,
+      profile_visibility: targetUser.privacy_settings?.profile_visibility || "public",
     };
 
     res.status(200).json(userBio);

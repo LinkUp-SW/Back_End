@@ -31,7 +31,33 @@ const addSkill = async (req: Request, res: Response, next: NextFunction): Promis
             licenses: licenseIds,
         };
 
+        // Add skill to user's skills array
         user.skills.push(newSkill);
+        
+        // Update skills array in education records
+        educationIds.forEach(eduId => {
+            const education = user.education.find(edu => edu._id.toString() === eduId);
+            if (education && !education.skills.includes(name)) {
+                education.skills.push(name);
+            }
+        });
+        
+        // Update skills array in work experience records
+        experienceIds.forEach(expId => {
+            const experience = user.work_experience.find(exp => exp._id.toString() === expId);
+            if (experience && !experience.skills.includes(name)) {
+                experience.skills.push(name);
+            }
+        });
+        
+        // Update skills array in license records
+        licenseIds.forEach(licId => {
+            const license = user.liscence_certificates.find(lic => lic._id.toString() === licId);
+            if (license && !license.skills.includes(name)) {
+                license.skills.push(name);
+            }
+        });
+
         await user.save();
 
         // Get fully populated user data to access organizations
@@ -111,12 +137,87 @@ const updateSkill = async (req: Request, res: Response, next: NextFunction): Pro
         
         const currentName = user.skills[skillIndex].name;
         const currentEndorsments = user.skills[skillIndex].endorsments;
+        
+        // Get previous references to remove skill from those that are no longer associated
+        const previousEducationIds = user.skills[skillIndex].educations;
+        const previousExperienceIds = user.skills[skillIndex].experiences;
+        const previousLicenseIds = user.skills[skillIndex].licenses;
 
         // Store IDs as strings
         const educationIds = Array.isArray(educations) ? educations.map(id => id.toString()) : [];
         const experienceIds = Array.isArray(experiences) ? experiences.map(id => id.toString()) : [];
         const licenseIds = Array.isArray(licenses) ? licenses.map(id => id.toString()) : [];
 
+        // Remove skill from education records that are no longer associated
+        previousEducationIds.forEach(eduId => {
+            if (!educationIds.includes(eduId)) {
+                const education = user.education.find(edu => edu._id.toString() === eduId);
+                if (education) {
+                    const skillIndex = education.skills.indexOf(currentName);
+                    if (skillIndex !== -1) {
+                        education.skills.splice(skillIndex, 1);
+                    }
+                }
+            }
+        });
+        
+        // Remove skill from work experience records that are no longer associated
+        previousExperienceIds.forEach(expId => {
+            if (!experienceIds.includes(expId)) {
+                const experience = user.work_experience.find(exp => exp._id.toString() === expId);
+                if (experience) {
+                    const skillIndex = experience.skills.indexOf(currentName);
+                    if (skillIndex !== -1) {
+                        experience.skills.splice(skillIndex, 1);
+                    }
+                }
+            }
+        });
+        
+        // Remove skill from license records that are no longer associated
+        previousLicenseIds.forEach(licId => {
+            if (!licenseIds.includes(licId)) {
+                const license = user.liscence_certificates.find(lic => lic._id.toString() === licId);
+                if (license) {
+                    const skillIndex = license.skills.indexOf(currentName);
+                    if (skillIndex !== -1) {
+                        license.skills.splice(skillIndex, 1);
+                    }
+                }
+            }
+        });
+
+        // Add skill to newly associated education records
+        educationIds.forEach(eduId => {
+            if (!previousEducationIds.includes(eduId)) {
+                const education = user.education.find(edu => edu._id.toString() === eduId);
+                if (education && !education.skills.includes(currentName)) {
+                    education.skills.push(currentName);
+                }
+            }
+        });
+        
+        // Add skill to newly associated work experience records
+        experienceIds.forEach(expId => {
+            if (!previousExperienceIds.includes(expId)) {
+                const experience = user.work_experience.find(exp => exp._id.toString() === expId);
+                if (experience && !experience.skills.includes(currentName)) {
+                    experience.skills.push(currentName);
+                }
+            }
+        });
+        
+        // Add skill to newly associated license records
+        licenseIds.forEach(licId => {
+            if (!previousLicenseIds.includes(licId)) {
+                const license = user.liscence_certificates.find(lic => lic._id.toString() === licId);
+                if (license && !license.skills.includes(currentName)) {
+                    license.skills.push(currentName);
+                }
+            }
+        });
+
+        // Update the skill in the user's skills array
         user.skills[skillIndex] = {
             _id: skillId,
             name: currentName,
@@ -201,6 +302,43 @@ const deleteSkill = async (req: Request, res: Response, next: NextFunction): Pro
             return;
         }
 
+        const skillToDelete = user.skills[skillIndex];
+        const skillName = skillToDelete.name;
+
+        // Remove skill from all associated education records
+        skillToDelete.educations.forEach(eduId => {
+            const education = user.education.find(edu => edu._id.toString() === eduId);
+            if (education) {
+                const skillIndex = education.skills.indexOf(skillName);
+                if (skillIndex !== -1) {
+                    education.skills.splice(skillIndex, 1);
+                }
+            }
+        });
+        
+        // Remove skill from all associated work experience records
+        skillToDelete.experiences.forEach(expId => {
+            const experience = user.work_experience.find(exp => exp._id.toString() === expId);
+            if (experience) {
+                const skillIndex = experience.skills.indexOf(skillName);
+                if (skillIndex !== -1) {
+                    experience.skills.splice(skillIndex, 1);
+                }
+            }
+        });
+        
+        // Remove skill from all associated license records
+        skillToDelete.licenses.forEach(licId => {
+            const license = user.liscence_certificates.find(lic => lic._id.toString() === licId);
+            if (license) {
+                const skillIndex = license.skills.indexOf(skillName);
+                if (skillIndex !== -1) {
+                    license.skills.splice(skillIndex, 1);
+                }
+            }
+        });
+
+        // Remove the skill from the user's skills array
         user.skills.splice(skillIndex, 1);
         await user.save();
 
