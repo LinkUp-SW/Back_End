@@ -7,6 +7,7 @@ import { UserRepository } from "../../repositories/user.repository.ts";
 
 const authService = new AuthService();
 const userRepository = new UserRepository();
+const isProduction = process.env.NODE_ENV === "production";
 
 /**
  * Local Email or Phone/Password Login
@@ -34,14 +35,14 @@ const login = asyncHandler(
       maxAge: 3600000, // 1 hour,
       sameSite: "none",
       secure: true,
-      domain: ".linkup-egypt.tech",
+      domain: isProduction? process.env.DOMAIN: undefined,
     });
     res.cookie("linkup_user_id", user.user_id, {
       maxAge: 3600000,
       httpOnly: false,
       sameSite: "none",
       secure: true,
-      domain: ".linkup-egypt.tech",
+      domain: isProduction? process.env.DOMAIN: undefined,
     });
 
     return res
@@ -106,7 +107,7 @@ const googleCallback = asyncHandler(
       maxAge: 3600000, // 1 hour,
       sameSite: "none",
       secure: true,
-      domain: ".linkup-egypt.tech",
+      domain:isProduction? process.env.DOMAIN: undefined,
     });
 
     const userCheck = await userRepository.findByEmail(user.email);
@@ -124,7 +125,7 @@ const googleCallback = asyncHandler(
         httpOnly: false,
         sameSite: "none",
         secure: true,
-        domain: ".linkup-egypt.tech",
+        domain: isProduction? process.env.DOMAIN: undefined,
       });
       return res
         .status(200)
@@ -145,7 +146,7 @@ const googleCallback = asyncHandler(
           maxAge: 3600000,
           sameSite: "lax",
           secure: false,
-          domain: ".linkup-egypt.tech",
+          domain: isProduction? process.env.DOMAIN: undefined,
         }
       );
       return res.redirect(

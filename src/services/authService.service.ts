@@ -120,14 +120,14 @@ export class AuthService {
       httpOnly: JWT_CONFIG.HTTP_ONLY,
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
-      domain: isProduction ? ".linkup-egypt.tech" : undefined,
+      domain: isProduction ? process.env.DOMAIN : undefined,
     });
 
     // Clear user ID cookie
     res.clearCookie("linkup_user_id", {
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
-      domain: isProduction ? ".linkup-egypt.tech" : undefined,
+      domain: isProduction ? process.env.DOMAIN : undefined,
     });
 
     return res.status(200).json({ message: "Logout successful" });
