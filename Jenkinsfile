@@ -55,8 +55,6 @@ pipeline {
                     """
                     }
                 }
-            }
-        }
 
         stage('Deploy Locally') {
             steps {
