@@ -39,6 +39,12 @@ export enum howDidYouHearAboutUsEnum{
     ad = "From an ad"
 }
 
+export enum jobStatusEnum{
+    open = "Open",
+    closed = "Closed",
+    draft = "Draft",
+}
+
 export interface jobsInterface extends mongoose.Document{
     organization_id: organizationsInterface;
     job_title: string;
@@ -66,6 +72,7 @@ export interface jobsInterface extends mongoose.Document{
     salary: number;
     posted_time: Date;
     applied_applications: jobApplicationsInterface[];
+    job_status: jobStatusEnum;
 }
 
 const jobsSchema = new Schema<jobsInterface>({
@@ -95,6 +102,7 @@ const jobsSchema = new Schema<jobsInterface>({
     salary: { type: Number },
     posted_time: { type: Date, default: Date.now },
     applied_applications: [{ type: Schema.Types.ObjectId, ref: "jobApplications" }],
+    job_status: { type: String, enum: Object.values(jobStatusEnum), default: jobStatusEnum.open },
 });
 
 const jobs = mongoose.model<jobsInterface>('jobs', jobsSchema);

@@ -130,7 +130,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     }[];
-    organizations: organizationsInterface;
+    organizations: organizationsInterface[];
     skills: {
         _id: string;
         name: string;
