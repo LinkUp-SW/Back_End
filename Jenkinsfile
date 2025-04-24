@@ -37,6 +37,13 @@ pipeline {
             }
         }
         */
+
+         stage('prepare environment') {
+            steps {
+                echo 'setting up environment variables...'   
+                writeFile file: '.env', text: "${VAULT_SECRET}"
+            }
+        }
         stage('Build Docker Image') {
             steps {
                withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
@@ -46,7 +53,47 @@ pipeline {
                 }
             }
         }
+        stage('Test Image Locally') {
+            when {
+                not {
+                    branch 'main'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
+                    sh '''
+                        docker run --rm "$IMAGE_NAME:$BUILD_NUMBER" node --version
+                    '''
+                }
+            }
+        }
 
+        stage('Push and Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME'),
+                    usernamePassword(credentialsId: 'docker-token', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push "$IMAGE_NAME:$BUILD_NUMBER"
+                        docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$IMAGE_NAME:latest"
+                        docker push "$IMAGE_NAME:latest"
+                    '''
+
+                    sh '''
+                        docker stop backend || true
+                        docker rm backend || true
+                        docker run -d --name backend --env-file .env -p 3000:3000 "$IMAGE_NAME:$BUILD_NUMBER"
+                    '''
+                }
+            }
+        }
+    }
+        /*
         stage('Push to Docker Hub') {
           steps {
                 withCredentials([
@@ -68,7 +115,7 @@ pipeline {
                 withCredentials([
                     string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')
                 ]) {
-                    writeFile file: '.env', text: "${VAULT_SECRET}"
+                    
         
                     sh '''
                         docker pull "$IMAGE_NAME:$BUILD_NUMBER"
@@ -79,6 +126,7 @@ pipeline {
                 }
             }
         }
+        */
     }
     post {
         success {
