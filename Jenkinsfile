@@ -55,9 +55,9 @@ pipeline {
                 ]) {
                     sh """
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                        docker push ${IMAGE_NAME}:latest
+                        docker push "$IMAGE_NAME:$BUILD_NUMBER"
+                        docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$IMAGE_NAME:latest"
+                        docker push "$IMAGE_NAME:latest"
                     """
                 }
             }
@@ -65,16 +65,13 @@ pipeline {
 
         stage('Deploy Locally') {
             steps {
-                withCredentials([
-                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME'),
-                    usernamePassword(credentialsId: 'docker-token', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
-                ]) {
-                    sh """
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                        docker push ${IMAGE_NAME}:latest
-                    """
+                withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
+                    sh '''
+                        docker pull "$IMAGE_NAME:$BUILD_NUMBER"
+                        docker stop backend || true
+                        docker rm backend || true
+                        docker run -d --name backend -p 3000:3000 "$IMAGE_NAME:$BUILD_NUMBER"
+                    '''
                 }
             }
         }
