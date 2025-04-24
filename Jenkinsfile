@@ -11,7 +11,7 @@ pipeline {
             steps {
                 sh ' rm -rf mywork'
                 checkout scm      
-                sh 'mkdir mywork && mv * mywork/ 2>/dev/null || true' 
+                #sh 'mkdir mywork && mv * mywork/ 2>/dev/null || true' 
                 }
         }
        /*
@@ -49,7 +49,7 @@ pipeline {
             steps {
                 
                     script {
-                        docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-creds') {
+                        docker.withRegistry('https://index.docker.io/v1/', 'docker-token') {
                             dockerImage.push()
                         }
                     
