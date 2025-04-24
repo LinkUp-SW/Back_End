@@ -66,8 +66,7 @@ pipeline {
         stage('Deploy Locally') {
                    steps {
                 withCredentials([
-                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME'),
-                    string(credentialsId: 'vault-secret-backend-env', variable: 'VAULT_SECRET')
+                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')
                 ]) {
                     writeFile file: '.env', text: "${VAULT_SECRET}"
         
