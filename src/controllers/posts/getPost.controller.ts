@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { findUserByUserId } from '../../utils/database.helper.ts';
-import { getComments, getSavedPostsCursorBased, PostRepository } from '../../repositories/posts.repository.ts';
+import { getSavedPostsCursorBased, PostRepository } from '../../repositories/posts.repository.ts';
 import { postsInterface } from '../../models/posts.model.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import users from '../../models/users.model.ts';
+import { getComments } from '../../repositories/comment.repository.ts';
+import { convert_idIntoUser_id } from '../../repositories/user.repository.ts';
 
 
 
@@ -13,6 +15,8 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
         const postId = req.params.postId;
         const cursor = parseInt(req.query.cursor as string) || 0;
         const limit = parseInt(req.query.limit as string) || 10;
+        const replyLimit = req.query.replyLimit !== undefined ? 
+            parseInt(req.query.replyLimit as string) : 2;
         let userId = await getUserIdFromToken(req,res);
         if (!userId) return;
         const user = await findUserByUserId(userId,res);
@@ -34,8 +38,14 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
             profilePicture: postAuthor.profile_photo,
             connectionDegree:"3rd+"
         };
-        const result = await getComments(cursor, limit, postId);
+        const result = await getComments(cursor, limit, postId,replyLimit);
         const plainPost = post.toObject ? post.toObject() : post;
+        if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
+            const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
+            if (userIds) {
+                plainPost.tagged_users = userIds;
+            }
+        }
         return res.status(200).json({message:'Post returned successfully',post:{...plainPost, author:authorInfo},comments:result })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
