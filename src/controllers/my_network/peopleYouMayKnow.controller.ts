@@ -17,13 +17,14 @@ export const getPeopleYouMayKnow = async (req: Request, res: Response): Promise<
       _id: viewerUserId as string, // Ensure _id is a string
       name: viewerUser.name, // Map required properties explicitly
       email: viewerUser.email,
-      education: viewerUser.education || [], // Default to empty array if undefined
-      work_experience: viewerUser.work_experience || [], // Default to empty array if undefined
-      connections: viewerUser.connections || [], // Default to empty array if undefined
-      blocked: viewerUser.blocked || [], // Default to empty array if undefined
-      sent_connections: viewerUser.sent_connections || [], // Default to empty array if undefined
-      received_connections: viewerUser.received_connections || [], // Default to empty array if undefined
-      // Add other properties from usersInterface as needed
+      education: viewerUser.education || [], 
+      work_experience: viewerUser.work_experience || [], 
+      connections: viewerUser.connections || [], 
+      blocked: viewerUser.blocked || [], 
+      sent_connections: viewerUser.sent_connections || [], 
+      received_connections: viewerUser.received_connections || [], 
+      withdrawn_connections: viewerUser.withdrawn_connections || [], 
+     
     } as usersInterface & { _id: string };
 
     // Extract query parameters for context and pagination

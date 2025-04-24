@@ -575,14 +575,14 @@ paths:
               type: object
               required:
                 - email
-                - token
+                - password
               properties:
                 email:
                   type: string
                   example: "new.email@example.com"
                 token:
                   type: string
-                  example: "jwt_token"
+                  example: "Password123"
       responses:
         '200':
           description: Email updated successfully.
@@ -598,9 +598,11 @@ paths:
                     type: string
                     example: "new.email@example.com"
         '400':
-          description: Email is required.
+          description: Email or Password is required.
         '401':
-          description: Email already exists or invalid token.
+          description: Email already exists or Invalid password.
+        '404':
+          description: User not found.
         '500':
           description: Server error.
   /api/v1/user/delete-account:
@@ -6057,6 +6059,29 @@ paths:
             type: string
           description: Bearer token for authentication
           example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform:
+                  type: string
+                  enum: [web, ios, android]
+                  default: web
+                  description: The client platform type to determine appropriate redirect URLs
+            examples:
+              Web:
+                value:
+                  platform: "web"
+              iOS:
+                value:
+                  platform: "ios"
+              Android:
+                value:
+                  platform: "android"
+
       responses:
         '200':
           description: Checkout session created successfully
@@ -6519,6 +6544,12 @@ paths:
                               type: string
                               example: "John Smith"
                               description: Name of one mutual connection
+                        is_in_sent_connections:
+                          type: boolean
+                          example: true
+                        is_in_received_connections:
+                          type: boolean
+                          example: false
                   pagination:
                     type: object
                     properties:
