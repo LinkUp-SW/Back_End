@@ -13,7 +13,7 @@ export interface jobApplicationsInterface extends mongoose.Document{
     country_code: string;
     resume: string;
     questions_responses: string[];
-    application_status: Enumerator;
+    application_status: string;
 }
 
 const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
