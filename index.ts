@@ -34,10 +34,10 @@ import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
 import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
-import createPost from './src/routes/posts/createPosts.routes.ts';
-import deletePost from './src/routes/posts/deletePosts.routes.ts';
-import editPost from './src/routes/posts/editPosts.routes.ts';
+import postRoutes from './src/routes/posts/posts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
+import createAdminRoutes from './src/routes/admin/createAdmin.routes.ts';
+import comments from './src/routes/posts/comments.routes.ts';
 
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
@@ -49,6 +49,13 @@ import companySettingsRoutes from "./src/routes/organization/companySettings.rou
 import companyJobsRoutes from "./src/routes/organization/companyJobs.routes.ts"
 import companyPostsRoutes from "./src/routes/organization/companyPosts.routes.ts"
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
+
+import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
+import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts';
+
+
+import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
+import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -57,12 +64,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
+// IMPORTANT: Add webhook route BEFORE express.json() middleware
+app.use('/webhook/stripe', stripeWebhookRoutes);
 app.use(express.json({limit:"50mb"}));
 
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1745264577196' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'hamza-ayman-1745264575839' });
   console.log('Generated Token:', token);
 };
 
@@ -114,6 +123,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
 
+
 // Mount User Routes
 app.use('/api/v1/user',
     otpRoutes,
@@ -137,7 +147,8 @@ app.use('/api/v1/user',
     skillsRoutes,
     myNetwork,
     privacySettingsRoutes,
-    aboutUserRoutes,);
+    aboutUserRoutes,
+    peopleYouMayKnowRoutes,);
 
 // Mount Jobs Routes
 app.use('/api/v1/jobs', 
@@ -149,10 +160,9 @@ app.use('/api/v1/jobs',
 
 
 app.use('/api/v1/post',
-    createPost,
-    deletePost,
-    editPost,
-    savePostRoutes
+    postRoutes,
+    savePostRoutes,
+    comments
 );
 
 app.use('/api/v1/company',
@@ -163,9 +173,14 @@ app.use('/api/v1/company',
 )
 
 
+// Add after your other middleware
+app.use('/api/v1/user/subscription', subscriptionRoutes);
 
-app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/search', 
+  userSearchRoutes,
+  searchRoutes );
 
+app.use('/api/v1/admin', createAdminRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');

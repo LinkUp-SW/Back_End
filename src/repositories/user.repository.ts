@@ -11,14 +11,14 @@ export class UserRepository {
     country: string,
     city: string,
     isStudent: boolean,
-    jobTitle: string | null,
-    school: ObjectId | null,
-    schoolStartYear: number | null,
-    schoolEndYear: number | null,
-    is16OrAbove: boolean | null,
-    birthDate: Date | null,
-    employmentType: string | null,
-    recentCompany: ObjectId | null
+    jobTitle?: string,
+    school?: ObjectId,
+    schoolStartYear?: number,
+    schoolEndYear?: number,
+    is16OrAbove?: boolean,
+    birthDate?: Date,
+    employmentType?: string,
+    recentCompany?: ObjectId
   ) {
     const userData: any = {
       user_id: userId,
@@ -36,21 +36,12 @@ export class UserRepository {
           city: city,
         },
         contact_info: {
-          phone_number: null,
-          country_code: null,
-          phone_type: null,
-          address: null,
           birthday: birthDate,
-          website: null,
         },
       },
       organizations: [],
       skills: [],
       liscence_certificates: [],
-      industry: null,
-      profile_photo: null,
-      cover_photo: null,
-      resume: null,
       connections: [],
       followers: [],
       following: [],
@@ -73,7 +64,6 @@ export class UserRepository {
       notification: [],
       applied_jobs: [],
       saved_jobs: [],
-      sex: null,
       subscription: {
         subscribed: false,
         subscription_started_at: null,
@@ -88,14 +78,9 @@ export class UserRepository {
         {
           _id : new mongoose.Types.ObjectId(),
           school: school,
-          degree: null,
-          field_of_study: null,
-          start_date: schoolStartYear ? new Date(schoolStartYear, 0) : null,
-          end_date: schoolEndYear ? new Date(schoolEndYear, 0) : null,
-          grade: null,
-          activites_and_socials: null,
+          start_date: schoolStartYear ? new Date(schoolStartYear, 0) : '',
+          end_date: schoolEndYear ? new Date(schoolEndYear, 0) : '',
           skills: [],
-          description: null,
           media: [],
         },
       ];
@@ -108,10 +93,6 @@ export class UserRepository {
           organization: recentCompany,
           is_current: true,
           start_date: new Date(),
-          end_date: null,
-          location: null,
-          description: null,
-          location_type: null,
           skills: [],
           media: [],
         },
@@ -124,15 +105,15 @@ export class UserRepository {
   async update(userId: string, firstName: string, lastName: string, email: string, password: string,
     country: string,
     city: string,
-    isStudent: boolean | null,
-    jobTitle: string | null,
-    school: string | null,
-    schoolStartYear: number | null,
-    schoolEndYear: number | null,
-    is16OrAbove: boolean | null,
-    birthDate: Date | null,
-    employmentType: string | null,
-    recentCompany: string | null
+    isStudent: boolean,
+    jobTitle?: string,
+    school?: ObjectId,
+    schoolStartYear?: number,
+    schoolEndYear?: number,
+    is16OrAbove?: boolean,
+    birthDate?: Date,
+    employmentType?: string,
+    recentCompany?: ObjectId
   ) {
     // Similarly update the update method to use the correct structure
     return User.findOneAndUpdate(
@@ -148,7 +129,6 @@ export class UserRepository {
           'bio.contact_info.birthday': birthDate,
           is_student: isStudent,
           is_16_or_above: is16OrAbove,
-          // Only set these if they're provided
           ...(school && { 'education.0.school': school }),
           ...(schoolStartYear && { 'education.0.start_date': new Date(schoolStartYear, 0) }),
           ...(schoolEndYear && { 'education.0.end_date': new Date(schoolEndYear, 0) }),
@@ -159,6 +139,37 @@ export class UserRepository {
       },
       { new: true, upsert: false }
     );
+  }
+
+  async createAdmin(userId: string, firstName: string, lastName: string, email: string, password: string) {
+    return User.create({
+      user_id: userId,
+      email: email,
+      password: password,
+      bio: {
+        first_name: firstName,
+        last_name: lastName,
+        location: {
+          country_region: "",
+          city: ""
+        },
+      },
+      is_verified: true,
+      is_admin: true,
+      privacy_settings: {
+        flag_account_status: accountStatusEnum.public,
+        flag_who_can_send_you_invitations: invitationsEnum.everyone,
+        flag_messaging_requests: true,
+        messaging_read_receipts: true
+      },
+      activity: {
+        posts: [],
+        reposted_posts: [],
+        reacted_posts: [],
+        comments: [],
+        media: []
+      },
+    });
   }
 
   async findByEmail(email: string) {
@@ -180,14 +191,6 @@ export class UserRepository {
           country_region: "",
           city: ""
         },
-        contact_info: {
-          phone_number: null,
-          country_code: null,
-          phone_type: null,
-          address: null,
-          birthday: null,
-          website: null
-        }
       },
       password: password,
       is_verified: true,
@@ -386,7 +389,7 @@ export const formatConnectionData = async (
               { "bio.first_name": 1, "bio.last_name": 1 }
             ).lean();
 
-            if (mutualConnectionUser) {
+            if (mutualConnectionUser && 'bio' in mutualConnectionUser) {
               nameOfOneMutualConnection = `${mutualConnectionUser.bio.first_name} ${mutualConnectionUser.bio.last_name}`;
             }
           }
@@ -411,6 +414,18 @@ export const formatConnectionData = async (
 };
 
 /**
+ * Interface for user connection documents
+ */
+interface UserConnectionsDocument {
+  _id: mongoose.Types.ObjectId;
+  connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  sent_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  received_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  followers?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  following?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+}
+
+/**
  * Fetches paginated connections using cursor-based pagination.
  * @param userId - The ID of the user whose connections are being fetched.
  * @param limit - The maximum number of connections to return.
@@ -426,7 +441,7 @@ export const getPaginatedConnectionsFollowers = async (
 ): Promise<{ connections: any[]; nextCursor: string | null }> => {
   try {
     // Find the user by ID and retrieve the specified connection type
-    const user = await Users.findById(userId, { [connectionType]: 1 }).lean();
+    const user = await Users.findById(userId, { [connectionType]: 1 }).lean() ;
     if (!user || !user[connectionType]) {
       return { connections: [], nextCursor: null };
     }

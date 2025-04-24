@@ -73,7 +73,7 @@ const populateOrganizationJobs = async () => {
                 category_type: categoryType,
                 unique_url: organizationNames[i].toLowerCase().replace(/\s+/g, '-'),
                 website: `https://www.${organizationNames[i].toLowerCase().replace(/\s+/g, '')}.com`,
-                logo: `https://example.com/logos/${i + 1}.png`,
+                logo: `https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png`,
                 description: `${organizationNames[i]} is a leading organization in ${industries[i]}.`,
                 industry: industries[i],
                 location: locations[i],

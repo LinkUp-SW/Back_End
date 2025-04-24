@@ -200,13 +200,22 @@ export interface usersInterface extends mongoose.Document{
     applied_jobs: jobsInterface[];
     saved_jobs: jobsInterface[];
     sex: sexEnum;
-    subscription:{
-        subscribed: boolean,
-        subscription_started_at: Date
+    subscription: {
+        status: string;  // 'active', 'canceled', 'trialing', 'past_due'
+        plan: string;    // 'free', 'premium'
+        subscription_id: string;  // Stripe subscription ID
+        customer_id: string;      // Stripe customer ID
+        current_period_start: Date;
+        current_period_end: Date;
+        canceled_at?: Date;
+        cancel_at_period_end: boolean;
+        subscription_started_at?: Date;
+        subscribed: boolean;
     };
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
+    is_admin: boolean;
     about?: aboutInterface;
 }
 
@@ -352,7 +361,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           },
           message: "Resume must be a valid URL, an empty string, or null",
         },
-        default: null,
+        default: '',
       },
       connections: [
         {
@@ -380,13 +389,34 @@ const usersSchema = new mongoose.Schema<usersInterface>({
       ],
       followers: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
       following: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
-    privacy_settings: {
-        flag_account_status: { type: String, enum: Object.values(accountStatusEnum) },
-        flag_who_can_send_you_invitations: { type: String, enum: Object.values(invitationsEnum) },
-        flag_messaging_requests: { type: Boolean },
-        messaging_read_receipts: { type: Boolean },
-        make_follow_primary: { type: Boolean },
-        Who_can_follow_you: { type: String, enum: Object.values(followEnum) },
+      privacy_settings: {
+        flag_account_status: { 
+            type: String, 
+            enum: Object.values(accountStatusEnum), 
+            default: accountStatusEnum.public // Default to "Public"
+        },
+        flag_who_can_send_you_invitations: { 
+            type: String, 
+            enum: Object.values(invitationsEnum), 
+            default: invitationsEnum.everyone // Default to "Everyone"
+        },
+        flag_messaging_requests: { 
+            type: Boolean, 
+            default: true // Default to allow messaging requests
+        },
+        messaging_read_receipts: { 
+            type: Boolean, 
+            default: true // Default to enable read receipts
+        },
+        make_follow_primary: { 
+            type: Boolean, 
+            default: false // Default to make follow primary
+        },
+        Who_can_follow_you: { 
+            type: String, 
+            enum: Object.values(followEnum), 
+            default: followEnum.everyone // Default to "Everyone"
+        },
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
@@ -427,8 +457,16 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
-        subscribed: { type: Boolean },
+        status: { type: String, enum: ['active', 'canceled', 'trialing', 'past_due'], default: 'active' },
+        plan: { type: String, enum: ['free', 'premium'], default: 'free' },
+        subscription_id: { type: String },
+        customer_id: { type: String },
+        current_period_start: { type: Date },
+        current_period_end: { type: Date },
+        canceled_at: { type: Date },
+        cancel_at_period_end: { type: Boolean, default: false },
         subscription_started_at: { type: Date },
+        subscribed: { type: Boolean, default: false },
     },
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
@@ -437,6 +475,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         about: { type: String },
         skills: [{ type: String }],
     },
+    is_admin: { type: Boolean, default: false },
 });
 
 usersSchema.pre('save', async function(next) {
@@ -456,5 +495,5 @@ usersSchema.methods.comparePassword = async function(password: string): Promise<
     return await bcrypt.compare(password, this.password);
 }
 
-const users = mongoose.model<usersInterface>('users',usersSchema);
-export default users
+const users = mongoose.model<usersInterface>('users', usersSchema);
+export default users;

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ObjectId } from "bson";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType } from "../../utils/database.helper.ts";
+import { updateUserSkills, handleRemovedSkills, handleDeletedSkills, SkillSourceType, transformSkillsToObjects } from "../../utils/database.helper.ts";
 import { processMediaArray, deleteMediaFromCloud } from "../../services/cloudinary.service.ts";
 
 const addLicense = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -36,7 +36,13 @@ const addLicense = async (req: Request, res: Response, next: NextFunction): Prom
         
         await user.save();
 
-        res.status(200).json({ message: 'License/Certificate added successfully', license: newLicense });
+        // Transform skills to objects for response
+        const responseLicense = {
+            ...newLicense,
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'License/Certificate added successfully', license: responseLicense });
     } catch (error) {
         next(error);
     }
@@ -81,7 +87,20 @@ const updateLicense = async (req: Request, res: Response, next: NextFunction): P
         
         await user.save();
 
-        res.status(200).json({ message: 'License/Certificate updated successfully', license: user.liscence_certificates[licenseIndex] });
+        // Transform skills to objects for response
+        const responseLicense = {
+            _id: licenseId,
+            name,
+            issuing_organization,
+            issue_date,
+            expiration_date,
+            credintial_id,
+            credintial_url,
+            media: processedMedia,
+            skills: transformSkillsToObjects(user, skills)
+        };
+
+        res.status(200).json({ message: 'License/Certificate updated successfully', license: responseLicense });
     } catch (error) {
         next(error);
     }

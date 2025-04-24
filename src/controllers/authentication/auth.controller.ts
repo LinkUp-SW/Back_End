@@ -33,7 +33,7 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
   });
 
 
-  return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified }}); // 1 hour expiration
+  return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified , isAdmin: user.is_admin}}); // 1 hour expiration
 });
 
 /**
@@ -102,6 +102,7 @@ const googleCallback = asyncHandler(async (req: Request, res: Response, next: Ne
         email: user.email.toLowerCase(),
         password: user.password,
         isVerified: user.is_verified,
+        isAdmin: user.is_admin,
       }),
       {
         httpOnly: false,
