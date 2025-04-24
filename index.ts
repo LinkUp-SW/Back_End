@@ -42,7 +42,12 @@ import comments from './src/routes/posts/comments.routes.ts';
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
-import searchRoutes from './src/routes/organization.route.ts';
+import searchJobsRoutes from './src/routes/jobs/searchJobs.routes.ts';
+import searchRoutes from './src/routes/organization/search.routes.ts';
+import companyProfileRoutes from "./src/routes/organization/companyProfile.routes.ts"
+import companySettingsRoutes from "./src/routes/organization/companySettings.routes.ts"
+import companyJobsRoutes from "./src/routes/organization/companyJobs.routes.ts"
+import companyPostsRoutes from "./src/routes/organization/companyPosts.routes.ts"
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
 
 import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
@@ -149,14 +154,24 @@ app.use('/api/v1/user',
 app.use('/api/v1/jobs', 
     filterJobsRoutes, 
     saveJobsRoutes,
-    getJobsRoutes);
+    getJobsRoutes,
+    searchJobsRoutes
+  );
 
 
-  app.use('/api/v1/post',
+app.use('/api/v1/post',
     postRoutes,
     savePostRoutes,
     comments
-  );
+);
+
+app.use('/api/v1/company',
+    companyProfileRoutes,
+    companySettingsRoutes,
+    companyJobsRoutes,
+    companyPostsRoutes
+)
+
 
 // Add after your other middleware
 app.use('/api/v1/user/subscription', subscriptionRoutes);
