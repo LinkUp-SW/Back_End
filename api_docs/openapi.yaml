@@ -575,14 +575,14 @@ paths:
               type: object
               required:
                 - email
-                - token
+                - password
               properties:
                 email:
                   type: string
                   example: "new.email@example.com"
                 token:
                   type: string
-                  example: "jwt_token"
+                  example: "Password123"
       responses:
         '200':
           description: Email updated successfully.
@@ -598,9 +598,11 @@ paths:
                     type: string
                     example: "new.email@example.com"
         '400':
-          description: Email is required.
+          description: Email or Password is required.
         '401':
-          description: Email already exists or invalid token.
+          description: Email already exists or Invalid password.
+        '404':
+          description: User not found.
         '500':
           description: Server error.
   /api/v1/user/delete-account:

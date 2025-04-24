@@ -9,7 +9,7 @@ import tokenUtils from '../../utils/token.utils.ts';
 const userRepository = new UserRepository();
 
 const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<Response> => {
-  const { email } = req.body;
+  const { email,password } = req.body;
 
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
@@ -27,6 +27,20 @@ const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<R
 
   if (emailExists) {
     throw new CustomError('Email already exists', 401, 'EMAIL_EXISTS');
+  }
+
+  if (!password) {
+    throw new CustomError('Password is required', 400, 'PASSWORD_REQUIRED');
+  }
+
+  const user = await userRepository.findByUserId(decodedToken.userId);
+  if (!user) {
+    throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
+  }
+
+  const isPasswordValid = await user.comparePassword(password);
+  if (!isPasswordValid) {
+    throw new CustomError('Password not matched', 401, 'PASSWORD_NOT_MATCHED');
   }
 
   await userRepository.updateEmail(decodedToken.userId, email);
