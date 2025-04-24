@@ -1,17 +1,21 @@
 import express from 'express';
-import { createComment, deleteComment, getCommentsController, updateComments } from '../../controllers/posts/comments.controller.ts';
+import { createComment, deleteComment, getCommentsController, getRepliesController, updateComments } from '../../controllers/posts/comments.controller.ts';
 
 const router = express.Router();
 
 
 
 
-router.post('/comment', (req,res) =>{
+router.post('/comment/:postId', (req,res) =>{
     createComment(req,res);
 });
 
 router.get('/comment/:postId', (req,res) =>{
     getCommentsController(req,res);
+});
+
+router.get('/comment/:postId/:commentId', (req,res) =>{
+    getRepliesController(req,res);
 });
 
 router.patch('/comment/:postId/:commentId', (req,res) =>{
