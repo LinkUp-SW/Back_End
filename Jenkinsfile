@@ -39,7 +39,7 @@ pipeline {
         */
         stage('Build Docker Image') {
             steps {
-               withCredentials([string(credentialsId: 'docker-repo-name', variable: 'IMAGE_NAME')]) {
+               withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
                     sh '''
                         docker build -t "$IMAGE_NAME:$BUILD_NUMBER" .
                     '''
