@@ -6544,6 +6544,12 @@ paths:
                               type: string
                               example: "John Smith"
                               description: Name of one mutual connection
+                        is_in_sent_connections:
+                          type: boolean
+                          example: true
+                        is_in_received_connections:
+                          type: boolean
+                          example: false
                   pagination:
                     type: object
                     properties:

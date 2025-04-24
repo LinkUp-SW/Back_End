@@ -117,7 +117,7 @@ export const searchUsers = async (
     const viewerObjectId = new mongoose.Types.ObjectId(viewerUserId);
     
     // First, get the viewer's connections
-    const viewerUser = await users.findById(viewerUserId, { connections: 1 , blocked: 1 }).lean();
+    const viewerUser = await users.findById(viewerUserId, { connections: 1 , blocked: 1 , sent_connections:1 , received_connections:1}).lean();
     
     if (!viewerUser) {
       throw new Error('Viewer user not found');
@@ -140,6 +140,24 @@ export const searchUsers = async (
             : typeof conn === 'string' ? conn : String(conn)
         ) 
       : [];
+
+    // Extract sent connection requests
+     const viewerSentConnections = Array.isArray(viewerUser.sent_connections) 
+     ? viewerUser.sent_connections.map(conn => 
+         typeof conn === 'object' && conn._id 
+           ? conn._id.toString() 
+           : typeof conn === 'string' ? conn : String(conn)
+       ) 
+     : [];
+   
+   // Extract received connection requests
+   const viewerReceivedConnections = Array.isArray(viewerUser.received_connections) 
+     ? viewerUser.received_connections.map(conn => 
+         typeof conn === 'object' && conn._id 
+           ? conn._id.toString() 
+           : typeof conn === 'string' ? conn : String(conn)
+       ) 
+     : [];
     
     // Get 2nd degree connections if needed
     let secondDegreeConnections: Set<string> = new Set();
@@ -426,7 +444,9 @@ if (connectionDegree !== 'all') {
         mutual_connections: {
           count: mutualCount,
           suggested_name: mutualConnectionName
-        }
+        },
+        is_in_sent_connections: viewerSentConnections.includes(user._id.toString()),
+        is_in_received_connections: viewerReceivedConnections.includes(user._id.toString())
       };
     });
     
