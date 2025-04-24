@@ -11,7 +11,7 @@ pipeline {
             steps {
                 sh ' rm -rf mywork'
                 checkout scm      
-                #sh 'mkdir mywork && mv * mywork/ 2>/dev/null || true' 
+                //#sh 'mkdir mywork && mv * mywork/ 2>/dev/null || true' 
                 }
         }
        /*
