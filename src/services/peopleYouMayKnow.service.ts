@@ -17,13 +17,20 @@ export const findPeopleYouMayKnow = async (
       let currentField = null;
       let institutionName = null;
       
+      const threeWeeksAgo = new Date();
+      threeWeeksAgo.setDate(threeWeeksAgo.getDate() - 21);
       // Build the excluded IDs array 
       const excludedIds = [
         viewerUser._id,
         ...(viewerUser.connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn),
         ...(viewerUser.blocked || []).map(block => typeof block === 'object' && block._id ? block._id : block),
         ...(viewerUser.sent_connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn),
-        ...(viewerUser.received_connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn)
+        ...(viewerUser.received_connections || []).map(conn => typeof conn === 'object' && conn._id ? conn._id : conn),
+        ...(viewerUser.withdrawn_connections || []).filter(conn => {
+              // Check if withdrawal date is within the 3-week period
+              return conn.date && new Date(conn.date) >= threeWeeksAgo;
+            })
+            .map(conn => typeof conn === 'object' && conn._id ? conn._id : conn)
       ];
 
       // Common blocked user conditions 

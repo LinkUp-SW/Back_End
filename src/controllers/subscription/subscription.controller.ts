@@ -20,6 +20,13 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
 // Create checkout session for premium subscription
 export const createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const platform = req.body.platform || 'web';
+      let successUrl, cancelUrl;
+
+      const manageUrl = platform === 'web' 
+      ? `${process.env.FRONTEND_URL}/subscription/manage`
+      : `${process.env.APP_URL}/subscription/manage`;
+
       const user = await validateTokenAndGetUser(req, res);
       if (!user) return;
   
@@ -38,7 +45,7 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
               message: 'You have a subscription that will end soon. You can resume it instead.',
               subscription_status: 'ending_soon',
               // Let them know they can resume instead
-              resume_url: `${process.env.FRONTEND_URL}/subscription/resume` 
+              //resume_url: `${process.env.FRONTEND_URL}/subscription/resume` 
             });
           }
           
@@ -52,7 +59,7 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
               message: 'You already have an existing subscription',
               subscription_status: existingSubscription.status,
               // Return manage URL so frontend can redirect to manage instead of checkout
-              manage_url: `${process.env.FRONTEND_URL}/subscription/manage` 
+              manage_url: manageUrl 
             });
           }
           
@@ -118,9 +125,17 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
           return res.status(400).json({ 
             message: 'You already have an active subscription in our payment system',
             subscription_status: activeSubscription.status,
-            manage_url: `${process.env.FRONTEND_URL}/subscription/manage` 
+            manage_url: manageUrl
           });
         }
+      }
+      
+      if (platform === 'web') {
+        successUrl = `${process.env.FRONTEND_URL}/subscription/success`;
+        cancelUrl = `${process.env.FRONTEND_URL}/subscription/cancel`;
+      } else if (platform === 'ios' || platform === 'android') {
+        successUrl = `${process.env.APP_URL}/subscription/success`;
+        cancelUrl = `${process.env.APP_URL}/subscription/cancel`;
       }
   
       // Create checkout session
@@ -134,8 +149,8 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
           }
         ],
         mode: 'subscription',
-        success_url: `${process.env.FRONTEND_URL}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.FRONTEND_URL}/subscription/cancel`,
+        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl,
         metadata: {
           userId: user.user_id
         }

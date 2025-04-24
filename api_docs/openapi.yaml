@@ -6059,6 +6059,29 @@ paths:
             type: string
           description: Bearer token for authentication
           example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform:
+                  type: string
+                  enum: [web, ios, android]
+                  default: web
+                  description: The client platform type to determine appropriate redirect URLs
+            examples:
+              Web:
+                value:
+                  platform: "web"
+              iOS:
+                value:
+                  platform: "ios"
+              Android:
+                value:
+                  platform: "android"
+
       responses:
         '200':
           description: Checkout session created successfully
