@@ -52,7 +52,7 @@ export class CommentRepository {
     commentId: string,
     content?: string,
     media?: string | null,
-    taggedUsers?: string[] | null
+    taggedUsers?: mongoose.Types.ObjectId[] | null
   ) {
     const updateFields: Record<string, any> = {};
     if (content !== undefined) updateFields.content = content;
@@ -417,7 +417,67 @@ export const getReplies = async (
     }
   };
 
-
+  export const deleteAllComments = async (postId: string): Promise<string[]> => {
+    try {
+      // First, fetch all root comments for the post
+      const rootComments = await comments
+        .find({ post_id: postId, parentId: null })
+        .lean()
+        .exec();
+        
+      if (rootComments.length === 0) {
+        return []; // No comments to delete
+      }
+      
+      // Get all root comment IDs
+      const rootCommentIds = rootComments.map(c => c._id.toString());
+      
+      // Fetch all replies (second-level comments)
+      const allReplies = await comments
+        .find({ parentId: { $in: rootCommentIds } })
+        .lean()
+        .exec();
+      
+      const replyIds = allReplies.map(r => r._id.toString());
+      
+      // Combine all comment IDs (roots and replies)
+      const allCommentIds = [...rootCommentIds, ...replyIds];
+      
+      // Get all unique user IDs who authored these comments for activity updates
+      const userIds = new Set<string>();
+      rootComments.forEach(comment => userIds.add(comment.user_id.toString()));
+      allReplies.forEach(reply => userIds.add(reply.user_id.toString()));
+      
+      // Update each user's activity to remove references to deleted comments
+      const userUpdatePromises = Array.from(userIds).map(userId => 
+        users.updateOne(
+          { _id: userId },
+          { $pull: { 'activity.comments': { $in: allCommentIds } } }
+        )
+      );
+      
+      // Delete all comments in one operation
+      const deleteCommentsPromise = comments.deleteMany({ 
+        $or: [
+          { post_id: postId, parentId: null },  // Root comments
+          { parentId: { $in: rootCommentIds } } // Replies
+        ]
+      });
+      
+      // Execute all operations
+      await Promise.all([...userUpdatePromises, deleteCommentsPromise]);
+      
+      // Return all deleted comment IDs
+      return allCommentIds;
+      
+    } catch (err) {
+      if (err instanceof Error) {
+        throw new Error(`Error deleting comments: ${err.message}`);
+      } else {
+        throw new Error("Error deleting comments: Unknown error");
+      }
+    }
+  };
 
 
 
