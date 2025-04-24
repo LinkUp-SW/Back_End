@@ -56,12 +56,9 @@ export const validateUserIdFromRequest = async (req: Request, res: Response): Pr
  */
 export const findUserByUserId = async (user_id: string, res: Response) => {
     try {
-        console.log(`Looking up user with ID: ${user_id}`);
         // Query the database using the `user_id` field
         const user = await Users.findOne({ user_id });
-        //console.log("User found:", user); // Log the found user
         if (!user) {
-            console.log(`No user found with ID: ${user_id}`);
             res.status(404).json({ message: "User not found" });
             return null;
         }
@@ -461,7 +458,6 @@ export const transformSkillsToObjects = (user: any, skillNames: string[]): any[]
  */
 export const findUserById = async (id: string, res: Response) => {
   try {
-      console.log(`Looking up user with MongoDB ID: ${id}`);
       // Validate that the id is a valid ObjectId
       if (!mongoose.Types.ObjectId.isValid(id)) {
           console.log(`Invalid MongoDB ID format: ${id}`);
@@ -473,7 +469,7 @@ export const findUserById = async (id: string, res: Response) => {
       const user = await Users.findById(id);
       
       if (!user) {
-          console.log(`No user found with MongoDB ID: ${id}`);
+
           res.status(404).json({ message: "User not found" });
           return null;
       }
