@@ -29,7 +29,7 @@ export interface postsInterface extends mongoose.Document{
     comments_disabled: commentsEnum;
     public_post: Boolean;
     reacts: reactsInterface[];
-    tagged_users: usersInterface[];
+    tagged_users: string[];
     comments: commentsInterface[];
     isEdited:boolean;
 } 
@@ -48,7 +48,7 @@ const postsSchema = new Schema<postsInterface>({
     comments_disabled: { type: String, enum: Object.values(commentsEnum) },
     public_post: { type: Boolean, default: true },
     reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
-    tagged_users: [{ type: Schema.Types.ObjectId, ref: "users" }],
+    tagged_users: [{ type: String }],
     comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
     isEdited:{type:Boolean,default:false}
 });
