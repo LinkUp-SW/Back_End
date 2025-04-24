@@ -2,6 +2,10 @@ pipeline {
     agent any
     environment {
         CI = "true"  
+        CI = "true"  
+        VAULT_SECRET = vault path: 'secret/jenkins/Back_env', engineVersion: "2", key: 'value'
+        DOCKERHUB_CREDENTIALS = credentials('docker-token')
+        IMAGE_NAME = credentials('DockerHub-back-repo')
     }
     stages {
         stage('Checkout') {
@@ -11,6 +15,7 @@ pipeline {
                 sh 'mkdir mywork && mv * mywork/ 2>/dev/null || true' 
                 }
         }
+       /*
        stage('Install Dependencies') { 
             steps {
                 echo 'installing dependencies...' 
@@ -30,6 +35,47 @@ pipeline {
                     cd ..
                     rm -rf mywork
                  '''
+            }
+        }
+        */
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                
+                    script {
+                        docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-creds') {
+                            dockerImage.push()
+                        }
+                    
+
+                    
+                    script {
+                        sh """
+                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                            docker push ${IMAGE_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy Locally') {
+            steps {
+                script {
+                    sh """
+                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker stop backend || true
+                        docker rm backend || true
+                        docker run -d --name backend -p 3000:3000 ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
+                }
             }
         }
     }
