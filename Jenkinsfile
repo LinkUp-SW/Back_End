@@ -4,7 +4,7 @@ pipeline {
         CI = "true"  
         VAULT_SECRET = vault path: 'secret/jenkins/Back_env', engineVersion: "2", key: 'value'
         DOCKERHUB_CREDENTIALS = credentials('docker-token')
-        IMAGE_NAME = credentials('DockerHub-back-repo')
+        IMAGE_TAG = "${BUILD_NUMBER}"
     }
     stages {
         stage('Checkout') {
@@ -39,31 +39,39 @@ pipeline {
         */
         stage('Build Docker Image') {
             steps {
-                script {
+                withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
                     sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
                 }
             }
         }
 
         stage('Push to Docker Hub') {
-            steps {
-                 sh """
+          steps {
+                withCredentials([
+                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME'),
+                    usernamePassword(credentialsId: 'docker-token', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
+                ]) {
+                    sh """
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push ${IMAGE_NAME}:${IMAGE_TAG}
                         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
                         docker push ${IMAGE_NAME}:latest
                     """
-                    }
                 }
+            }
+        }
 
         stage('Deploy Locally') {
             steps {
-                script {
+                withCredentials([
+                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME'),
+                    usernamePassword(credentialsId: 'docker-token', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
+                ]) {
                     sh """
-                        docker pull ${IMAGE_NAME}:${IMAGE_TAG}
-                        docker stop backend || true
-                        docker rm backend || true
-                        docker run -d --name backend -p 3000:3000 ${IMAGE_NAME}:${IMAGE_TAG}
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                        docker push ${IMAGE_NAME}:latest
                     """
                 }
             }
