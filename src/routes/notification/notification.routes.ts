@@ -5,7 +5,7 @@ import { authorizeMessaging } from '../../middleware/authMiddleware.ts';
 const router = express.Router();
 
 // Get all notifications
-router.get('/', authorizeMessaging, notificationController.getNotifications);
+router.get('/get-notifications', authorizeMessaging, notificationController.getNotifications);
 
 // Get unread notifications count
 router.get('/unread-count', authorizeMessaging, notificationController.getUnreadNotificationsCount);

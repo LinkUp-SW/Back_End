@@ -18,9 +18,25 @@ const getNotifications = asyncHandler(async (req: Request, res: Response, next: 
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 20;
   
-  const notifications = await notificationRepo.getUserNotifications(userId as string, limit, page);
+  // Get notifications and total count
+  const { notifications, total } = await notificationRepo.getUserNotifications(userId as string, limit, page);
   
-  return res.status(200).json({ notifications });
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(total / limit);
+  const hasNextPage = page < totalPages;
+  const hasPreviousPage = page > 1;
+  
+  return res.status(200).json({
+    notifications,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage
+    }
+  });
 });
 
 /**

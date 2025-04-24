@@ -356,11 +356,16 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
           await viewerUser.save();
         }
       }
+
+      let msgNotificationData = {
+        senderId: viewerUser.user_id,
+        recipientId: targetUser.user_id,
+        type: NotificationType.CONNECTION_REQUEST,
+        referenceId: targetUser._id,
+      }
   
       await webSocketService.sendNotification(
-        targetUser.user_id, // recipient
-        viewerUser.user_id, // sender
-        NotificationType.CONNECTION_REQUEST
+        msgNotificationData
       );
 
       res.status(200).json({ message: "Connection request sent successfully." });

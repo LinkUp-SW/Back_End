@@ -39,16 +39,20 @@ export class NotificationRepository {
     }
   }
 
-  async getUserNotifications(userId: string, limit: number = 20, page: number = 1) {
+  async getUserNotifications(userId: string, limit: number, page: number) {
     const skip = (page - 1) * limit;
     
-    const notificationsList = await notifications.find({ recipient_id: userId })
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    // Run two queries in parallel for better performance
+    const [userNotifications, total] = await Promise.all([
+      notifications.find({ recipient_id: userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      notifications.countDocuments({ recipient_id: userId })
+    ]);
     
-    return notificationsList;
+    return { notifications: userNotifications, total };
   }
 
   async getUnreadNotificationsCount(userId: string): Promise<number> {
