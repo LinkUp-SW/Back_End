@@ -42,6 +42,7 @@ import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
+import searchJobsRoutes from './src/routes/jobs/searchJobs.routes.ts';
 import searchRoutes from './src/routes/organization/search.routes.ts';
 import companyProfileRoutes from "./src/routes/organization/companyProfile.routes.ts"
 import companySettingsRoutes from "./src/routes/organization/companySettings.routes.ts"
@@ -142,7 +143,9 @@ app.use('/api/v1/user',
 app.use('/api/v1/jobs', 
     filterJobsRoutes, 
     saveJobsRoutes,
-    getJobsRoutes);
+    getJobsRoutes,
+    searchJobsRoutes
+  );
 
 
 app.use('/api/v1/post',

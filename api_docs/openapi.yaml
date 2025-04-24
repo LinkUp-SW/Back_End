@@ -4357,6 +4357,112 @@ paths:
                   message:
                     type: string
                     example: "Error filtering jobs"
+  /api/v1/jobs/search-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Search for jobs
+      description: Search for jobs by keyword or industry
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term to look for in all job fields
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job search results"
+                  query:
+                    type: string
+                    example: "software"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Please provide a keyword or industry to search for"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error searching jobs"
 
 components:
   securitySchemes:
