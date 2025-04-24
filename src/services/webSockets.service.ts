@@ -92,6 +92,8 @@ export class WebSocketService {
 
       socket.on("mark_notification_read", (data) => this.handleMarkNotificationRead(socket, data));
       socket.on("mark_all_notifications_read", () => this.handleMarkAllNotificationsRead(socket));
+
+      socket.on("new_notification", async (data) => this.sendNotification(data))
     
 
       socket.on("error", (error) => {
@@ -206,15 +208,17 @@ export class WebSocketService {
       const receiverSocketId = this.userSockets.get(receiverId);
       if (receiverSocketId) {
         this.io.to(receiverSocketId).emit("new_message", messageObj);
+
+        let msgNotificationData = {
+          recipientId: receiverId,
+          senderId: senderId,
+          type: NotificationType.MESSAGE,
+          referenceId: conversation.id,
+          content: message.length > 30 ? `${message.substring(0, 30)}...` : message
+        }
         
         // Send message notification if user is online but in different conversation
-        await this.sendNotification(
-          receiverId,
-          senderId,
-          NotificationType.MESSAGE,
-          conversation.id,
-          message.length > 30 ? `${message.substring(0, 30)}...` : message
-        );
+        await this.sendNotification(msgNotificationData);
         
         // Update unread count
         const unreadCount = await this.getUnseenMessagesCount(receiverId);
@@ -499,61 +503,60 @@ export class WebSocketService {
     }
   }
 
-  public async sendNotification(
+  public async sendNotification(data: {
     recipientId: string,
     senderId: string,
     type: NotificationType,
     referenceId?: mongoose.Types.ObjectId,
     content?: string
-  ) {
+  }) {
     try {
       // Create notification in database
       const notification = await this.notificationRepo.createNotification(
-        recipientId,
-        senderId,
-        type,
-        referenceId,
-        content
+        data.recipientId,
+        data.senderId,
+        data.type,
+        data.referenceId,
+        data.content
       );
-
       if (!notification) {
         throw new CustomError("Failed to create notification", 500);
       }
-
-      console.log("Notification created:", notification);
-
+      console.log("[DEBUG] Notification created:", notification);
+  
       // Get sender information
-      const sender = await this.userRepo.findByUserId(senderId);
-      
+      const sender = await this.userRepo.findByUserId(data.senderId);
+  
       // Prepare notification object for socket
       const notificationObj = {
         id: notification._id,
         type: notification.type,
-        senderId: senderId,
+        senderId: data.senderId,
         senderName: sender ? `${sender.bio?.first_name || ''} ${sender.bio?.last_name || ''}` : '',
         senderPhoto: sender ? sender.profile_photo : null,
         content: notification.content,
         createdAt: notification.created_at,
         referenceId: notification.reference_id
       };
-      
+  
       // Send notification to user if online
-      const recipientSocketId = this.userSockets.get(recipientId);
+      const recipientSocketId = this.userSockets.get(data.recipientId);
       if (recipientSocketId) {
+        console.log(`[DEBUG] Emitting new_notification to recipientId: ${data.recipientId}, socketId: ${recipientSocketId}`);
         this.io.to(recipientSocketId).emit("new_notification", notificationObj);
-        console.log(`[WebSocketService] userSockets:`, Array.from(this.userSockets.entries()));
-        console.log(`[WebSocketService] Emitting new_notification to recipientId: ${recipientId}, socketId: ${recipientSocketId}`);
-
+  
         // Update unread count
-        const unreadCount = await this.notificationRepo.getUnreadNotificationsCount(recipientId);
+        const unreadCount = await this.notificationRepo.getUnreadNotificationsCount(data.recipientId);
+        console.log(`[DEBUG] Emitting unread_notifications_count to recipientId: ${data.recipientId}, count: ${unreadCount}`);
         this.io.to(recipientSocketId).emit("unread_notifications_count", { count: unreadCount });
+      } else {
+        console.warn(`[DEBUG] Recipient ${data.recipientId} is not online`);
       }
-
-      console.log(`[WebSocketService] Sending notification to ${recipientId} from ${senderId} of type ${type}`);
-      
+  
+      console.log(`[DEBUG] Sending notification to ${data.recipientId} from ${data.senderId} of type ${data.type}`);
       return notification;
     } catch (error) {
-      console.error("Send notification error:", error);
+      console.error("[ERROR] Send notification error:", error);
       throw error;
     }
   }
