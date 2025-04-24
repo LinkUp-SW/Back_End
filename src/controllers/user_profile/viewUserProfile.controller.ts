@@ -6,6 +6,8 @@ import {
   getUserPostsLimited,
   getUserCommentsLimited,
   getUserReactedPostsLimited,
+  findUserById
+  
 } from "../../utils/database.helper.ts";
 import tokenUtils from "../../utils/token.utils.ts";
 import { findMutualConnections , handleProfileAccess} from "../../repositories/user.repository.ts";
@@ -179,7 +181,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
 
     const nameOfOneMutualConnection = mutualConnections.length > 0
       ? await (async () => {
-          const mutualConnectionUser = await findUserByUserId(mutualConnections[0], res);
+          const mutualConnectionUser = await findUserById(mutualConnections[0], res);
           return mutualConnectionUser
             ? `${mutualConnectionUser.bio.first_name} ${mutualConnectionUser.bio.last_name}`
             : null;
