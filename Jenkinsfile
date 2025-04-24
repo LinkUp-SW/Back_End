@@ -64,13 +64,18 @@ pipeline {
         }
 
         stage('Deploy Locally') {
-            steps {
-                withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
+                   steps {
+                withCredentials([
+                    string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME'),
+                    string(credentialsId: 'vault-secret-backend-env', variable: 'VAULT_SECRET')
+                ]) {
+                    writeFile file: '.env', text: "${VAULT_SECRET}"
+        
                     sh '''
                         docker pull "$IMAGE_NAME:$BUILD_NUMBER"
                         docker stop backend || true
                         docker rm backend || true
-                        docker run -d --name backend -p 3000:3000 "$IMAGE_NAME:$BUILD_NUMBER"
+                        docker run -d --name backend --env-file .env -p 3000:3000 "$IMAGE_NAME:$BUILD_NUMBER"
                     '''
                 }
             }
