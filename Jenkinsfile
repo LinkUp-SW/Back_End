@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         CI = "true"  
-        CI = "true"  
         VAULT_SECRET = vault path: 'secret/jenkins/Back_env', engineVersion: "2", key: 'value'
         DOCKERHUB_CREDENTIALS = credentials('docker-token')
         IMAGE_NAME = credentials('DockerHub-back-repo')
