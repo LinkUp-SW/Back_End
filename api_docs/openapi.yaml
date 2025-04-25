@@ -288,6 +288,7 @@ paths:
               required:
                 - otp
                 - email
+                - update
               properties:
                 otp:
                   type: string
@@ -295,6 +296,9 @@ paths:
                 email:
                   type: string
                   example: "test@example.com"
+                update:
+                  type: boolean
+                  example: false
       responses:
         '200':
           description: OTP verified successfully.
