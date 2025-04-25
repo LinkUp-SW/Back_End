@@ -288,6 +288,7 @@ paths:
               required:
                 - otp
                 - email
+                - update
               properties:
                 otp:
                   type: string
@@ -295,23 +296,9 @@ paths:
                 email:
                   type: string
                   example: "test@example.com"
-      responses:
-        '200':
-          description: OTP verified successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Password reset successful"
-        '400':
-          description: OTP is required.
-        '401':
-          description: Invalid OTP or OTP expired.
-        '500':
-          description: Server error
+                update:
+                  type: boolean
+                  example: false
 
   /api/v1/user/verify-email:
     post:
