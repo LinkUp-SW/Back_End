@@ -16,16 +16,16 @@ export enum organizationSizeEnum {
   }
 
 export enum organizationTypeEnum{
-    public_organization = "Public company",
-    self_employed = "Private company",
-    government_agency = "Government agency",
-    nonprofit = "Nonprofit",
-    partnership = "Partnership",
+    Public_organization = "Public company",
+    Self_employed = "Private company",
+    Government_agency = "Government agency",
+    Nonprofit = "Nonprofit",
+    Partnership = "Partnership",
     university = "University",
     college = "College",
-    high_school = "High School",
-    middle_school = "Middle School",
-    elementary_school = "Elementary School"
+    high_school = "High school",
+    middle_school = "Middle school",
+    elementary_school = "Elementary school"
 }
 
 export enum categoryTypeEnum{
