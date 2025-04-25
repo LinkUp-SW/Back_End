@@ -6606,6 +6606,18 @@ paths:
                           logo:
                             type: string
                             example: "https://example.com/logo.png"
+                          industry:
+                            type: string
+                            example: "Software Development"
+                          size:
+                            type: string
+                            example: "1001-5000 employees"
+                          description:
+                            type: string
+                            example: "Tech Company is a leading provider of software solutions..."
+                          followers_count:
+                            type: integer
+                            example: 1500
         '400':
           description: Invalid job ID
           content:
