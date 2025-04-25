@@ -196,3 +196,72 @@ export const getPaginatedReactions = async (
   }
 };
 
+export const deleteReactionsByContent = async (
+  contentId: string, 
+  contentType: "Post" | "Comment"
+): Promise<number> => {
+  try {
+    // Find all reactions for this content
+    const contentReactions = await reactions.find({
+      target_id: new mongoose.Types.ObjectId(contentId),
+      target_type: contentType
+    });
+    // const reactionIds = contentReactions.map(reaction => reaction._id);
+    
+    // Remove reactions from users' activity
+    for (const reaction of contentReactions) {
+      await users.updateOne(
+        { _id: reaction.user_id },
+        { $pull: { 'activity.reacts': reaction._id } }
+      );
+    }
+    
+    // Delete all reactions
+    const result = await reactions.deleteMany({
+      target_id: new mongoose.Types.ObjectId(contentId),
+      target_type: contentType
+    });
+    
+    return result.deletedCount || 0;
+  } catch (error) {
+    console.error(`Error deleting reactions for ${contentType} ${contentId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Recursively deletes all reactions for a post and its comments
+ * @param postId The ID of the post
+ */
+export const deleteAllPostReactions = async (postId: string): Promise<number> => {
+  // Delete reactions on the post itself
+  const postReactionsCount = await deleteReactionsByContent(postId, "Post");
+  return postReactionsCount;
+};
+
+/**
+ * Deletes reactions for a comment and optionally its replies
+ * @param commentId The ID of the comment
+ * @param includeReplies Whether to delete reactions for replies too
+ * @param replyIds Optional array of reply IDs if already known
+ */
+export const deleteCommentReactions = async (
+  commentId: string,
+  includeReplies: boolean = true,
+  replyIds?: string[]
+): Promise<number> => {
+  let totalDeleted = 0;
+  
+  // Delete reactions on the comment itself
+  totalDeleted += await deleteReactionsByContent(commentId, "Comment");
+  
+  // Delete reactions on replies if requested
+  if (includeReplies) {
+    const repliesIdArray = replyIds || [];
+    for (const replyId of repliesIdArray) {
+      totalDeleted += await deleteReactionsByContent(replyId, "Comment");
+    }
+  }
+  
+  return totalDeleted;
+};
