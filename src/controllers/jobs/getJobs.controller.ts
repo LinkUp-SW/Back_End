@@ -92,7 +92,7 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
                     organization: {
                         _id: '$org._id',
                         name: '$org.name',
-                        logo: '$org.logo'
+                        logo: '$org.logo',
                     }
                 }
             }
@@ -156,7 +156,7 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
                     organization: {
                         _id: '$org._id',
                         name: '$org.name',
-                        logo: '$org.logo'
+                        logo: '$org.logo',
                     }
                 }
             }
@@ -223,7 +223,11 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
                     organization: {
                         _id: '$org._id',
                         name: '$org.name',
-                        logo: '$org.logo'
+                        logo: '$org.logo',
+                        industry: '$org.industry',
+                        size: '$org.size',
+                        description: '$org.description',
+                        followers_count: { $size: { $ifNull: ['$org.followers', []] } }
                     }
                 }
             },

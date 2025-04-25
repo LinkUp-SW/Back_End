@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import organizations from "../../models/organizations.model.ts";
 import users from "../../models/users.model.ts";
+import jobs from "../../models/jobs.model.ts"; 
 import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
 import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
 
@@ -95,9 +96,16 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
             { $pull: { organizations: companyId } }
         );
 
+        // Delete all jobs associated with this organization
+        const deletedJobs = await jobs.deleteMany({ organization_id: companyId });
+        
+        // Delete the organization
         await organizations.findByIdAndDelete(companyId);
 
-        res.status(200).json({ message: "Company profile deleted successfully" });
+        res.status(200).json({ 
+            message: "Company profile deleted successfully", 
+            deletedJobsCount: deletedJobs.deletedCount 
+        });
     } catch (error) {
         next(error);
     }
