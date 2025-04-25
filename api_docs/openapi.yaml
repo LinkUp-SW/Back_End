@@ -7859,7 +7859,7 @@ paths:
       tags:
         - Jobs
       summary: Search for jobs
-      description: Search for jobs by keyword or industry
+      description: Search for jobs by keyword or industry. Optional authentication to determine saved status.
       parameters:
         - name: query
           in: query
@@ -7879,6 +7879,12 @@ paths:
           schema:
             type: integer
           description: Number of results per page (default is 10)
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Bearer token for authentication (optional)
       responses:
         '200':
           description: Successfully retrieved search results
@@ -7925,6 +7931,10 @@ paths:
                         timeAgo:
                           type: string
                           example: "3 days ago"
+                        is_saved:
+                          type: boolean
+                          example: false
+                          description: Indicates if the job is saved by the authenticated user
                         organization:
                           type: object
                           properties:
@@ -7937,6 +7947,18 @@ paths:
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
+                            industry:
+                              type: string
+                              example: "Software Development"
+                            size:
+                              type: string
+                              example: "1001-5000 employees"
+                            description:
+                              type: string
+                              example: "Tech Company is a leading provider of software solutions..."
+                            followers_count:
+                              type: integer
+                              example: 1500
                   nextCursor:
                     type: string
                     example: "60d21b4667d0d8992e610c85"
@@ -7949,7 +7971,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Please provide a keyword or industry to search for"
+                    example: "Please provide a search query"
         '500':
           description: Server error
           content:
@@ -7960,7 +7982,7 @@ paths:
                   message:
                     type: string
                     example: "Error searching jobs"
-
+                    
 components:
   securitySchemes:
     bearerAuth:
