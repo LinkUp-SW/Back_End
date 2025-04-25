@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import posts from "../models/posts.model.ts";
+import users from "../models/users.model.ts";
 
 export class PostRepository {
   async create(
@@ -84,7 +85,7 @@ export const getSavedPostsCursorBased = async (
   const postsData: any[] = []; // Array to store fetched posts
   if (cursor == null) cursor = 0
   const end = Math.min(cursor + limit, savedPosts.length); // Calculate the end index based on the limit
-
+  const userIds = new Set<string>();
   for (let i = cursor; i < end; i++) {
     if (i >= savedPosts.length) {
       break; // Exit the loop if the array finishes mid-processing
@@ -93,13 +94,34 @@ export const getSavedPostsCursorBased = async (
     const post = await posts.findOne({ _id: postId }); // Fetch the post by ID
     if (post) {
       postsData.push(post); // Add the post to the postsData array
+      userIds.add(post.user_id.toString());
     }
   }
-
+  
+  const authors = await users.find({_id:{$in: Array.from(userIds) } }).lean();
+  const authorMap = new Map();
+  for (const author of authors) {
+    authorMap.set(author._id.toString(), {
+      username: author.user_id,
+      firstName: author.bio.first_name,
+      lastName: author.bio.last_name,
+      headline: author.bio?.headline,
+      profilePicture: author.profile_photo,
+      connectionDegree: "3rd+" // Default connection degree
+    });
+  }
+  const enrichedPosts = postsData.map(post => {
+  const authorInfo = authorMap.get(post.user_id.toString());
+  const plainPost = post.toObject ? post.toObject() : post;
+  return {
+    ...plainPost,
+    author: authorInfo || null
+  };
+});
   // Determine the next cursor
   const hasNextPage = end < savedPosts.length; // Check if there are more posts to fetch
   const nextCursor = hasNextPage ? end : null; // Set the next cursor or null if no more posts
 
-  return { posts: postsData, nextCursor }
+  return { posts: enrichedPosts, nextCursor }
 };
 
