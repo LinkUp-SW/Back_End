@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 import comments from '../models/comments.model.ts';
 import users from '../models/users.model.ts';
 import { convert_idIntoUser_id } from './user.repository.ts';
-import { deleteCommentReactions } from './reacts.repository.ts';
+import { deleteCommentReactions, getTopReactions } from './reacts.repository.ts';
+import { targetTypeEnum } from '../models/reactions.model.ts';
 
 export class CommentRepository {
   /**
@@ -219,6 +220,29 @@ export const getComments = async (
       // Build the result object
       const result: Record<string, any> = {};
       
+      const rootCommentReactionsPromises = rootComments.map(comment => 
+        getTopReactions(comment._id.toString(), targetTypeEnum.comment)
+      );
+      const rootCommentReactions = await Promise.all(rootCommentReactionsPromises);
+      // Create a map of comment ID to reactions for quick lookups
+      const commentReactionsMap = new Map();
+      rootComments.forEach((comment, index) => {
+        commentReactionsMap.set(comment._id.toString(), rootCommentReactions[index]);
+      });
+
+      // Also fetch reactions for replies
+      const allReplyIds = allReplies.map(reply => reply._id.toString());
+      const replyReactionsPromises = allReplyIds.map(replyId => 
+        getTopReactions(replyId, targetTypeEnum.comment)
+      );
+      const replyReactionsResults = await Promise.all(replyReactionsPromises);
+      
+      // Create a map of reply ID to reactions
+      const replyReactionsMap = new Map();
+      allReplyIds.forEach((replyId, index) => {
+        replyReactionsMap.set(replyId, replyReactionsResults[index]);
+      });
+
       for (const rootComment of rootComments) {
         const rootId = rootComment._id.toString();
         const rootAuthorInfo = userInfoMap.get(rootComment.user_id.toString());
@@ -228,6 +252,9 @@ export const getComments = async (
                 rootComment.tagged_users = userIds;
             }
         }
+
+        const rootReactions = commentReactionsMap.get(rootId);
+
         const transformedRootComment = {
           ...rootComment,
           media: rootComment.media ? {
@@ -236,7 +263,9 @@ export const getComments = async (
           } : {
             link: '',
             mediaType: 'none'
-          }
+          },
+          reactions: rootReactions.topReacts,
+          reactionsCount: rootReactions.totalCount
         };
   
         // Process replies for this root comment
@@ -252,6 +281,7 @@ export const getComments = async (
                 reply.tagged_users = userIds;
             }
         }
+        const replyReactions = replyReactionsMap.get(replyId);
           repliesWithAuthors[replyId] = {
             ...reply,
             media: reply.media ? {
@@ -261,7 +291,9 @@ export const getComments = async (
               link: '',
               mediaType: 'none'
             },
-            author: replyAuthorInfo
+            author: replyAuthorInfo,
+            reactions: replyReactions.topReacts,
+            reactionsCount: replyReactions.totalCount
           };
         }
         
