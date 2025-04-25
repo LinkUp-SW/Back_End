@@ -61,7 +61,7 @@ describe('Search Suggestions API', () => {
       industry: testIndustry,
       logo: 'https://example.com/logo.png',
       size: organizationSizeEnum.large_1001_5000,
-      type: organizationTypeEnum.privately_held
+      type: organizationTypeEnum.Private_company
     });
     tech_company_id = techCompany._id as mongoose.Types.ObjectId;
     

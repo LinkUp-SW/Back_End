@@ -17,7 +17,7 @@ export enum organizationSizeEnum {
 
 export enum organizationTypeEnum{
     Public_organization = "Public company",
-    Self_employed = "Private company",
+    Private_company = "Private company",
     Government_agency = "Government agency",
     Nonprofit = "Nonprofit",
     Partnership = "Partnership",

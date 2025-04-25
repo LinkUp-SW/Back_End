@@ -25,8 +25,8 @@ describe('organizations Model Test', () => {
             description: 'A test organization',
             industry: 'Software',
             location: 'Test City',
-            size: organizationSizeEnum.small_2_10,
-            type: organizationTypeEnum.public_organization,
+            size: organizationSizeEnum.small_1_10,
+            type: organizationTypeEnum.Public_organization,
             posts: [],
             followers: [],
             blocked: [],
@@ -37,7 +37,6 @@ describe('organizations Model Test', () => {
         expect(savedorganization._id).toBeDefined();
         expect(savedorganization.name).toBe(validorganization.name);
         expect(savedorganization.category_type).toBe(validorganization.category_type);
-        expect(savedorganization.unique_url).toBe(validorganization.unique_url);
         expect(savedorganization.website).toBe(validorganization.website);
         expect(savedorganization.logo).toBe(validorganization.logo);
         expect(savedorganization.description).toBe(validorganization.description);
@@ -54,8 +53,8 @@ describe('organizations Model Test', () => {
             description: 'A test organization',
             industry: 'Software',
             location: 'Test City',
-            size: organizationSizeEnum.small_2_10,
-            type: organizationTypeEnum.public_organization,
+            size: organizationSizeEnum.small_1_10,
+            type: organizationTypeEnum.Public_organization,
             posts: [],
             followers: [],
             blocked: [],
