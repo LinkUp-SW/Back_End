@@ -46,7 +46,10 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
                 plainPost.tagged_users = userIds;
             }
         }
-        return res.status(200).json({message:'Post returned successfully',post:{...plainPost, author:authorInfo},comments:result })
+        const isSaved = user.savedPosts.some(savedPostId => 
+            savedPostId.toString() === postId
+          );        
+          return res.status(200).json({message:'Post returned successfully',post:{...plainPost, author:authorInfo,isSaved},comments:result })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message });
