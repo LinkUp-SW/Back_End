@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import mongoose from 'mongoose';
 import { paginatedJobQuery, getTimeAgoStage } from "../../utils/database.helper.ts";
+import { validateTokenAndGetUser } from "../../utils/helper.ts";
 
 /**
  * Search for jobs using a single query term
@@ -8,6 +9,9 @@ import { paginatedJobQuery, getTimeAgoStage } from "../../utils/database.helper.
  */
 export const searchJobs = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // Get the authenticated user (optional)
+        const user = await validateTokenAndGetUser(req, res);
+        
         // Get query parameters
         const query = req.query.query as string;
         const cursor = req.query.cursor as string || null;
@@ -30,7 +34,7 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
             ]
         };
         
-        // Use the helper function with standard projection for jobs
+        // Use the helper function with enhanced projection for jobs
         const extraStages = [
             getTimeAgoStage(),
             {
@@ -60,7 +64,11 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
                     organization: {
                         _id: '$org._id',
                         name: '$org.name',
-                        logo: '$org.logo'
+                        logo: '$org.logo',
+                        industry: '$org.industry',
+                        size: '$org.size',
+                        description: '$org.description',
+                        followers_count: { $size: { $ifNull: ['$org.followers', []] } }
                     }
                 }
             }
@@ -74,6 +82,22 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
             { _id: -1 }, // Sort by newest first
             extraStages
         );
+        
+        // Add isSaved status to each job if user is authenticated
+        if (user && user.saved_jobs && result.data) {
+            const savedJobIds = user.saved_jobs.map(id => id.toString());
+            
+            result.data = result.data.map(job => ({
+                ...job,
+                is_saved: savedJobIds.includes(job._id.toString())
+            }));
+        } else if (result.data) {
+            // Set is_saved to false for all jobs if user is not authenticated
+            result.data = result.data.map(job => ({
+                ...job,
+                is_saved: false
+            }));
+        }
         
         // Return search results
         return res.status(200).json({
