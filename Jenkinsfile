@@ -65,8 +65,14 @@ pipeline {
                    sh """
                         docker run --rm --name backend-test -p 3001:3000 --env-file .env ${IMAGE_NAME}:${BUILD_NUMBER} \
                         sh -c 'npm start & \
-                        sleep 5 && \
-                        curl --fail http://localhost:3001/health/code || exit 1'
+                          for i in {1..10}; do \
+                            curl --fail http://localhost:3001/health/code && exit 0; \
+                            echo "Waiting for server..."; \
+                            sleep 1; \
+                          done; \
+                          echo "Health check failed"; \
+                          exit 1'
+
                     """
                     }
                 }
