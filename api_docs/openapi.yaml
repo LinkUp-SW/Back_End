@@ -3636,6 +3636,12 @@ paths:
                   isConnectByEmail:
                     type: boolean
                     example: true
+                  number_of_saved_posts:
+                    type: integer
+                    example: 10
+                  number_of_saved_jobs: 
+                    type: integer
+                    example: 5
         '401':
           description: Unauthorized
           content:
