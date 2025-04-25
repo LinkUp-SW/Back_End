@@ -57,7 +57,7 @@ pipeline {
         stage('Test Image Locally') {
             when {
                 not {
-                    branch 'dockerize-back'
+                    branch 'main'
                 }
             }
            steps {
@@ -82,7 +82,7 @@ pipeline {
 
        stage('Push and Deploy') {
             when {
-                branch 'dockerize-back'
+                branch 'main'
             }
             steps {
                 withCredentials([
