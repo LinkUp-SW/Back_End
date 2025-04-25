@@ -63,10 +63,10 @@ pipeline {
                 withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
                 script {
                    sh """
-                        docker run --rm -p 3000:3000 --env-file .env ${IMAGE_NAME}:${BUILD_NUMBER} \
+                        docker run --rm --name backend-test -p 3001:3000 --env-file .env ${IMAGE_NAME}:${BUILD_NUMBER} \
                         sh -c 'npm start & \
                         sleep 5 && \
-                        curl --fail http://localhost:3000/health/code'
+                        curl --fail http://localhost:3001/health/code || exit 1'
                     """
                     }
                 }
