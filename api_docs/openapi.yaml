@@ -274,7 +274,7 @@ paths:
   /api/v1/user/verify-otp:
     post:
       tags:
-        - Auth
+        - OTP
       summary: Register a New User (Starter)
       description: >
         Verifies the one-time password (OTP) provided by the user.
