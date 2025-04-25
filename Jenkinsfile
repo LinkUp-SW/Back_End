@@ -57,7 +57,7 @@ pipeline {
         stage('Test Image Locally') {
             when {
                 not {
-                    branch 'main'
+                    branch 'dockerize-back'
                 }
             }
            steps {
