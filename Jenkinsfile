@@ -59,11 +59,14 @@ pipeline {
                     branch 'main'
                 }
             }
-            steps {
-                withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
-                    sh '''
-                        docker run --rm "$IMAGE_NAME:$BUILD_NUMBER" node --version
-                    '''
+           steps {
+                script {
+                   sh """
+                        docker run --rm -p 3000:3000 --env-file .env ${IMAGE_NAME}:${BUILD_NUMBER} \
+                        sh -c 'npm start & \
+                        sleep 5 && \
+                        curl --fail http://localhost:3000/health/code'
+                    """
                 }
             }
         }
