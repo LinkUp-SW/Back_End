@@ -185,6 +185,9 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
             return res.status(400).json({ message: 'Invalid job ID format' });
         }
         
+        // Get the authenticated user to check saved status
+        const user = await validateTokenAndGetUser(req, res);
+        
         // Use aggregation pipeline instead of findById
         const jobData = await jobs.aggregate([
             { 
@@ -235,6 +238,16 @@ export const getJobById = async (req: Request, res: Response, next: NextFunction
         }
         
         const job = jobData[0];
+        
+        // Add is_saved status if user is authenticated
+        if (user) {
+            const isSaved = user.saved_jobs.some(savedJobId => 
+                savedJobId.toString() === jobId
+            );
+            job.is_saved = isSaved;
+        } else {
+            job.is_saved = false; // Default to false if user is not authenticated
+        }
         
         return res.status(200).json({
             message: "Job retrieved successfully",

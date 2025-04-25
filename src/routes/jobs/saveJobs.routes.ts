@@ -8,7 +8,7 @@ router.post('/save-jobs/:jobId', (req, res, next) => {
 });
 
 router.delete('/unsave-jobs/:jobId', (req, res, next) => {
-    saveJobsControllers.unsaveJob(req,res,next);
+    saveJobsControllers.unsaveJob(req, res, next);
 });
 
 router.get('/get-saved-jobs', (req, res, next) => {

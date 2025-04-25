@@ -73,6 +73,7 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
   }
 
+  
   user.is_verified = true;
   await user.save();
 

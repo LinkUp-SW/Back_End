@@ -56,10 +56,8 @@ export const validateUserIdFromRequest = async (req: Request, res: Response): Pr
  */
 export const findUserByUserId = async (user_id: string, res: Response) => {
     try {
-
         // Query the database using the `user_id` field
         const user = await Users.findOne({ user_id });
-        //console.log("User found:", user); // Log the found user
         if (!user) {
             res.status(404).json({ message: "User not found" });
             return null;
