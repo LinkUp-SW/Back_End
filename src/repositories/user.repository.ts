@@ -213,7 +213,7 @@ export class UserRepository {
   }
 
   async updateEmail(user_id: string, email: string) {
-    return User.updateOne({ user_id: user_id }, { $set: { email: email } });
+    return User.updateOne({ user_id: user_id }, { $set: { email: email.toLowerCase() } });
   }
 
   async deleteAccount(user_id: string) {
