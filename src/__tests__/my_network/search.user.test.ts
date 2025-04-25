@@ -57,7 +57,7 @@ describe('User Search API', () => {
       industry: testIndustry,
       logo: 'https://example.com/logo.png',
       size: organizationSizeEnum.large_1001_5000,
-      type: organizationTypeEnum.privately_held
+      type: organizationTypeEnum.self_employed
     });
     tech_company_id = techCompany._id as mongoose.Types.ObjectId;
     
@@ -67,7 +67,7 @@ describe('User Search API', () => {
       industry: 'Finance',
       logo: 'https://example.com/finance.png',
       size: organizationSizeEnum.medium_51_200,
-      type: organizationTypeEnum.privately_held
+      type: organizationTypeEnum.self_employed
     });
     finance_company_id = financeCompany._id as mongoose.Types.ObjectId;
     
