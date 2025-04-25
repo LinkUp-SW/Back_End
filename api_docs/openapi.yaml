@@ -299,6 +299,29 @@ paths:
                 update:
                   type: boolean
                   example: false
+      responses:
+        '200':
+          description: OTP verified successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "OTP verified successfully"
+        '400':
+          description: Invalid OTP or OTP expired.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid OTP or OTP expired"
+        '500':
+          description: Server error
 
   /api/v1/user/verify-email:
     post:
