@@ -2,9 +2,10 @@ pipeline {
     agent any
     environment {
         CI = "true"  
-        VAULT_SECRET = vault path: 'secret/jenkins/Back_env', engineVersion: "2", key: 'value'
+        VAULT_SECRET = vault path: 'secret/jenkins/Back_env', version: 2, engineVersion: "2", key: 'value'
         DOCKERHUB_CREDENTIALS = credentials('docker-token')
         IMAGE_TAG = "${BUILD_NUMBER}"
+        HEALTH_CHECK_URL = credentials('health-check-url')
     }
     stages {
         stage('Checkout') {
@@ -68,7 +69,7 @@ pipeline {
                         sh -c 'npm start & \
                         sleep 5 && \
                         echo "Health check starting..." && \
-                        curl -v --fail http://localhost:3000/health/code || (echo "Health check failed"; exit 1)'
+                        curl -v --fail ${HEALTH_CHECK_URL} || (echo "Health check failed"; exit 1)'
                     """
                 } catch (e) {
                     sh "docker logs backend-test"  // Capture container logs on failure
@@ -108,7 +109,7 @@ pipeline {
                                 echo "Waiting for production container to start..."
                                 sleep 5
                                 for i in {1..5}; do
-                                    if curl -sSf http://localhost:3000/health/code; then
+                                    if curl -sSf ${HEALTH_CHECK_URL}; then
                                         echo "Production health check passed!"
                                         exit 0
                                     fi
