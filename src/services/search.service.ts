@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import users from '../models/users.model.ts';
 import organizations from '../models/organizations.model.ts';
 import { Response } from 'express';
+import { profile } from 'console';
 
 /**
  * User Search Service
@@ -418,15 +419,18 @@ if (connectionDegree !== 'all') {
       
       // Get name of one mutual connection if any exist
       let mutualConnectionName = '';
+      let mutualConnectionProfilePhoto = '';
       if (mutualCount > 0) {
         // Get just one mutual connection's details
         const mutualUser = await users.findById(
           mutualConnectionIds[0],
-          { 'bio.first_name': 1, 'bio.last_name': 1 }
+          { 'bio.first_name': 1, 'bio.last_name': 1, 'profile_photo': 1 }
         ).lean();
         
         if (mutualUser && mutualUser.bio) {
           mutualConnectionName = `${mutualUser.bio.first_name || ''} ${mutualUser.bio.last_name || ''}`.trim();
+          mutualConnectionProfilePhoto = mutualUser.profile_photo ||
+            'https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png'; // Default image path
         }
       }
       
@@ -443,7 +447,9 @@ if (connectionDegree !== 'all') {
         connection_degree: connectionDegreeLabel,
         mutual_connections: {
           count: mutualCount,
-          suggested_name: mutualConnectionName
+          suggested_name: mutualConnectionName,
+          suggested_profile_photo: mutualConnectionProfilePhoto
+
         },
         is_in_sent_connections: viewerSentConnections.includes(user._id.toString()),
         is_in_received_connections: viewerReceivedConnections.includes(user._id.toString())

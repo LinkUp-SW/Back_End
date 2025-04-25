@@ -6158,6 +6158,10 @@ paths:
                               type: string
                               example: "John Smith"
                               description: Name of one mutual connection
+                            suggested_profile_photo:
+                              type: string
+                              format: url
+                              example: "https://res.cloudinary.com/dxxx"
                         is_in_sent_connections:
                           type: boolean
                           example: true
