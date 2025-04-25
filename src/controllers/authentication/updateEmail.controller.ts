@@ -49,4 +49,23 @@ const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<R
   return res.status(200).json({ message: 'Email updated successfully', user_updated_email: user_updated?.email  });
 }); 
 
-export { updateEmail };
+
+const getCurrentEmail = asyncHandler(async (req: Request, res: Response): Promise<Response> => {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+  const decodedToken = tokenUtils.validateToken(token) as { userId: string };
+
+  if (!decodedToken || !decodedToken.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  const user = await userRepository.findByUserId(decodedToken.userId);
+  if (!user) {
+    throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
+  }
+
+  return res.status(200).json({ email: user.email });
+}
+);
+
+export { updateEmail,getCurrentEmail };
