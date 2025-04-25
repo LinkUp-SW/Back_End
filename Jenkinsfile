@@ -66,7 +66,7 @@ pipeline {
                         docker run --rm --name backend-test -p 3001:3000 --env-file .env ${IMAGE_NAME}:${BUILD_NUMBER} \
                         sh -c 'npm start & \
                         sleep 5 && \
-                        curl --fail http://localhost:3001/health/code || exit 1'
+                        curl --fail http://localhost:3000/health/code || exit 1'
                     """
                     }
                 }
