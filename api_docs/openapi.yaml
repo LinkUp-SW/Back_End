@@ -580,7 +580,7 @@ paths:
                 email:
                   type: string
                   example: "new.email@example.com"
-                token:
+                password:
                   type: string
                   example: "Password123"
       responses:
@@ -605,6 +605,37 @@ paths:
           description: User not found.
         '500':
           description: Server error.
+  /api/vq/user/get-current-email:
+    get:
+      tags:
+        - User
+      summary: Get current user email
+      description: >
+        Retrieves the email address of the authenticated user.
+        A valid token is required to verify the user's identity.
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: JWT token to validate
+      responses:
+        '200':
+          description: Email retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    example: "email@gmail.com"
+        '401':
+          description: Unauthorized or invalid token.
+        '404':
+          description: User not found.
+        '500':
+          description: Server error
   /api/v1/user/delete-account:
     delete:
       tags:
@@ -1683,6 +1714,12 @@ paths:
         - User Profile
       summary: Update user email
       description: Updates the user's email address
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: JWT token to validate
       requestBody:
         required: true
         content:
