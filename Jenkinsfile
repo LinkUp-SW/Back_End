@@ -62,20 +62,25 @@ pipeline {
            steps {
                 withCredentials([string(credentialsId: 'DockerHub-back-repo', variable: 'IMAGE_NAME')]) {
                 script {
-                   sh """
+                   try {
+                    sh """
                         docker run --rm --name backend-test -p 3001:3000 --env-file .env ${IMAGE_NAME}:${BUILD_NUMBER} \
                         sh -c 'npm start & \
                         sleep 5 && \
-                        curl --fail http://localhost:3000/health/code || exit 1'
+                        echo "Health check starting..." && \
+                        curl -v --fail http://localhost:3000/health/code || (echo "Health check failed"; exit 1)'
                     """
-                    }
+                } catch (e) {
+                    sh "docker logs backend-test"  // Capture container logs on failure
+                    error("Health check failed: ${e.getMessage()}")
+                }
                 }
             }
         }
 
-        stage('Push and Deploy') {
+       stage('Push and Deploy') {
             when {
-                branch 'main'
+                branch 'dockerize-back'
             }
             steps {
                 withCredentials([
@@ -88,12 +93,35 @@ pipeline {
                         docker tag "$IMAGE_NAME:$BUILD_NUMBER" "$IMAGE_NAME:latest"
                         docker push "$IMAGE_NAME:latest"
                     '''
-
-                    sh '''
-                        docker stop backend || true
-                        docker rm backend || true
-                        docker run -d --name backend --env-file .env -p 3000:3000 "$IMAGE_NAME:$BUILD_NUMBER"
-                    '''
+        
+                    script {
+                        try {
+                            sh '''
+                                docker stop backend || true
+                                docker rm backend || true
+                                docker run -d --name backend --env-file .env -p 3000:3000 "$IMAGE_NAME:$BUILD_NUMBER"
+                            '''
+                            
+                            //  production health check
+                            sh '''
+                                echo "Waiting for production container to start..."
+                                sleep 5
+                                for i in {1..5}; do
+                                    if curl -sSf http://localhost:3000/health/code; then
+                                        echo "Production health check passed!"
+                                        exit 0
+                                    fi
+                                    echo "Attempt $i/5 - Service not ready..."
+                                    sleep 3
+                                done
+                                echo "Production health check failed after 5 attempts"
+                                exit 1
+                            '''
+                        } catch (e) {
+                            sh "docker logs backend"  // Show logs on failure
+                            error("Production deployment failed: ${e.getMessage()}")
+                        }
+                    }
                 }
             }
         }
