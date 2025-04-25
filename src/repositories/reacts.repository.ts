@@ -59,7 +59,7 @@ export const getTopReactions = async (targetId: string, targetType: targetTypeEn
     // Get top 3 reactions
     const topReacts = await reactions.aggregate([
         // Match documents for the specific target
-        { $match: { target_id: targetId, target_type: targetType } },
+        { $match: { target_id: new mongoose.Types.ObjectId(targetId), target_type: targetType } },
         // Group by reaction type and count occurrences
         { $group: { _id: "$reaction", count: { $sum: 1 } } },
         // Sort by count in descending order
