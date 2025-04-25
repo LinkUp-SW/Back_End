@@ -3252,6 +3252,17 @@ paths:
                   isConnectByEmail:
                     type: boolean
                     example: true
+                  allow_messaging:
+                    type: boolean
+                    example: true
+                  viewer_user_is_subscribed:
+                    type: boolean
+                    example: false
+                  resume:
+                    type: string
+                    example: "https://example.com/resume.pdf"
+                  
+
         '401':
           description: Unauthorized
           content:

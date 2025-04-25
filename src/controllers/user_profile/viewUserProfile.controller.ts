@@ -167,6 +167,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
         isSubscribed: targetUser.subscription?.subscribed || false,
         education: educationDetails,
         work_experience: experienceDetails,
+        resume: targetUser.resume || "",
       };
 
       res.status(200).json(userBio);
@@ -235,6 +236,9 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
       education: educationDetails,
       work_experience: experienceDetails,
       profile_visibility: targetUser.privacy_settings?.profile_visibility || "public",
+      viewer_user_is_subscribed: viewerUser.subscription?.subscribed || false,
+      allow_messaging: targetUser.privacy_settings?.flag_messaging_requests || false,
+      resume: targetUser.resume || "",
     };
 
     res.status(200).json(userBio);
