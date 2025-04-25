@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import comments from '../models/comments.model.ts';
 import users from '../models/users.model.ts';
 import { convert_idIntoUser_id } from './user.repository.ts';
+import { deleteCommentReactions } from './reacts.repository.ts';
 
 export class CommentRepository {
   /**
@@ -210,9 +211,7 @@ export const getComments = async (
         replyCountByParentId.set(parentId, replyCountByParentId.get(parentId) + 1);
         
         // Only add the reply if we're still under the limit
-        console.log(replyLimit)
         if (repliesByParentId.get(parentId).length+1 < replyLimit) {
-            console.log(repliesByParentId.get(parentId).length)
           repliesByParentId.get(parentId).push(reply);
         }
       }
@@ -417,58 +416,36 @@ export const getReplies = async (
     }
   };
 
-  export const deleteAllComments = async (postId: string): Promise<string[]> => {
+  export const deleteAllComments = async (postId: string): Promise<void> => {
     try {
-      // First, fetch all root comments for the post
-      const rootComments = await comments
-        .find({ post_id: postId, parentId: null })
-        .lean()
-        .exec();
+      // Get all comments for this post
+      const postComments = await comments.find({ post_id: new mongoose.Types.ObjectId(postId) }).lean().exec();
         
-      if (rootComments.length === 0) {
-        return []; // No comments to delete
+      for (const comment of postComments) {
+          const commentId = (comment as any)._id.toString();
+          
+          // If it's a root comment (no parent), check for replies
+          if (!comment.parentId) {
+              const replies = await comments.find({ parentId: commentId });
+              const replyIds = replies.map(reply => (reply as any)._id.toString());
+              
+              // Delete reactions for the replies
+              if (replyIds.length > 0) {
+                  await deleteCommentReactions(commentId, true, replyIds);
+              } else {
+                  await deleteCommentReactions(commentId, false);
+              }
+          }
+          
+          // Remove from user's activity
+          await users.updateOne(
+              { _id: comment.user_id },
+              { $pull: { 'activity.comments': comment._id } }
+          );
       }
       
-      // Get all root comment IDs
-      const rootCommentIds = rootComments.map(c => c._id.toString());
-      
-      // Fetch all replies (second-level comments)
-      const allReplies = await comments
-        .find({ parentId: { $in: rootCommentIds } })
-        .lean()
-        .exec();
-      
-      const replyIds = allReplies.map(r => r._id.toString());
-      
-      // Combine all comment IDs (roots and replies)
-      const allCommentIds = [...rootCommentIds, ...replyIds];
-      
-      // Get all unique user IDs who authored these comments for activity updates
-      const userIds = new Set<string>();
-      rootComments.forEach(comment => userIds.add(comment.user_id.toString()));
-      allReplies.forEach(reply => userIds.add(reply.user_id.toString()));
-      
-      // Update each user's activity to remove references to deleted comments
-      const userUpdatePromises = Array.from(userIds).map(userId => 
-        users.updateOne(
-          { _id: userId },
-          { $pull: { 'activity.comments': { $in: allCommentIds } } }
-        )
-      );
-      
-      // Delete all comments in one operation
-      const deleteCommentsPromise = comments.deleteMany({ 
-        $or: [
-          { post_id: postId, parentId: null },  // Root comments
-          { parentId: { $in: rootCommentIds } } // Replies
-        ]
-      });
-      
-      // Execute all operations
-      await Promise.all([...userUpdatePromises, deleteCommentsPromise]);
-      
-      // Return all deleted comment IDs
-      return allCommentIds;
+      // Delete all comments for the post
+      await comments.deleteMany({ post_id: new mongoose.Types.ObjectId(postId) });
       
     } catch (err) {
       if (err instanceof Error) {

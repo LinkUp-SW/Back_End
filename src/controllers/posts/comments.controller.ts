@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import users from '../../models/users.model.ts';
 import { CommentRepository, getAllCommentChildrenIds, getComments, getReplies } from '../../repositories/comment.repository.ts';
 import { convert_idIntoUser_id, convertUser_idInto_id } from '../../repositories/user.repository.ts';
+import { deleteCommentReactions } from '../../repositories/reacts.repository.ts';
 
 /**
  * Create new comment under a post
@@ -262,7 +263,7 @@ const deleteComment = async (req: Request, res: Response) => {
         
         // Get all direct reply IDs (only one level)
         const replyIds = await getAllCommentChildrenIds(comment_id);
-        
+        await deleteCommentReactions(comment_id);
         await posts.updateOne(
             { _id: post_id },
             { $pull: { comments: comment_id } }
