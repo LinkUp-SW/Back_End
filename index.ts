@@ -38,6 +38,7 @@ import postRoutes from './src/routes/posts/posts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
 import createAdminRoutes from './src/routes/admin/createAdmin.routes.ts';
 import comments from './src/routes/posts/comments.routes.ts';
+import reactionRoutes from './src/routes/posts/reactions.routes.ts';
 
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
@@ -162,7 +163,8 @@ app.use('/api/v1/jobs',
 app.use('/api/v1/post',
     postRoutes,
     savePostRoutes,
-    comments
+    comments,
+    reactionRoutes
 );
 
 app.use('/api/v1/company',
