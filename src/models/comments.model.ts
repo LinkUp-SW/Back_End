@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { usersInterface } from "./users.model.ts";
 import { postsInterface } from "./posts.model.ts";
+import { reactsInterface } from "./reactions.model.ts";
 
 
 export interface commentsInterface extends mongoose.Document{
@@ -10,7 +11,7 @@ export interface commentsInterface extends mongoose.Document{
     content: string;
    date: number; // Changed to number type for Unix timestamp
     media: string;
-    reacts: string[];
+    reacts: reactsInterface[];
     tagged_users: string[];
     is_edited:boolean;
 } 
@@ -25,7 +26,7 @@ const commentsSchema = new Schema<commentsInterface>({
         default: () => Math.floor(Date.now() / 1000) // Unix timestamp in seconds
     },
     media: { type: String },
-    reacts: [{ type: String }],
+   reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
     tagged_users: [{ type: String }],
     is_edited:{type:Boolean, default:false}
 });

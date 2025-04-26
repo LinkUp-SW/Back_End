@@ -3339,7 +3339,7 @@ paths:
                   items:
                     type: string
                   description: Array of user IDs tagged in the post
-                  example: ["6457abc123def456", "6457abc123def457"]
+                  example: ["Amr-Doma81","Darwin-Núñez32"]
               required:
                 - commentsDisabled
                 - publicPost
@@ -3449,7 +3449,7 @@ paths:
                       items:
                         type: string
                       description: Updated array of user IDs tagged in the post
-                      example: ["6457abc123def456"]
+                      example: ["Amr-Doma81","Darwin-Núñez32"]
                   required:
                     - postId
           responses:
@@ -3584,21 +3584,27 @@ paths:
             type: string
           description: ID of the post to retrieve
           example: "6458abc123def456"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                cursor:
-                  type: Integer
-                  description: Cursor for pagination of comments
-                  example: 11
-                limit:
-                  type: integer
-                  description: Number of comments to retrieve
-                  example: 10
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination of comments
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of comments to retrieve
+        - in: query
+          name: replyLimit
+          required: false
+          schema:
+            type: integer
+            default: 2
+          description: Maximum number of replies to include per comment
       responses:
         '200':
           description: Post retrieved successfully
@@ -3636,11 +3642,11 @@ paths:
                       publicPost:
                         type: boolean
                         example: true
-                      taggedUsers:
+                      tagged_users:
                         type: array
                         items:
                           type: string
-                        example: ["6457abc123def457"]
+                        example: ["Amr-Doma81","Darwin-Núñez32"]
                       date:
                         type: number
                         example: "1745194451"
@@ -3650,7 +3656,7 @@ paths:
                           username:
                             type: string
                             example: "johndoe"
-                          finstName:
+                          firstName:
                             type: string
                             example: "John"
                           lastName:
@@ -3678,7 +3684,7 @@ paths:
                           example: "68058dd3ca03555f929d0ecc"
                         user_id:
                           type: string
-                          exapmle: "67e6b2e1ef869d719662ca10"
+                          example: "67e6b2e1ef869d719662ca10"
                         content:
                           type: string
                           example: "content will be written here"
@@ -3701,7 +3707,7 @@ paths:
                               type: object
                         tagged_users:
                           type: array
-                          example: ["67e6b2e1ef869d719662ca10"]
+                          example: ["Amr-Doma81","Darwin-Núñez32"]
                         is_edited:
                           type: boolean
                         date:
@@ -3763,7 +3769,7 @@ paths:
                     type: string
                     example: "Server error"
                   error:
-                    type: object                   
+                    type: object
   /api/v1/post/save-post:
     post:
       tags:
@@ -3821,21 +3827,20 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                limit:
-                  type: integer
-                  description: Number of posts to retrieve in a batch.
-                cursor:
-                  type: integer
-                  description: Cursor for pagination.
-              required:
-                - limit
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of posts to retrieve in a batch.
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination.
       responses:
         '200':
           description: Posts returned successfully.
@@ -3847,6 +3852,21 @@ paths:
                   message:
                     type: string
                     example: "Posts returned successfully."
+                  author:
+                    type: object
+                    properties:
+                      username:
+                        type: string
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      headline:
+                        type: string
+                      profilePicture:
+                        type: string
+                      connectionDegree:
+                        type: string
                   posts:
                     type: array
                     items:
@@ -4288,7 +4308,7 @@ paths:
                   message:
                     type: string
                     example: "Error fetching user education details"
-  /api/v1/post/comment:
+  /api/v1/post/comment/{postId}:
     post:
       tags:
         - Comments
@@ -4297,6 +4317,13 @@ paths:
         Creates a new comment on a post or as a reply to another comment.
         Only allows one level of nesting (replies to comments but not replies to replies).
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to comment on
+          example: "6458abc123def456"
         - in: header
           name: Authorization
           required: true
@@ -4310,28 +4337,29 @@ paths:
             schema:
               type: object
               properties:
-                post_id:
+                parent_id:
                   type: string
-                  description: ID of the post to comment on.
-                comment_id:
-                  type: string
-                  description: ID of the parent comment (if this is a reply).
+                  description: ID of the parent comment (if this is a reply)
+                  example: null
                 content:
                   type: string
-                  description: Text content of the comment.
+                  description: Text content of the comment
+                  example: "Great post! I really enjoyed reading this."
                 media:
-                  type: string
-                  description: Media URL for the comment.
+                  type: array
+                  items:
+                    type: string
+                    description: Media URL or base64 encoded string for the comment
+                    example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
                 tagged_users:
                   type: array
                   items:
                     type: string
-                  description: Array of user IDs tagged in the comment.
-              required:
-                - post_id
+                  description: Array of user IDs tagged in the comment
+                  example: ["Amr-Doma81", "Darwin-Núñez32"]
       responses:
         '200':
-          description: Comment successfully created.
+          description: Comment successfully created
           content:
             application/json:
               schema:
@@ -4340,11 +4368,58 @@ paths:
                   message:
                     type: string
                     example: "comment successfully created"
-                  commentId:
-                    type: string
-                    example: "6511b82172d92e69ee81c39b"
+                  comment:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6511b82172d92e69ee81c39b"
+                      post_id: 
+                        type: string
+                        example: "68058dd3ca03555f929d0ecc"
+                      user_id:
+                        type: string
+                        example: "67e6b2e1ef869d719662ca10"
+                      content:
+                        type: string
+                        example: "Great post! I really enjoyed reading this."
+                      media:
+                        type: string
+                        example: "https://example.com/media.jpg"
+                      tagged_users:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Amr-Doma81", "Darwin-Núñez32"]
+                      is_edited:
+                        type: boolean
+                        example: false
+                      date:
+                        type: number
+                        example: 1745194451
+                      author:
+                        type: object
+                        properties:
+                          username:
+                            type: string
+                            example: "johndoe"
+                          firstName:
+                            type: string
+                            example: "John"
+                          lastName:
+                            type: string
+                            example: "doe"
+                          headline:
+                            type: string
+                            example: "Software Engineer"
+                          profilePicture:
+                            type: string
+                            example: "https://example.com/profile.jpg"
+                          connectionDegree:
+                            type: string
+                            example: "3rd+"
         '400':
-          description: Required fields missing.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4354,7 +4429,7 @@ paths:
                     type: string
                     example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
           content:
             application/json:
               schema:
@@ -4367,7 +4442,7 @@ paths:
                     type: boolean
                     example: false
         '403':
-          description: Not allowed to comment on this post.
+          description: Not allowed to comment on this post
           content:
             application/json:
               schema:
@@ -4377,7 +4452,7 @@ paths:
                     type: string
                     example: "You are not allowed to comment on this post"
         '404':
-          description: Post or parent comment not found.
+          description: Post or parent comment not found
           content:
             application/json:
               schema:
@@ -4387,7 +4462,7 @@ paths:
                     type: string
                     example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4396,7 +4471,8 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-
+                  error:
+                    type: object
     get:
       tags:
         - Comments
@@ -4404,34 +4480,43 @@ paths:
       description: >
         Retrieves comments for a specific post with pagination support.
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to get comments for
+          example: "6458abc123def456"
         - in: header
           name: Authorization
           required: true
           schema:
             type: string
             example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                post_id:
-                  type: string
-                  description: ID of the post to get comments for.
-                cursor:
-                  type: number
-                  description: Cursor for pagination.
-                limit:
-                  type: integer
-                  description: Maximum number of comments to return.
-              required:
-                - post_id
-                - limit
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination (position to start from)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of comments to return per page
+        - in: query
+          name: replyLimit
+          required: false
+          schema:
+            type: integer
+            default: 2
+          description: Maximum number of replies to include per comment
       responses:
         '200':
-          description: Comments retrieved successfully.
+          description: Comments retrieved successfully
           content:
             application/json:
               schema:
@@ -4444,38 +4529,27 @@ paths:
                       properties:
                         _id:
                           type: string
-                          example: "68058fa5f67c3a130d2b0372"
+                          example: "6511b82172d92e69ee81c39b"
                         post_id: 
                           type: string
                           example: "68058dd3ca03555f929d0ecc"
                         user_id:
                           type: string
-                          exapmle: "67e6b2e1ef869d719662ca10"
+                          example: "67e6b2e1ef869d719662ca10"
                         content:
                           type: string
-                          example: "content will be written here"
+                          example: "Great post! I really enjoyed reading this."
                         media:
-                          type: object
-                          properties:
-                            link:
-                              type: string
-                              example: "https://example.com/media.jpg"
-                            mediaType:
-                              type: string
-                              example: "image"
-                        reacts:
-                          type: object
-                          properties:
-                            total: 
-                              type: number
-                              example: 100
-                            mostCommmon:
-                              type: object
+                          type: string
+                          example: "https://example.com/media.jpg"
                         tagged_users:
                           type: array
-                          example: ["67e6b2e1ef869d719662ca10"]
+                          items:
+                            type: string
+                          example: ["Amr-Doma81", "Darwin-Núñez32"]
                         is_edited:
                           type: boolean
+                          example: false
                         date:
                           type: number
                           example: 1745194451
@@ -4502,12 +4576,15 @@ paths:
                               example: "3rd+"
                         children:
                           type: array
-                          items: 
+                          description: Replies to this comment
+                          items:
                             type: object
                   nextCursor:
-                    type: string
+                    type: integer
+                    description: Cursor for the next page of results
+                    example: 10
         '400':
-          description: Required fields missing.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4517,9 +4594,17 @@ paths:
                     type: string
                     example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
         '404':
-          description: Post not found.
+          description: Post not found
           content:
             application/json:
               schema:
@@ -4529,7 +4614,7 @@ paths:
                     type: string
                     example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4538,7 +4623,7 @@ paths:
                   error:
                     type: string
                     example: "An error occurred while fetching comments"
-
+  /api/v1/post/comment/{postId}/{commentId}:
     patch:
       tags:
         - Comments
@@ -4547,6 +4632,20 @@ paths:
         Updates an existing comment's content, media, or tagged users.
         Only the comment owner can update their comment.
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post the comment belongs to
+          example: "6458abc123def456"
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to update
+          example: "6511b82172d92e69ee81c39b"
         - in: header
           name: Authorization
           required: true
@@ -4560,29 +4659,25 @@ paths:
             schema:
               type: object
               properties:
-                post_id:
-                  type: string
-                  description: ID of the post the comment belongs to.
-                comment_id:
-                  type: string
-                  description: ID of the comment to update.
                 content:
                   type: string
-                  description: Updated text content of the comment.
+                  description: Updated text content of the comment
+                  example: "This is my updated comment text."
                 media:
                   type: string
-                  description: Updated media URL for the comment.
+                  description: Updated media URL or base64 encoded string for the comment
+                  example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
                 tagged_users:
                   type: array
                   items:
                     type: string
-                  description: Updated array of user IDs tagged in the comment.
+                  description: Updated array of user IDs tagged in the comment
+                  example: ["Amr-Doma81", "Darwin-Núñez32"]
               required:
-                - post_id
-                - comment_id
+                - content
       responses:
         '200':
-          description: Comment updated successfully.
+          description: Comment updated successfully
           content:
             application/json:
               schema:
@@ -4593,8 +4688,35 @@ paths:
                     example: "Comment updated successfully"
                   comment:
                     type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6511b82172d92e69ee81c39b"
+                      post_id: 
+                        type: string
+                        example: "68058dd3ca03555f929d0ecc"
+                      user_id:
+                        type: string
+                        example: "67e6b2e1ef869d719662ca10"
+                      content:
+                        type: string
+                        example: "This is my updated comment text."
+                      media:
+                        type: string
+                        example: "https://example.com/media.jpg"
+                      tagged_users:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Amr-Doma81", "Darwin-Núñez32"]
+                      is_edited:
+                        type: boolean
+                        example: true
+                      date:
+                        type: number
+                        example: 1745194451
         '400':
-          description: Required fields missing.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4604,7 +4726,7 @@ paths:
                     type: string
                     example: "Required fields missing"
         '401':
-          description: Not authorized to update this comment.
+          description: Not authorized to update this comment
           content:
             application/json:
               schema:
@@ -4613,8 +4735,11 @@ paths:
                   message:
                     type: string
                     example: "Not authorized to update this comment"
+                  success:
+                    type: boolean
+                    example: false
         '404':
-          description: Post or comment not found.
+          description: Post or comment not found
           content:
             application/json:
               schema:
@@ -4624,7 +4749,7 @@ paths:
                     type: string
                     example: "Comment does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4633,7 +4758,8 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-
+                  error:
+                    type: object
     delete:
       tags:
         - Comments
@@ -4642,27 +4768,29 @@ paths:
         Deletes a comment and all its replies.
         Only the comment owner can delete their comment.
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post the comment belongs to
+          example: "6458abc123def456"
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to delete
+          example: "6511b82172d92e69ee81c39b"
         - in: header
           name: Authorization
           required: true
           schema:
             type: string
             example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                comment_id:
-                  type: string
-                  description: ID of the comment to delete.
-              required:
-                - comment_id
       responses:
         '200':
-          description: Comment deleted successfully.
+          description: Comment deleted successfully
           content:
             application/json:
               schema:
@@ -4675,7 +4803,7 @@ paths:
                     type: integer
                     example: 3
         '400':
-          description: Comment ID is required.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4685,7 +4813,7 @@ paths:
                     type: string
                     example: "Comment ID is required"
         '401':
-          description: Not authorized to delete this comment.
+          description: Not authorized to delete this comment
           content:
             application/json:
               schema:
@@ -4695,7 +4823,7 @@ paths:
                     type: string
                     example: "Not authorized to delete this comment"
         '404':
-          description: Comment not found.
+          description: Comment not found
           content:
             application/json:
               schema:
@@ -4705,7 +4833,7 @@ paths:
                     type: string
                     example: "Comment does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4714,6 +4842,159 @@ paths:
                   error:
                     type: string
                     example: "An error occurred while deleting the comment"
+    get:
+      tags:
+        - Comments
+      summary: Get replies for a comment
+      description: >
+        Retrieves replies for a specific comment with pagination support.
+        Only returns one level of replies as the API only supports single-level nesting.
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post the comment belongs to
+          example: "6458abc123def456"
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the parent comment to get replies for
+          example: "6511b82172d92e69ee81c39b"
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination (position to start from)
+        - in: query
+          name: replyLimit
+          required: false
+          schema:
+            type: integer
+            default: 2
+          description: Maximum number of replies to return per page
+      responses:
+        '200':
+          description: Replies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: Total number of replies for this comment
+                    example: 15
+                  replies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "6511b82172d92e69ee81c39c"
+                        post_id: 
+                          type: string
+                          example: "68058dd3ca03555f929d0ecc"
+                        user_id:
+                          type: string
+                          example: "67e6b2e1ef869d719662ca10"
+                        parentId:
+                          type: string
+                          example: "6511b82172d92e69ee81c39b"
+                        content:
+                          type: string
+                          example: "I completely agree with your comment!"
+                        media:
+                          type: string
+                          example: "https://example.com/media.jpg"
+                        tagged_users:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Amr-Doma81", "Darwin-Núñez32"]
+                        is_edited:
+                          type: boolean
+                          example: false
+                        date:
+                          type: number
+                          example: 1745194451
+                        author:
+                          type: object
+                          properties:
+                            username:
+                              type: string
+                              example: "johndoe"
+                            firstName:
+                              type: string
+                              example: "John"
+                            lastName:
+                              type: string
+                              example: "doe"
+                            headline:
+                              type: string
+                              example: "Software Engineer"
+                            profilePicture:
+                              type: string
+                              example: "https://example.com/profile.jpg"
+                            connectionDegree:
+                              type: string
+                              example: "3rd+"
+                  nextCursor:
+                    type: integer
+                    description: Cursor for the next page of replies, null if no more replies
+                    example: 2
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Post or comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "An error occurred while fetching comments"
   # Invitation Settings Endpoints
   /api/v1/user/privacy-settings/invitations-requests:
     get:
@@ -5588,7 +5869,218 @@ paths:
                   error:
                     type: object
                     description: Error details
-        
+  /api/v1/post/react/{postId}:
+    post:
+      tags:
+        - Reactions
+      summary: Add a reaction to a post or comment
+      description: >
+        Adds or updates a user's reaction to a post or comment.
+        If the user has already reacted, it will update their reaction.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to react to
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_type
+                - reaction
+              properties:
+                comment_id:
+                  type: string
+                  description: Required when reacting to a comment
+                  example: "60d5ec69c5d019ab15c55789"
+                target_type:
+                  type: string
+                  enum: [Post, Comment]
+                  example: "Post"
+                reaction:
+                  type: string
+                  enum: [like, celebrate, support, love, insightful, funny]
+                  example: "like"
+            examples:
+              postReaction:
+                summary: Example of reacting to a post
+                value:
+                  target_type: "Post"
+                  reaction: "love"
+              commentReaction:
+                summary: Example of reacting to a comment
+                value:
+                  comment_id: "60d5ec69c5d019ab15c55789"
+                  target_type: "Comment"
+                  reaction: "insightful"
+      responses:
+        '200':
+          description: Reaction added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reaction added successfully"
+                  reaction:
+                    type: object
+                  topReactions:
+                    type: array
+                  totalCount:
+                    type: integer
+    delete:
+      tags:
+        - Reactions
+      summary: Remove a reaction from a post or comment
+      description: >
+        Removes the authenticated user's reaction from a post or comment.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post containing the reaction
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_type
+              properties:
+                comment_id:
+                  type: string
+                  description: Required when removing a reaction from a comment
+                target_type:
+                  type: string
+                  enum: [Post, Comment]
+                  example: "Post"
+            examples:
+              postReaction:
+                summary: Example of removing a reaction to a post
+                value:
+                  target_type: "Post"
+              commentReaction:
+                summary: Example of removing a reaction to a comment
+                value:
+                  comment_id: "60d5ec69c5d019ab15c55789"
+                  target_type: "Comment"
+      responses:
+        '200':
+          description: Reaction removed successfully
+        '400':
+          description: Required fields missing
+        '401':
+          description: Invalid or expired token
+        '404':
+          description: Post or comment not found
+        '500':
+          description: Server error
+    
+    get:
+      tags:
+        - Reactions
+      summary: Get reactions for a post or comment
+      description: >
+        Retrieves paginated reactions for a post or comment, with options to filter by reaction type.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: commentId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID of the comment (required when target_type is 'Comment')
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 10
+          description: Number of results per page
+        - name: targetType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment]
+          description: The type of content to get reactions for
+        - name: specificReaction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [like, celebrate, support, love, insightful, funny]
+          description: Filter by specific reaction type, if nothing is sent all reactions will be returned
+      responses:
+        '200':
+          description: Reactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  reactions:
+                    type: object
+                    properties:
+                      reactions:
+                        type: array
+                      totalCount:
+                        type: integer
+                      reactionCounts:
+                        type: object
+                      nextCursor:
+                        type: integer
+                        nullable: true
+        '400':
+          description: Required fields missing
+        '401':
+          description: Invalid or expired token
+        '404':
+          description: Post or comment not found
+        '500':
+          description: Server error
   # Add these paths to your openapi.yaml file
   /api/v1/user/subscription/status:
     get:
@@ -7450,6 +7942,18 @@ paths:
                           logo:
                             type: string
                             example: "https://example.com/logo.png"
+                          industry:
+                            type: string
+                            example: "Software Development"
+                          size:
+                            type: string
+                            example: "1001-5000 employees"
+                          description:
+                            type: string
+                            example: "Tech Company is a leading provider of software solutions..."
+                          followers_count:
+                            type: integer
+                            example: 1500
         '400':
           description: Invalid job ID
           content:
@@ -7853,7 +8357,7 @@ paths:
       tags:
         - Jobs
       summary: Search for jobs
-      description: Search for jobs by keyword or industry
+      description: Search for jobs by keyword or industry. Optional authentication to determine saved status.
       parameters:
         - name: query
           in: query
@@ -7873,6 +8377,12 @@ paths:
           schema:
             type: integer
           description: Number of results per page (default is 10)
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Bearer token for authentication (optional)
       responses:
         '200':
           description: Successfully retrieved search results
@@ -7919,6 +8429,10 @@ paths:
                         timeAgo:
                           type: string
                           example: "3 days ago"
+                        is_saved:
+                          type: boolean
+                          example: false
+                          description: Indicates if the job is saved by the authenticated user
                         organization:
                           type: object
                           properties:
@@ -7931,6 +8445,18 @@ paths:
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
+                            industry:
+                              type: string
+                              example: "Software Development"
+                            size:
+                              type: string
+                              example: "1001-5000 employees"
+                            description:
+                              type: string
+                              example: "Tech Company is a leading provider of software solutions..."
+                            followers_count:
+                              type: integer
+                              example: 1500
                   nextCursor:
                     type: string
                     example: "60d21b4667d0d8992e610c85"
@@ -7943,7 +8469,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Please provide a keyword or industry to search for"
+                    example: "Please provide a search query"
         '500':
           description: Server error
           content:
@@ -7954,7 +8480,7 @@ paths:
                   message:
                     type: string
                     example: "Error searching jobs"
-
+                    
 components:
   securitySchemes:
     bearerAuth:

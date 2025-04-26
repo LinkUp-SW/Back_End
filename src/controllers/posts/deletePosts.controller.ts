@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { findUserByUserId } from '../../utils/database.helper.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
+import { deleteAllComments } from '../../repositories/comment.repository.ts';
+import { deleteAllPostReactions, deleteCommentReactions } from '../../repositories/reacts.repository.ts';
 
 
 /**
@@ -27,6 +29,8 @@ const deletePost = async (req: Request, res: Response): Promise<Response | void>
         if (!post){
             return res.status(400).json({message:'Post does not exist ' })
         }
+        await deleteAllPostReactions(postId);
+        await deleteAllComments(postId);
         // remove post from the user
         user.activity.posts = user.activity.posts.filter((userPost) => userPost.toString() !== postId);
 
