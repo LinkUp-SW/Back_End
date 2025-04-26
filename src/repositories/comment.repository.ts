@@ -154,12 +154,11 @@ export const getComments = async (
         
         comments.countDocuments({
           post_id: postId,
-          parentId: { $exists: false }
+          parentId: null
         })
       ]);
       const rootComments = rootCommentResults;
       const totalRootComments = countResults;
-      
       if (rootComments.length === 0) {
         return { count: 0, comments: {}, nextCursor: null };
       }
