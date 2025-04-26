@@ -269,7 +269,6 @@ export const getComments = async (
         // Map reply reactions to their IDs
         allReplies.forEach((reply, index) => {
           userReactionsMap.set(reply._id.toString(), replyUserReactions[index]?.reaction || null);
-          console.log(userReactionsMap);
         });
       }
       for (const rootComment of rootComments) {
