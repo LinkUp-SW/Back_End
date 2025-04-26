@@ -25,7 +25,7 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         const is_me = viewerUser.user_id.toString() === targetUser.user_id.toString();
         const hasAccess = await handleProfileAccess(viewerId.toString(), targetUser.user_id.toString(), res);
             if (!hasAccess) return;
-        const displayedUserPosts = targetUser.activity.posts.map((post: postsInterface) => post._id);
+        const displayedUserPosts = [...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id);
         const { posts: postsData, nextCursor } = await getSavedPostsCursorBased(displayedUserPosts as string[], cursor, limit);
         let filteredPosts = is_me ? postsData : postsData.filter(post => post.public_post === true);
         
