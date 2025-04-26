@@ -1622,51 +1622,6 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-  /api/v1/privacy/profile-visibility/{user_id}:
-    get:
-      tags:
-        - Privacy Settings
-      summary: Get profile visibility
-      description: Retrieves the profile visibility setting for the specified user.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the user whose profile visibility is being retrieved.
-      responses:
-        '200':
-          description: Profile visibility retrieved successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  profileVisibility:
-                    type: string
-                    example: "Public"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '403':
-          description: User is not authorized to access this profile visibility.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "https://cloudinary.com/user/resume.pdf"
-  
   # Add validate-token endpoint
   /api/v1/user/validate-token:
     get:
@@ -8474,6 +8429,85 @@ paths:
                   message:
                     type: string
                     example: "Error searching jobs"
+
+  /api/v1/user/privacy-settings:
+    get:
+      tags:
+        - Privacy Settings
+      summary: Get all privacy settings
+      description: >
+        Retrieves all privacy settings for the authenticated user in a single request.
+        This includes profile visibility, invitation settings, follow settings, messaging preferences, and more.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Successfully retrieved all privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messagingRequests:
+                    type: boolean
+                    description: Whether non-connections can send you messages
+                    example: true
+                  isFollowPrimary:
+                    type: boolean
+                    description: Whether "Follow" is the primary action instead of "Connect"
+                    example: false
+                  readReceipts:
+                    type: boolean
+                    description: Whether other users can see when you've read their messages
+                    example: true
+                  followSetting:
+                    type: string
+                    enum: ["Everyone", "Connections only"]
+                    description: Who can follow you
+                    example: "Everyone"
+                  invitationSetting:
+                    type: string
+                    enum: ["Everyone", "Email"]
+                    description: Who can send you connection invitations
+                    example: "Everyone"
+                  profileVisibility:
+                    type: string
+                    enum: ["Public", "Private", "Connections only"]
+                    description: Who can view your full profile
+                    example: "Public"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving all privacy settings"
+                  error:
+                    type: object
+      security:
+        - bearerAuth: []
                     
 components:
   securitySchemes:
