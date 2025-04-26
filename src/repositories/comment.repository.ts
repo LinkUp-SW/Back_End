@@ -146,7 +146,7 @@ export const getComments = async (
       const [rootCommentResults, countResults] = await Promise.all([
         comments
           .find({ post_id: postId, parentId: null })
-          .sort({ date: 1 })
+          .sort({ date: -1 })
           .skip(cursor)
           .limit(limit)
           .lean()
@@ -169,7 +169,7 @@ export const getComments = async (
       // Fetch all replies in one query
       const allReplies = await comments
         .find({ parentId: { $in: rootCommentIds } })
-        .sort({ date: 1 })
+        .sort({ date: -1 })
         .lean()
         .exec();
       
