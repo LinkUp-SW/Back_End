@@ -62,7 +62,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'newtestUserId' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'NotifUser-25' });
   console.log('Generated Token:', token);
 };
 

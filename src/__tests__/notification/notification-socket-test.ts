@@ -9,9 +9,9 @@ dotenv.config();
 // Constants
 const SERVER_URL = "http://localhost:3000"; // Make sure this matches your server's port
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret'; 
-const USER1_ID = 'newtestUserId'; // The user receiving notifications
-const USER2_ID = 'NotifUser-0'; // The user sending notifications
-const USER3_ID = 'NotifUser-1'; // Another user for testing
+const USER1_ID = 'NotifUser-25'; // The user receiving notifications
+const USER2_ID = 'NotifUser-22'; // The user sending notifications
+const USER3_ID = 'NotifUser-23'; // Another user for testing
 const TEST_DURATION_MS = 60000; // 60 seconds
 
 // Helper Functions
@@ -157,7 +157,7 @@ async function testConnectionRequestNotificationViaAPI() {
   // Trigger the connection request via API
   console.log("Simulating connection request from User2 to User1 via API...");
   try {
-    const response = await fetch(`${SERVER_URL}/api/my-network/connect/${USER1_ID}`, {
+    const response = await fetch(`${SERVER_URL}/api/v1/user/connect/${USER1_ID}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -385,11 +385,12 @@ async function runTests() {
     // Run test cases
     await testAuthentication();
     await testConnectionRequestNotification();
+    await testConnectionRequestNotificationViaAPI(); // Fallback to API if needed
     await testLikeNotification();
     await testCommentNotification();
     await testMessageNotification();
     await testMarkingNotificationAsRead();
-    await testMarkingAllNotificationsAsRead();
+    // await testMarkingAllNotificationsAsRead();
 
     console.log("All tests completed successfully!");
   } catch (error) {

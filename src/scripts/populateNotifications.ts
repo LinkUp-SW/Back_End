@@ -60,7 +60,7 @@ const populateNotifications = async () => {
 
         // Create 20 other users to interact with mainUser
         const otherUsers = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 20; i < 26; i++) {
             // Find or create other users
             let otherUser = await users.findOne({ user_id: `NotifUser-${i}` });
             
@@ -72,7 +72,7 @@ const populateNotifications = async () => {
                 otherUser = await users.create({
                     user_id: `NotifUser-${i}`,
                     email: `notifuser${i}@example.com`,
-                    password: hashedPassword,
+                    password: "password123",
                     bio: {
                         first_name: `User`,
                         last_name: `${i}`,

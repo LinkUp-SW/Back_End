@@ -361,7 +361,7 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         senderId: viewerUser.user_id,
         recipientId: targetUser.user_id,
         type: NotificationType.CONNECTION_REQUEST,
-        referenceId: targetUser._id,
+        referenceId: targetUser._id,  
       }
   
       await webSocketService.sendNotification(

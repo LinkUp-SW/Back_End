@@ -50,9 +50,9 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
   }
 
   // Check if the sender is blocked by the receiver
-  // if (user2.blocked && user2.blocked.includes(user1Id as string)) {
-  //   throw new CustomError('You cannot send messages to this user', 403);
-  // } // Check if the receiver is blocked by the sender
+  if (user2.blocked && user2.blocked.includes(user1.id)) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  } // Check if the receiver is blocked by the sender
 
   const conversation = await conversationRepo.findConversationByUsers(user1Id as string, user2ID);
   if (conversation) {
