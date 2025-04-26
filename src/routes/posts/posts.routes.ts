@@ -3,6 +3,7 @@ import { createPost } from '../../controllers/posts/createPosts.controller.ts';
 import { editPost } from '../../controllers/posts/editPosts.controller.ts';
 import { deletePost } from '../../controllers/posts/deletePosts.controller.ts';
 import { getPost } from '../../controllers/posts/getPost.controller.ts';
+import { displayUserPosts } from '../../controllers/posts/getUserPosts.controller.ts';
 const router = express.Router();
 
 
@@ -22,5 +23,9 @@ router.delete('/posts/:postId', (req,res) =>{
 
 router.get('/posts/:postId', (req,res) =>{
     getPost(req,res);
+});
+
+router.get('/posts/user/:user_id', (req,res) =>{
+    displayUserPosts(req,res);
 });
 export default router;
