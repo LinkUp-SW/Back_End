@@ -163,7 +163,8 @@ app.use('/api/v1/jobs',
 app.use('/api/v1/post',
     postRoutes,
     savePostRoutes,
-    comments
+    comments,
+    reactionRoutes
 );
 
 app.use('/api/v1/company',
