@@ -3,9 +3,7 @@ import organizations from "../../models/organizations.model.ts";
 import users from "../../models/users.model.ts";
 import jobs from "../../models/jobs.model.ts"; 
 import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
-import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
-import cloudinary from "../../../config/cloudinary.ts";
-import { extractPublicId } from "../../services/cloudinary.service.ts";
+import { getCompanyProfileById, validateUserIsCompanyAdmin, handleLogoUpload } from "../../utils/helper.ts";
 
 export const createCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -14,21 +12,14 @@ export const createCompanyProfile = async (req: Request, res: Response, next: Ne
 
         const { name, category_type, website, logo, description, industry, location, size, type } = req.body;
         
-        // Handle logo as base64 if provided
-        let logoUrl = logo;
-        if (logo && typeof logo === 'string' && logo.startsWith('data:image/')) {
-            try {
-                // Upload to Cloudinary
-                const uploadResponse = await cloudinary.uploader.upload(logo, {
-                    folder: "company_logos",
-                    resource_type: "image",
-                });
-                logoUrl = uploadResponse.secure_url;
-            } catch (uploadError) {
-                console.error("Error uploading logo to Cloudinary:", uploadError);
-                res.status(500).json({ message: "Error uploading company logo" });
-                return;
-            }
+        // Handle logo upload
+        let logoUrl;
+        try {
+            logoUrl = await handleLogoUpload(logo);
+        } catch (uploadError) {
+            console.error("Error uploading logo:", uploadError);
+            res.status(500).json({ message: "Error uploading company logo" });
+            return;
         }
 
         const newCompanyProfile = new organizations({
@@ -69,29 +60,14 @@ export const updateCompanyProfile = async (req: Request, res: Response, next: Ne
 
         const { name, category_type, website, logo, description, industry, location, tagline, size, type, phone } = req.body;
 
-        // Handle logo as base64 if provided
-        let logoUrl = logo;
-        if (logo && typeof logo === 'string' && logo.startsWith('data:image/')) {
-            try {
-                // If an old logo exists, delete it from Cloudinary
-                if (companyProfile.logo) {
-                    const publicId = extractPublicId(companyProfile.logo);
-                    if (publicId) {
-                        await cloudinary.uploader.destroy(publicId, { invalidate: true });
-                    }
-                }
-                
-                // Upload new logo to Cloudinary
-                const uploadResponse = await cloudinary.uploader.upload(logo, {
-                    folder: "company_logos",
-                    resource_type: "image",
-                });
-                logoUrl = uploadResponse.secure_url;
-            } catch (uploadError) {
-                console.error("Error uploading logo to Cloudinary:", uploadError);
-                res.status(500).json({ message: "Error uploading company logo" });
-                return;
-            }
+        // Handle logo upload with existing logo for replacement
+        let logoUrl;
+        try {
+            logoUrl = await handleLogoUpload(logo, companyProfile.logo);
+        } catch (uploadError) {
+            console.error("Error uploading logo:", uploadError);
+            res.status(500).json({ message: "Error uploading company logo" });
+            return;
         }
 
         const updatedCompanyProfile = await organizations.findByIdAndUpdate(

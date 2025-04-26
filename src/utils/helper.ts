@@ -3,6 +3,8 @@ import tokenUtils from "../utils/token.utils.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
 import Organization, { categoryTypeEnum } from "../models/organizations.model.ts";
 import organizations from "../models/organizations.model.ts";
+import cloudinary from "../../config/cloudinary.ts";
+import { extractPublicId } from "../services/cloudinary.service.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization || "";
@@ -134,4 +136,42 @@ export const validateUserIsCompanyAdmin = (companyProfile: any, userId: string, 
   }
   
   return isAdmin;
+};
+
+/**
+ * Handles uploading a logo image to Cloudinary
+ * If a new image is provided in base64 format, it uploads it and returns the URL
+ * If an existing logo URL is provided, it deletes the old image before uploading the new one
+ * 
+ * @param logo The logo image (may be base64 string or existing URL)
+ * @param existingLogoUrl Optional existing logo URL to be deleted
+ * @returns The URL of the uploaded image, or the original URL if no upload was needed
+ * @throws Error if upload fails
+ */
+export const handleLogoUpload = async (logo: string, existingLogoUrl?: string): Promise<string> => {
+  // If logo is not a base64 string, just return it as is
+  if (!logo || typeof logo !== 'string' || !logo.startsWith('data:image/')) {
+    return logo;
+  }
+  
+  try {
+    // If replacing an existing logo, delete the old one from Cloudinary
+    if (existingLogoUrl) {
+      const publicId = extractPublicId(existingLogoUrl);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId, { invalidate: true });
+      }
+    }
+    
+    // Upload new logo to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(logo, {
+      folder: "company_logos",
+      resource_type: "image",
+    });
+    
+    return uploadResponse.secure_url;
+  } catch (error) {
+    console.error("Error handling logo upload:", error);
+    throw new Error("Failed to process logo image");
+  }
 };
