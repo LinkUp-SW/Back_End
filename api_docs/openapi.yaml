@@ -1800,8 +1800,16 @@ paths:
               properties:
                 profileVisibility:
                   type: string
-                  enum: [public, connections, private]
+                  enum: [public, connections]
+                  example: "connections"
                   description: Profile visibility level
+            examples:
+              Public:
+                value:
+                  profileVisibility: "public"
+              Connections:
+                value:
+                  profileVisibility: "connections"
       responses:
         '200':
           description: Privacy settings updated successfully
