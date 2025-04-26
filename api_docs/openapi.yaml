@@ -3821,21 +3821,20 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                limit:
-                  type: integer
-                  description: Number of posts to retrieve in a batch.
-                cursor:
-                  type: integer
-                  description: Cursor for pagination.
-              required:
-                - limit
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of posts to retrieve in a batch.
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination.
       responses:
         '200':
           description: Posts returned successfully.
@@ -3847,6 +3846,21 @@ paths:
                   message:
                     type: string
                     example: "Posts returned successfully."
+                  author:
+                    type: object
+                    properties:
+                      username:
+                        type: string
+                      firstName:
+                        type: string
+                      lastName:
+                        type: string
+                      headline:
+                        type: string
+                      profilePicture:
+                        type: string
+                      connectionDegree:
+                        type: string
                   posts:
                     type: array
                     items:
