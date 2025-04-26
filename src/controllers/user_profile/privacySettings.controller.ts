@@ -216,7 +216,7 @@ export const getReadReceiptsSetting = async (req: Request, res: Response): Promi
 
     // Return the read receipts setting
     res.status(200).json({ 
-      readReceipts: viewerUser.privacy_settings.messaging_read_receipts || true ,
+      readReceipts: viewerUser.privacy_settings.messaging_read_receipts ?? true ,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -283,7 +283,7 @@ export const getFollowPrimarySetting = async (req: Request, res: Response): Prom
 
     // Return the follow primary setting
     res.status(200).json({ 
-      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary 
+      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary ?? false
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -350,7 +350,7 @@ export const getMessagingRequestsSetting = async (req: Request, res: Response): 
 
     // Return the messaging requests setting
     res.status(200).json({ 
-      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests || true,
+      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests ?? true,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -417,9 +417,9 @@ export const getAllPrivacySettings = async (req: Request, res: Response): Promis
 
     // Return all privacy settings
     res.status(200).json({ 
-      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests || true,
-      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary || false,
-      readReceipts: viewerUser.privacy_settings.messaging_read_receipts || true,
+      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests ?? true,
+      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary ?? false,
+      readReceipts: viewerUser.privacy_settings.messaging_read_receipts ?? true,
       followSetting: viewerUser.privacy_settings.Who_can_follow_you  || followEnum.everyone,
       invitationSetting: viewerUser.privacy_settings.flag_who_can_send_you_invitations || invitationsEnum.everyone,
       profileVisibility: viewerUser.privacy_settings.flag_account_status || accountStatusEnum.public,
