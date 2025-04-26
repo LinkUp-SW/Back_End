@@ -10,7 +10,7 @@ export const getProfileVisibility = async (req: Request, res: Response): Promise
     if (!viewerUser) return;
 
     // Return the profile visibility setting
-    res.status(200).json({ profileVisibility: viewerUser.privacy_settings.flag_account_status });
+    res.status(200).json({ profileVisibility: viewerUser.privacy_settings.flag_account_status  || accountStatusEnum.public });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
       res.status(401).json({ message: error.message, success: false });
@@ -57,7 +57,7 @@ export const updateProfileVisibility = async (req: Request, res: Response): Prom
 
     res.status(200).json({
       message: "Profile visibility updated successfully",
-      profileVisibility: viewerUser.privacy_settings.flag_account_status,
+      profileVisibility: viewerUser.privacy_settings.flag_account_status ,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -79,7 +79,7 @@ export const getInvitationSettings = async (req: Request, res: Response): Promis
 
     // Return the invitation settings
     res.status(200).json({ 
-      invitationSetting: viewerUser.privacy_settings.flag_who_can_send_you_invitations 
+      invitationSetting: viewerUser.privacy_settings.flag_who_can_send_you_invitations || invitationsEnum.everyone
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -195,7 +195,7 @@ export const updateFollowSettings = async (req: Request, res: Response): Promise
 
     res.status(200).json({
       message: "Follow settings updated successfully",
-      followSetting: viewerUser.privacy_settings.Who_can_follow_you,
+      followSetting: viewerUser.privacy_settings.Who_can_follow_you  || followEnum.everyone,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -216,7 +216,7 @@ export const getReadReceiptsSetting = async (req: Request, res: Response): Promi
 
     // Return the read receipts setting
     res.status(200).json({ 
-      readReceipts: viewerUser.privacy_settings.messaging_read_receipts 
+      readReceipts: viewerUser.privacy_settings.messaging_read_receipts || true ,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -350,7 +350,7 @@ export const getMessagingRequestsSetting = async (req: Request, res: Response): 
 
     // Return the messaging requests setting
     res.status(200).json({ 
-      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests 
+      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests || true,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -404,6 +404,32 @@ export const updateMessagingRequestsSetting = async (req: Request, res: Response
     } else {
       console.error("Error updating messaging requests setting:", error);
       res.status(500).json({ message: "Error updating messaging requests setting", error });
+    }
+  }
+};
+
+// getter for all privacy settings
+export const getAllPrivacySettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate token and get the authenticated user
+    const viewerUser = await validateTokenAndGetUser(req, res);
+    if (!viewerUser) return;
+
+    // Return all privacy settings
+    res.status(200).json({ 
+      messagingRequests: viewerUser.privacy_settings.flag_messaging_requests || true,
+      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary || false,
+      readReceipts: viewerUser.privacy_settings.messaging_read_receipts || true,
+      followSetting: viewerUser.privacy_settings.Who_can_follow_you  || followEnum.everyone,
+      invitationSetting: viewerUser.privacy_settings.flag_who_can_send_you_invitations || invitationsEnum.everyone,
+      profileVisibility: viewerUser.privacy_settings.flag_account_status || accountStatusEnum.public,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error retrieving all privacy settings:", error);
+      res.status(500).json({ message: "Error retrieving all privacy settings", error });
     }
   }
 };
