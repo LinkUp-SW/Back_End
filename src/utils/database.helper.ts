@@ -451,3 +451,32 @@ export const transformSkillsToObjects = (user: any, skillNames: string[]): any[]
     };
   }).filter(Boolean);
 };
+
+/**
+ * Finds a user by MongoDB _id.
+ * Returns the user document if found; otherwise sends a 404 response and returns null.
+ */
+export const findUserById = async (id: string, res: Response) => {
+  try {
+      // Validate that the id is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+          console.log(`Invalid MongoDB ID format: ${id}`);
+          res.status(400).json({ message: "Invalid user ID format" });
+          return null;
+      }
+      
+      // Query the database using the MongoDB `_id` field
+      const user = await Users.findById(id);
+      
+      if (!user) {
+
+          res.status(404).json({ message: "User not found" });
+          return null;
+      }
+      return user;
+  } catch (error) {
+      console.error("Error finding user by MongoDB ID:", error);
+      res.status(500).json({ message: "Error finding user", error });
+      return null;
+  }
+};

@@ -43,8 +43,20 @@ import reactionRoutes from './src/routes/posts/reactions.routes.ts';
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
-import searchRoutes from './src/routes/organization.route.ts';
+import searchJobsRoutes from './src/routes/jobs/searchJobs.routes.ts';
+import searchRoutes from './src/routes/organization/search.routes.ts';
+import companyProfileRoutes from "./src/routes/organization/companyProfile.routes.ts"
+import companySettingsRoutes from "./src/routes/organization/companySettings.routes.ts"
+import companyJobsRoutes from "./src/routes/organization/companyJobs.routes.ts"
+import companyPostsRoutes from "./src/routes/organization/companyPosts.routes.ts"
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
+
+import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
+import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts';
+
+
+import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
+import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -53,12 +65,14 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
+// IMPORTANT: Add webhook route BEFORE express.json() middleware
+app.use('/webhook/stripe', stripeWebhookRoutes);
 app.use(express.json({limit:"50mb"}));
 
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Abd-Allah-Aref25' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'omar-khaled-1745264577196' });
   console.log('Generated Token:', token);
 };
 
@@ -110,6 +124,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Authenticatio Routes
 app.use('/auth', authRoutes); 
 
+
 // Mount User Routes
 app.use('/api/v1/user',
     otpRoutes,
@@ -133,24 +148,38 @@ app.use('/api/v1/user',
     skillsRoutes,
     myNetwork,
     privacySettingsRoutes,
-    aboutUserRoutes,);
+    aboutUserRoutes,
+    peopleYouMayKnowRoutes,);
 
 // Mount Jobs Routes
 app.use('/api/v1/jobs', 
     filterJobsRoutes, 
     saveJobsRoutes,
-    getJobsRoutes);
-
-
-  app.use('/api/v1/post',
-    postRoutes,
-    savePostRoutes,
-    comments,
-    reactionRoutes
+    getJobsRoutes,
+    searchJobsRoutes
   );
 
 
-app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/post',
+    postRoutes,
+    savePostRoutes,
+    comments
+);
+
+app.use('/api/v1/company',
+    companyProfileRoutes,
+    companySettingsRoutes,
+    companyJobsRoutes,
+    companyPostsRoutes
+)
+
+
+// Add after your other middleware
+app.use('/api/v1/user/subscription', subscriptionRoutes);
+
+app.use('/api/v1/search', 
+  userSearchRoutes,
+  searchRoutes );
 
 app.use('/api/v1/admin', createAdminRoutes);
 

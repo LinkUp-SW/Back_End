@@ -41,7 +41,7 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
 });
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-  let { otp, email } = req.body;
+  let { otp, email, update } = req.body;
   email = email.toLowerCase();
   
   if (!otp) {
@@ -73,8 +73,14 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
   }
 
+  
   user.is_verified = true;
   await user.save();
+
+  if (update) {
+    return res.status(200).json({ message: 'OTP verified successfully', isVerified: true });
+  }
+
 
   res.cookie("linkup_user_id", user.user_id, {
       maxAge: 3600000,

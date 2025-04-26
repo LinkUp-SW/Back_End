@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import tokenUtils from "../utils/token.utils.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
 import Organization, { categoryTypeEnum } from "../models/organizations.model.ts";
+import organizations from "../models/organizations.model.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
     const authHeader = req.headers.authorization || "";
@@ -100,3 +101,37 @@ export const searchAllOrganizations = async (query: string) => {
   }).select('_id name logo category_type').limit(10);
 };
 
+/**
+ * Fetches a company profile by ID and validates its existence
+ * @param companyId The ID of the company to fetch
+ * @param res Express response object
+ * @returns The company profile or null if not found
+ */
+export const getCompanyProfileById = async (companyId: string, res: Response) => {
+  const companyProfile = await organizations.findById(companyId);
+  
+  if (!companyProfile) {
+      res.status(404).json({ message: "Company profile not found" });
+      return null;
+  }
+  
+  return companyProfile;
+};
+
+/**
+* Checks if a user is an admin of a company
+* @param companyProfile The company profile object
+* @param userId The ID of the user to check
+* @param res Express response object
+* @returns Boolean indicating admin status, or null if unauthorized
+*/
+export const validateUserIsCompanyAdmin = (companyProfile: any, userId: string, res: Response) => {
+  const isAdmin = companyProfile.admins.some((adminId: string) => adminId.toString() === userId.toString());
+  
+  if (!isAdmin) {
+      res.status(403).json({ message: "Unauthorized: Only company admins can perform this action" });
+      return null;
+  }
+  
+  return isAdmin;
+};

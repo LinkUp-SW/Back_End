@@ -288,6 +288,7 @@ paths:
               required:
                 - otp
                 - email
+                - update
               properties:
                 otp:
                   type: string
@@ -295,6 +296,9 @@ paths:
                 email:
                   type: string
                   example: "test@example.com"
+                update:
+                  type: boolean
+                  example: false
       responses:
         '200':
           description: OTP verified successfully.
@@ -561,7 +565,7 @@ paths:
         '500':
           description: Server error
   /api/v1/user/update-email:
-    put:
+    patch:
       tags:
         - User
       summary: Update user email
@@ -575,14 +579,14 @@ paths:
               type: object
               required:
                 - email
-                - token
+                - password
               properties:
                 email:
                   type: string
                   example: "new.email@example.com"
-                token:
+                password:
                   type: string
-                  example: "jwt_token"
+                  example: "Password123"
       responses:
         '200':
           description: Email updated successfully.
@@ -598,11 +602,44 @@ paths:
                     type: string
                     example: "new.email@example.com"
         '400':
-          description: Email is required.
+          description: Email or Password is required.
         '401':
-          description: Email already exists or invalid token.
+          description: Email already exists or Invalid password.
+        '404':
+          description: User not found.
         '500':
           description: Server error.
+  /api/vq/user/get-current-email:
+    get:
+      tags:
+        - User
+      summary: Get current user email
+      description: >
+        Retrieves the email address of the authenticated user.
+        A valid token is required to verify the user's identity.
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: JWT token to validate
+      responses:
+        '200':
+          description: Email retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    example: "email@gmail.com"
+        '401':
+          description: Unauthorized or invalid token.
+        '404':
+          description: User not found.
+        '500':
+          description: Server error
   /api/v1/user/delete-account:
     delete:
       tags:
@@ -1681,6 +1718,12 @@ paths:
         - User Profile
       summary: Update user email
       description: Updates the user's email address
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          description: JWT token to validate
       requestBody:
         required: true
         content:
@@ -1870,433 +1913,6 @@ paths:
           description: Invalid email format
         '404':
           description: Email not registered
-        '500':
-          description: Server error
-   
-  # Jobs Endpoints
-  /api/v1/jobs/save-jobs/{jobId}:
-    post:
-      tags:
-        - Jobs
-      summary: Save a job
-      description: Saves a job to the user's saved jobs list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the job to save
-      responses:
-        '200':
-          description: Job saved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job saved successfully"
-        '400':
-          description: Invalid job ID format or job already saved
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid job ID format" 
-        '401':
-          description: Unauthorized, authentication token missing or invalid
-        '404':
-          description: Job not found
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/get-saved-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Get user's saved jobs
-      description: Retrieves all jobs saved by the authenticated user
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Saved jobs retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Job'
-        '401':
-          description: Unauthorized, authentication token missing or invalid
-        '404':
-          description: User not found
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/get-top-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Get personalized job recommendations
-      description: >
-        Returns job recommendations based on user skills, experience, and preferences.
-        Jobs are ranked by relevance to user profile.
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Cursor for pagination (ID of the last item in previous page)
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
-          description: Number of jobs to return per page
-      responses:
-        '200':
-          description: Job recommendations retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Personalized job recommendations retrieved successfully"
-                  count: 
-                    type: integer
-                    example: 10
-                  total:
-                    type: integer
-                    example: 100
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/JobSummary'
-                  nextCursor:
-                    type: string
-                    example: "60d5ec69c5d019ab15c55555"
-        '401':
-          description: Unauthorized, authentication token missing or invalid
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/get-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Get all jobs
-      description: Retrieves all available jobs with pagination
-      parameters:
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Cursor for pagination (ID of the last item in previous page)
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
-          description: Number of jobs to return per page
-      responses:
-        '200':
-          description: Jobs retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs retrieved successfully"
-                  count: 
-                    type: integer
-                    example: 10
-                  total:
-                    type: integer
-                    example: 100
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/JobSummary'
-                  nextCursor:
-                    type: string
-                    example: "60d5ec69c5d019ab15c55555"
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/get-job/{jobId}:
-    get:
-      tags:
-        - Jobs
-      summary: Get job details
-      description: Retrieves detailed information about a specific job
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the job to retrieve
-      responses:
-        '200':
-          description: Job retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job retrieved successfully"
-                  data:
-                    $ref: '#/components/schemas/Job'
-        '400':
-          description: Invalid job ID format
-        '404':
-          description: Job not found
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/filter-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Filter jobs with multiple criteria
-      description: Filters jobs based on multiple criteria submitted in the request body
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                location:
-                  type: string
-                  description: Location to filter jobs by (full or partial match)
-                  example: "New York"
-                experienceLevel:
-                  oneOf:
-                    - type: string
-                      description: Single experience level to filter by
-                      example: "Entry Level"
-                    - type: array
-                      items:
-                        type: string
-                      description: Multiple experience levels to filter by
-                      example: ["Entry Level", "Mid-Senior Level"]
-                companyId:
-                  type: string
-                  description: ID of the company to filter jobs by
-                  example: "60d5ec69c5d019ab15c55678"
-                minSalary:
-                  type: number
-                  description: Minimum salary to filter jobs by
-                  example: 50000
-                maxSalary:
-                  type: number
-                  description: Maximum salary to filter jobs by
-                  example: 100000
-      responses:
-        '200':
-          description: Jobs filtered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs filtered successfully"
-                  count:
-                    type: integer
-                    example: 5
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Job'
-        '400':
-          description: Invalid filter criteria or no filters provided
-        '404':
-          description: No jobs found matching the provided filters
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/filter-jobs/location/{location}:
-    get:
-      tags:
-        - Jobs
-      summary: Filter jobs by location
-      description: Retrieves jobs filtered by a specific location
-      parameters:
-        - name: location
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Location to filter jobs by (partial match supported)
-          example: "Chicago"
-      responses:
-        '200':
-          description: Jobs filtered by location successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs filtered by location successfully"
-                  count:
-                    type: integer
-                    example: 5
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Job'
-        '404':
-          description: No jobs found for this location
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/filter-jobs/experience-level/{levels}:
-    get:
-      tags:
-        - Jobs
-      summary: Filter jobs by experience level
-      description: Retrieves jobs filtered by one or more experience levels
-      parameters:
-        - name: levels
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Comma-separated list of experience levels
-          example: "Entry Level,Mid-Senior Level"
-      responses:
-        '200':
-          description: Jobs filtered by experience levels successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs filtered by experience levels successfully"
-                  count:
-                    type: integer
-                    example: 8
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Job'
-        '404':
-          description: No jobs found for the selected experience levels
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/filter-jobs/company/{companyId}:
-    get:
-      tags:
-        - Jobs
-      summary: Filter jobs by company
-      description: Retrieves jobs posted by a specific company
-      parameters:
-        - name: companyId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the company
-          example: "60d5ec69c5d019ab15c55678"
-      responses:
-        '200':
-          description: Jobs filtered by company successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs filtered by company successfully"
-                  count:
-                    type: integer
-                    example: 3
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Job'
-        '400':
-          description: Invalid company ID format
-        '404':
-          description: No jobs found for this company
-        '500':
-          description: Server error
-          
-  /api/v1/jobs/filter-jobs/salary-range/{minSalary}/{maxSalary}:
-    get:
-      tags:
-        - Jobs
-      summary: Filter jobs by salary range
-      description: Retrieves jobs within a specific salary range
-      parameters:
-        - name: minSalary
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Minimum salary (numeric value)
-          example: "50000"
-        - name: maxSalary
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Maximum salary (numeric value)
-          example: "100000"
-      responses:
-        '200':
-          description: Jobs filtered by salary range successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs filtered by salary range successfully"
-                  count:
-                    type: integer
-                    example: 12
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Job'
-        '400':
-          description: Invalid salary range or non-numeric values provided
-        '404':
-          description: No jobs found in this salary range
         '500':
           description: Server error
   
@@ -3636,12 +3252,17 @@ paths:
                   isConnectByEmail:
                     type: boolean
                     example: true
-                  number_of_saved_posts:
-                    type: integer
-                    example: 10
-                  number_of_saved_jobs: 
-                    type: integer
-                    example: 5
+                  allow_messaging:
+                    type: boolean
+                    example: true
+                  viewer_user_is_subscribed:
+                    type: boolean
+                    example: false
+                  resume:
+                    type: string
+                    example: "https://example.com/resume.pdf"
+                  
+
         '401':
           description: Unauthorized
           content:
@@ -6440,7 +6061,2406 @@ paths:
           description: Post or comment not found
         '500':
           description: Server error
+  # Add these paths to your openapi.yaml file
+  /api/v1/user/subscription/status:
+    get:
+      tags:
+        - Subscription
+      summary: Get subscription status
+      description: >
+        Retrieves the current subscription status for the authenticated user.
+        Returns details about the subscription plan, status, billing dates, and other subscription metadata.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Subscription status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription:
+                    type: object
+                    properties:
+                      plan:
+                        type: string
+                        enum: [free, premium]
+                        example: "premium"
+                      status:
+                        type: string
+                        enum: [active, canceled, trialing, past_due]
+                        example: "active"
+                      subscription_id:
+                        type: string
+                        example: "sub_1RGiGGH6stw1zTOOg5cwzl9G"
+                      customer_id:
+                        type: string
+                        example: "cus_SB4cRWFLSnzZ6y"
+                      current_period_start:
+                        type: string
+                        format: date-time
+                        example: "2023-04-01T00:00:00Z"
+                      current_period_end:
+                        type: string
+                        format: date-time
+                        example: "2023-05-01T00:00:00Z"
+                      subscribed:
+                        type: boolean
+                        example: true
+                      cancel_at_period_end:
+                        type: boolean
+                        example: false
+                      canceled_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: null
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving subscription status"
+      security:
+        - bearerAuth: []
 
+  /api/v1/user/subscription/checkout:
+    post:
+      tags:
+        - Subscription
+      summary: Create subscription checkout session
+      description: >
+        Creates a checkout session for purchasing a premium subscription.
+        Returns a URL that redirects to the Stripe checkout page.
+        Prevents duplicate subscriptions by checking if the user already has an active or pending subscription.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform:
+                  type: string
+                  enum: [web, ios, android]
+                  default: web
+                  description: The client platform type to determine appropriate redirect URLs
+            examples:
+              Web:
+                value:
+                  platform: "web"
+              iOS:
+                value:
+                  platform: "ios"
+              Android:
+                value:
+                  platform: "android"
+
+      responses:
+        '200':
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    example: "https://checkout.stripe.com/c/pay/cs_test_a1b2c3..."
+        '400':
+          description: Bad request - User already has an active subscription
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "You already have an existing subscription"
+                  subscription_status:
+                    type: string
+                    example: "active"
+                  manage_url:
+                    type: string
+                    example: "http://localhost:3000/subscription/manage"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error creating checkout session"
+      security:
+        - bearerAuth: []
+
+  /api/v1/user/subscription/cancel:
+    post:
+      tags:
+        - Subscription
+      summary: Cancel premium subscription
+      description: >
+        Cancels the user's premium subscription at the end of the current billing period.
+        The subscription remains active until the end of the paid period, then automatically expires.
+        User account will revert to the free plan after the current billing period ends.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Subscription cancellation scheduled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Subscription will be canceled at the end of the billing period"
+        '400':
+          description: No active subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No active premium subscription found"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error canceling subscription"
+      security:
+        - bearerAuth: []
+
+  /api/v1/user/subscription/resume:
+    post:
+      tags:
+        - Subscription
+      summary: Resume canceled subscription
+      description: >
+        Resumes a previously canceled subscription that has not yet expired.
+        Removes the cancellation request so the subscription will automatically renew
+        at the end of the current billing period.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Subscription resumed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Subscription resumed successfully"
+        '400':
+          description: No canceled subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No canceled subscription found"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error resuming subscription"
+      security:
+        - bearerAuth: []
+
+  /api/v1/user/subscription/invoices:
+    get:
+      tags:
+        - Subscription
+      summary: Get invoice history
+      description: >
+        Retrieves the user's subscription invoice history from Stripe.
+        Returns up to 10 most recent invoices with payment status, amount, and download link.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Invoice history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "in_1RGjGhH6stw1zTOOfYQD6Vbn"
+                        amount_paid:
+                          type: number
+                          format: float
+                          example: 9.99
+                        status:
+                          type: string
+                          enum: [paid, open, void, uncollectible]
+                          example: "paid"
+                        created:
+                          type: string
+                          format: date-time
+                          example: "2023-04-15T14:32:21Z"
+                        invoice_pdf:
+                          type: string
+                          format: uri
+                          example: "https://invoice.stripe.com/i/acct_1RGhjbH6stw1zTOO/test_1RGjGhkRMbFP3X3HfYr9J5bO"
+        '400':
+          description: No subscription history found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No subscription history found"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error getting invoice history"
+      security:
+        - bearerAuth: []     
+  /api/v1/user/people-you-may-know:
+    get:
+      tags:
+        - Invitation Manager
+      summary: Get People You May Know
+      description: >
+        Retrieves a list of people the user may know based on common education or work experience.
+        Results are filtered to exclude connections, blocked users, and users who have blocked the viewer.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication.
+        - name: context
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [education, work_experience]
+          description: Context to find people by (education or work_experience)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results to return per page
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination (ID of the last item in previous page)
+      responses:
+        '200':
+          description: Successfully retrieved people you may know
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  institutionName:
+                    type: string
+                    description: Name of the school or organization
+                    example: "Tech Innovations Inc"
+                  people:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "67e6b39b6bf4f58c1fea6d20"
+                        user_id:
+                          type: string
+                          example: "Omar-Khaled-1234"
+                        bio:
+                          type: object
+                          properties:
+                            headline:
+                              type: string
+                              example: "Data Scientist"
+                            first_name: 
+                              type: string
+                              example: "Omar"
+                            last_name:
+                              type: string
+                              example: "Khaled"
+                        profile_photo:
+                          type: string
+                          nullable: true
+                          format: uri
+                          example: "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png"
+                        cover_photo:
+                          type: string
+                          nullable: true
+                          format: uri
+                          example: "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png"
+                        privacy_settings:
+                          type: object
+                          properties:
+                            flag_who_can_send_you_invitations:
+                              type: string
+                              example: "Everyone"
+                  nextCursor:
+                    type: string
+                    nullable: true
+                    description: Cursor for fetching the next page of results
+                    example: null
+        '400':
+          description: Invalid context parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid context. Use 'education' or 'work_experience'."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching people you may know"    
+
+  /api/v1/search/users:
+    get:
+      tags:
+        - Search
+      summary: Search for users
+      description: >
+        Searches for users based on name, company, industry, and connection degree.
+        Includes mutual connection information and various filtering options.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term to match against user profiles
+        - name: connectionDegree
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [1st, 2nd, 3rd+, all]
+            default: all
+          description: Filter results by connection relationship
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of results per page
+      responses:
+        '200':
+          description: Successfully retrieved search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  people:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        user_id:
+                          type: string
+                          example: "jane-doe-1234"
+                        name:
+                          type: string
+                          example: "Jane Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer at Tech Company"
+                        location:
+                          type: string
+                          example: "San Francisco, CA"
+                        profile_photo:
+                          type: string
+                          format: uri
+                          example: "https://res.cloudinary.com/dxxx/image/upload/profile.jpg"
+                        connection_degree:
+                          type: string
+                          enum: [1st, 2nd, 3rd+]
+                          example: "2nd"
+                          description: Relationship to the viewer
+                        mutual_connections:
+                          type: object
+                          properties:
+                            count:
+                              type: integer
+                              example: 3
+                              description: Number of mutual connections
+                            suggested_name:
+                              type: string
+                              example: "John Smith"
+                              description: Name of one mutual connection
+                            suggested_profile_photo:
+                              type: string
+                              format: url
+                              example: "https://res.cloudinary.com/dxxx"
+                        is_in_sent_connections:
+                          type: boolean
+                          example: true
+                        is_in_received_connections:
+                          type: boolean
+                          example: false
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 45
+                        description: Total number of results
+                      page:
+                        type: integer
+                        example: 1
+                        description: Current page number
+                      limit:
+                        type: integer
+                        example: 10
+                        description: Results per page
+                      pages:
+                        type: integer
+                        example: 5
+                        description: Total number of pages
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error searching users"
+  
+  /api/v1/search/suggestions:
+    get:
+      tags:
+        - Search
+      summary: Get search suggestions as user types
+      description: >
+        Returns a mixed set of suggestions including users, organizations, jobs, 
+        and industries based on the provided query string with a maximum of 10 possible suggestions. Used to provide real-time
+        suggestions as users type in the search box.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term to match against various entities
+      responses:
+        '200':
+          description: Successfully retrieved search suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: [user]
+                              example: "user"
+                            user_id:
+                              type: string
+                              example: "jsmith"
+                            name:
+                              type: string
+                              example: "John Smith"
+                            headline:
+                              type: string
+                              example: "Software Engineer at Tech Company"
+                            profile_photo:
+                              type: string
+                              format: uri
+                              example: "https://example.com/photo.jpg"
+                            connection_degree:
+                              type: string
+                              enum: [1st, 2nd, 3rd+]
+                              example: "2nd"
+                            industry:
+                              type: string
+                              example: "Information Technology"
+                        - type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: [organization]
+                              example: "organization"
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            name:
+                              type: string
+                              example: "Tech Company Inc."
+                            category_type:
+                              type: string
+                              enum: [company, education]
+                              example: "company"
+                            logo:
+                              type: string
+                              format: uri
+                              example: "https://example.com/logo.png"
+                            industry:
+                              type: string
+                              example: "Software Development"
+                        - type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: [job]
+                              example: "job"
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            title:
+                              type: string
+                              example: "Senior Software Developer"
+                            location:
+                              type: string
+                              example: "San Francisco, CA"
+                            industry:
+                              type: string
+                              example: "Technology"
+                            is_job:
+                              type: boolean
+                              example: true
+                        - type: object
+                          properties:
+                            type:
+                              type: string
+                              enum: [industry]
+                              example: "industry"
+                            id:
+                              type: string
+                              example: "Technology"
+                            name:
+                              type: string
+                              example: "Technology"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error fetching search suggestions"
+                  error:
+                    type: object
+  /api/v1/jobs/search-jobs:
+    get:
+      tags:
+        - Search
+      summary: Search for jobs
+      description: Search for jobs by keyword or industry
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term to look for in all job fields
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job search results"
+                  query:
+                    type: string
+                    example: "software"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Please provide a keyword or industry to search for"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error searching jobs"
+
+
+  /api/v1/jobs/get-top-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get personalized job recommendations
+      description: >
+        Provides job recommendations tailored to the user's skills, experience, and preferences.
+        Uses a recommendation algorithm that matches user skills with job requirements, excludes jobs
+        from the user's current organization, and excludes jobs the user has already applied to.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved personalized job recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Personalized job recommendations retrieved successfully"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 50
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to retrieve job recommendations"
+
+  /api/v1/jobs/get-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get all jobs
+      description: Retrieves a paginated list of all available jobs with organization details.
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs retrieved successfully"
+                  count:
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 100
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving jobs"
+
+  /api/v1/jobs/get-job/{jobId}:
+    get:
+      tags:
+        - Jobs
+      summary: Get job details
+      description: Retrieves detailed information about a specific job.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retrieve
+      responses:
+        '200':
+          description: Successfully retrieved job details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      job_title:
+                        type: string
+                        example: "Software Engineer"
+                      location:
+                        type: string
+                        example: "Remote"
+                      workplace_type:
+                        type: string
+                        example: "Hybrid"
+                      experience_level:
+                        type: string
+                        example: "Mid-Senior"
+                      salary:
+                        type: number
+                        example: 85000
+                      description:
+                        type: string
+                        example: "We are looking for a skilled Software Engineer to join our team..."
+                      benefits:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Health insurance", "401(k) matching", "Remote work options"]
+                      qualifications:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Bachelor's degree", "3+ years experience", "JavaScript"]
+                      responsibilities:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Develop web applications", "Code review", "Testing"]
+                      timeAgo:
+                        type: string
+                        example: "3 days ago"
+                      is_saved:
+                        type: boolean
+                        example: true
+                      organization:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                            example: "60d21b4667d0d8992e610c80"
+                          name:
+                            type: string
+                            example: "Tech Company"
+                          logo:
+                            type: string
+                            example: "https://example.com/logo.png"
+        '400':
+          description: Invalid job ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid job ID format"
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to retrieve job"
+
+  /api/v1/jobs/save-jobs/{jobId}:
+    post:
+      tags:
+        - Jobs
+      summary: Save a job
+      description: Saves a job to the user's saved jobs list.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to save
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Job saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job saved successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job is already saved"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error saving job"
+
+  /api/v1/jobs/unsave-jobs/{jobId}:
+    delete:
+      tags:
+        - Jobs
+      summary: Unsave a job
+      description: Removes a job from the user's saved jobs list.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to unsave
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Job unsaved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job unsaved successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job is not saved"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error unsaving job"
+
+  /api/v1/jobs/get-saved-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get saved jobs
+      description: Retrieves all jobs saved by the user.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved saved jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Saved jobs retrieved successfully"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving saved jobs"
+
+  /api/v1/jobs/filter-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs
+      description: Filters jobs based on specified criteria.
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Bearer token for authentication (optional)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  example: "New York"
+                  description: Location to filter by
+                experienceLevel:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Entry Level", "Associate"]
+                  description: Experience levels to filter by
+                companyId:
+                  type: string
+                  example: "60d21b4667d0d8992e610c80"
+                  description: Company ID to filter by
+                minSalary:
+                  type: number
+                  example: 50000
+                  description: Minimum salary to filter by
+                maxSalary:
+                  type: number
+                  example: 100000
+                  description: Maximum salary to filter by
+      responses:
+        '200':
+          description: Successfully filtered jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered successfully"
+                  count:
+                    type: integer
+                    example: 3
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Junior Developer"
+                        location:
+                          type: string
+                          example: "New York"
+                        workplace_type:
+                          type: string
+                          example: "On-site"
+                        experience_level:
+                          type: string
+                          example: "Entry Level"
+                        salary:
+                          type: number
+                          example: 65000
+                        organization_id:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "At least one filter must be provided"
+        '404':
+          description: No matching jobs found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No jobs found matching the provided filters"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error filtering jobs"
+  
+# Add this section to your paths in openapi.yaml
+
+  /api/v1/jobs/get-top-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get personalized job recommendations
+      description: >
+        Provides job recommendations tailored to the user's skills, experience, and preferences.
+        Uses a recommendation algorithm that matches user skills with job requirements, excludes jobs
+        from the user's current organization, and excludes jobs the user has already applied to.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved personalized job recommendations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Personalized job recommendations retrieved successfully"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 50
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to retrieve job recommendations"
+
+  /api/v1/jobs/get-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get all jobs
+      description: Retrieves a paginated list of all available jobs with organization details.
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs retrieved successfully"
+                  count:
+                    type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 100
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving jobs"
+
+  /api/v1/jobs/get-job/{jobId}:
+    get:
+      tags:
+        - Jobs
+      summary: Get job details
+      description: Retrieves detailed information about a specific job.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to retrieve
+      responses:
+        '200':
+          description: Successfully retrieved job details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      job_title:
+                        type: string
+                        example: "Software Engineer"
+                      location:
+                        type: string
+                        example: "Remote"
+                      workplace_type:
+                        type: string
+                        example: "Hybrid"
+                      experience_level:
+                        type: string
+                        example: "Mid-Senior"
+                      salary:
+                        type: number
+                        example: 85000
+                      description:
+                        type: string
+                        example: "We are looking for a skilled Software Engineer to join our team..."
+                      benefits:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Health insurance", "401(k) matching", "Remote work options"]
+                      qualifications:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Bachelor's degree", "3+ years experience", "JavaScript"]
+                      responsibilities:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Develop web applications", "Code review", "Testing"]
+                      timeAgo:
+                        type: string
+                        example: "3 days ago"
+                      is_saved:
+                        type: boolean
+                        example: true
+                      organization:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                            example: "60d21b4667d0d8992e610c80"
+                          name:
+                            type: string
+                            example: "Tech Company"
+                          logo:
+                            type: string
+                            example: "https://example.com/logo.png"
+                          industry:
+                            type: string
+                            example: "Software Development"
+                          size:
+                            type: string
+                            example: "1001-5000 employees"
+                          description:
+                            type: string
+                            example: "Tech Company is a leading provider of software solutions..."
+                          followers_count:
+                            type: integer
+                            example: 1500
+        '400':
+          description: Invalid job ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid job ID format"
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Failed to retrieve job"
+
+  /api/v1/jobs/save-jobs/{jobId}:
+    post:
+      tags:
+        - Jobs
+      summary: Save a job
+      description: Saves a job to the user's saved jobs list.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to save
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Job saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job saved successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job is already saved"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error saving job"
+
+  /api/v1/jobs/unsave-jobs/{jobId}:
+    delete:
+      tags:
+        - Jobs
+      summary: Unsave a job
+      description: Removes a job from the user's saved jobs list.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to unsave
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Job unsaved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job unsaved successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job is not saved"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error unsaving job"
+
+  /api/v1/jobs/get-saved-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Get saved jobs
+      description: Retrieves all jobs saved by the user.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+      responses:
+        '200':
+          description: Successfully retrieved saved jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Saved jobs retrieved successfully"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error retrieving saved jobs"
+
+  /api/v1/jobs/filter-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Filter jobs
+      description: Filters jobs based on specified criteria.
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Bearer token for authentication (optional)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                location:
+                  type: string
+                  example: "New York"
+                  description: Location to filter by
+                experienceLevel:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Entry Level", "Associate"]
+                  description: Experience levels to filter by
+                companyId:
+                  type: string
+                  example: "60d21b4667d0d8992e610c80"
+                  description: Company ID to filter by
+                minSalary:
+                  type: number
+                  example: 50000
+                  description: Minimum salary to filter by
+                maxSalary:
+                  type: number
+                  example: 100000
+                  description: Maximum salary to filter by
+      responses:
+        '200':
+          description: Successfully filtered jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Jobs filtered successfully"
+                  count:
+                    type: integer
+                    example: 3
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Junior Developer"
+                        location:
+                          type: string
+                          example: "New York"
+                        workplace_type:
+                          type: string
+                          example: "On-site"
+                        experience_level:
+                          type: string
+                          example: "Entry Level"
+                        salary:
+                          type: number
+                          example: 65000
+                        organization_id:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "At least one filter must be provided"
+        '404':
+          description: No matching jobs found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No jobs found matching the provided filters"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error filtering jobs"
+  /api/v1/jobs/search-jobs:
+    get:
+      tags:
+        - Jobs
+      summary: Search for jobs
+      description: Search for jobs by keyword or industry. Optional authentication to determine saved status.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term to look for in all job fields
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Number of results per page (default is 10)
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Bearer token for authentication (optional)
+      responses:
+        '200':
+          description: Successfully retrieved search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job search results"
+                  query:
+                    type: string
+                    example: "software"
+                  count:
+                    type: integer
+                    example: 5
+                  total:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "Remote"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 85000
+                        timeAgo:
+                          type: string
+                          example: "3 days ago"
+                        is_saved:
+                          type: boolean
+                          example: false
+                          description: Indicates if the job is saved by the authenticated user
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c80"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+                            industry:
+                              type: string
+                              example: "Software Development"
+                            size:
+                              type: string
+                              example: "1001-5000 employees"
+                            description:
+                              type: string
+                              example: "Tech Company is a leading provider of software solutions..."
+                            followers_count:
+                              type: integer
+                              example: 1500
+                  nextCursor:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Please provide a search query"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error searching jobs"
+                    
 components:
   securitySchemes:
     bearerAuth:
@@ -6448,97 +8468,3 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT token is passed as a header in the format `Authorization: Bearer {token}`
-  schemas:
-    JobSummary:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "60d5ec69c5d019ab15c55678"
-        job_title:
-          type: string
-          example: "Software Engineer"
-        location:
-          type: string
-          example: "New York, NY"
-        workplace_type:
-          type: string
-          example: "On-site"
-        salary:
-          type: number
-          example: 85000
-        experience_level:
-          type: string
-          example: "Mid-Senior Level"
-        posted_time:
-          type: string
-          format: date-time
-          example: "2023-05-20T12:00:00Z"
-        organization_id:
-          type: object
-          properties:
-            name:
-              type: string
-              example: "Tech Solutions Inc."
-            logo:
-              type: string
-              example: "https://example.com/logos/techsolutions.png"
-    
-    Job:
-      type: object
-      properties:
-        _id:
-          type: string
-          example: "60d5ec69c5d019ab15c55678"
-        job_title:
-          type: string
-          example: "Software Engineer"
-        job_description:
-          type: string
-          example: "We are looking for a software engineer with experience in..."
-        location:
-          type: string
-          example: "New York, NY"
-        workplace_type:
-          type: string
-          example: "On-site"
-        salary:
-          type: number
-          example: 85000
-        experience_level:
-          type: string
-          enum: ["Entry Level", "Mid-Senior Level", "Director", "Executive"]
-          example: "Mid-Senior Level"
-        posted_time:
-          type: string
-          format: date-time
-          example: "2023-05-20T12:00:00Z"
-        application_deadline:
-          type: string
-          format: date-time
-          example: "2023-06-20T23:59:59Z"
-        targetted_skills:
-          type: array
-          items:
-            type: string
-          example: ["JavaScript", "React", "Node.js"]
-        organization_id:
-          type: object
-          properties:
-            _id:
-              type: string
-              example: "60d5ec69c5d019ab15c55999"
-            organization_name:
-              type: string
-              example: "Tech Solutions Inc."
-            logo:
-              type: string
-              example: "https://example.com/logos/techsolutions.png"
-            website:
-              type: string
-              example: "https://techsolutions.com"
-            industry:
-              type: string
-              example: "Information Technology"
-
-  
