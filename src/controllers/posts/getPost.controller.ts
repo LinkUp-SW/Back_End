@@ -53,7 +53,7 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
         const reactions = await getTopReactions(postId, targetTypeEnum.post);
         const reactionRepository = new ReactionRepository;
         const userReaction = await reactionRepository.getUserReaction(user._id as string,postId);
-        return res.status(200).json({message:'Post returned successfully',post:{...plainPost, author:authorInfo,isSaved, userReaction:userReaction?.reaction?? null ,reactions: reactions.topReacts,reactionsCount: reactions.totalCount,},comments:result })
+        return res.status(200).json({message:'Post returned successfully',post:{...plainPost, author:authorInfo,isSaved, userReaction:userReaction?.reaction?? null ,reactions: reactions.topReacts,reactionsCount: reactions.totalCount,commentsCount:plainPost.comments.length},comments:result })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message });
