@@ -4,6 +4,7 @@ import { editPost } from '../../controllers/posts/editPosts.controller.ts';
 import { deletePost } from '../../controllers/posts/deletePosts.controller.ts';
 import { getPost } from '../../controllers/posts/getPost.controller.ts';
 import { displayUserPosts } from '../../controllers/posts/getUserPosts.controller.ts';
+import { displayPosts } from '../../controllers/posts/displayPosts.Controller.ts';
 const router = express.Router();
 
 
@@ -13,6 +14,9 @@ router.post('/posts', (req,res) =>{
     createPost(req,res);
 });
 
+router.get('/posts/feed', (req,res) =>{
+    displayPosts(req,res);
+});
 router.patch('/posts/:postId', (req,res) =>{
     editPost(req,res);
 });
@@ -28,4 +32,6 @@ router.get('/posts/:postId', (req,res) =>{
 router.get('/posts/user/:user_id', (req,res) =>{
     displayUserPosts(req,res);
 });
+
+
 export default router;
