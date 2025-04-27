@@ -1,28 +1,30 @@
 import posts from "../models/posts.model.ts";
 import comments from "../models/comments.model.ts";
 import users from "../models/users.model.ts";
+import { organizationsInterface } from "../models/organizations.model.ts";
 
 export class PostRepository {
   async create(
-    userId: string,
+    userId: string | null,
     content: string,
     mediaLink: string[] | null,
     mediaType: string | null,
     commentsDisabled: string | null,
     publicPost: boolean | null,
-    taggedUsers: string | null
+    taggedUsers: string | null,
+    organization?: organizationsInterface | null 
   ) {
     return posts.create({
-      user_id:userId,
-      content:content,
+      user_id: userId,
+      organization: organization,
+      content: content,
       media: {
-              link:mediaLink,
-              media_type:mediaType
-          },
-      comments_disabled:commentsDisabled,
-      public_post:publicPost,
-      tagged_users:taggedUsers
-     
+        link: mediaLink,
+        media_type: mediaType
+      },
+      comments_disabled: commentsDisabled,
+      public_post: publicPost,
+      tagged_users: taggedUsers
     });
   }
 

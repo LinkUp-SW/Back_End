@@ -3,6 +3,7 @@ import { mediaInterface } from "../models_to_delete/media.model.ts";
 import { usersInterface } from "./users.model.ts";
 import { commentsInterface } from "./comments.model.ts";
 import { reactsInterface } from "../models_to_delete/reactions.model.ts";
+import { organizationsInterface } from "./organizations.model.ts";
 
 
 export enum commentsEnum{
@@ -21,6 +22,7 @@ export enum mediaTypeEnum{
 }
 export interface postsInterface extends mongoose.Document{
     user_id: string;
+    organization: organizationsInterface;
     content: string;
     date: number; // Changed to number type for Unix timestamp
     media: {
@@ -40,6 +42,7 @@ export interface postsInterface extends mongoose.Document{
 
 const postsSchema = new Schema<postsInterface>({
     user_id: { type: String },
+    organization: { type: Schema.Types.ObjectId, ref: "organizations" },
     content: { type: String },
     date: { 
         type: Number, 
