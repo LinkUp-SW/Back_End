@@ -458,8 +458,8 @@ postsToReturn.forEach(post => {
     const nextCursor = hasNextPage && postsToReturn.length > 0
       ? Math.floor(new Date(postsToReturn[postsToReturn.length - 1].date).getTime() / 1000)
       : null;
-    
-    return { posts: enhancedPosts, nextCursor };
+    const filteredPosts = enhancedPosts.filter(post => post !== null);
+    return { posts: filteredPosts, nextCursor };
   } catch (err) {
     if (err instanceof Error) {
       throw new Error(`Error fetching posts feed: ${err.message}`);
