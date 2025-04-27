@@ -234,7 +234,6 @@ export const getPostsCursorBased = async (
     
     // Execute the first query to get activity IDs
     const activities = await posts.aggregate(activityQuery).exec();
-    
     // Extract post IDs from activities
     const postIds = activities.map(a => new mongoose.Types.ObjectId(a._id));
     
@@ -246,7 +245,12 @@ export const getPostsCursorBased = async (
     // Second query: Get complete post data for the IDs we found
     const postsQuery: PipelineStage[] = [
       // 1. Match only the posts we need
-      { $match: { _id: { $in: postIds } } },
+      { 
+        $match: { 
+          _id: { $in: postIds },
+          ...(userId ? { _id: { $ne: userId.toString() } } : {}) // Exclude user's own posts
+        } 
+      },
       
       // 2. Lookup comments
       {
@@ -325,6 +329,7 @@ export const getPostsCursorBased = async (
     ];
     // Execute the second query to get full post data
     const completePostsData = await posts.aggregate(postsQuery).exec();
+    
     // Create a map of posts by ID for easy access
     const postsMap = new Map();
     completePostsData.forEach(post => {
@@ -335,11 +340,10 @@ export const getPostsCursorBased = async (
     const orderedPosts = [];
     for (const activity of activities) {
       const post = postsMap.get(activity._id.toString());
-      if (post) {
+      if (post && !(userId?.toString() && post.user_id === userId?.toString())) {
         // Add activity type to post
         post.activityType = activity.kind; // note: 'kind' from your aggregation, not 'type'
         post.actorId = activity.actor; // use 'actor' from your aggregation
-        
         orderedPosts.push(post);
       }
     }
@@ -348,7 +352,6 @@ export const getPostsCursorBased = async (
     
     // Get final post list (remove extra post used for pagination)
     const postsToReturn = hasNextPage ? orderedPosts.slice(0, limit) : orderedPosts;
-    
     const actorIds = new Set<string>();
 postsToReturn.forEach(post => {
   if (post.activityType !== 'post' && post.actorId) {
@@ -359,7 +362,7 @@ postsToReturn.forEach(post => {
     // Fetch all actor information in one query
     const actorData = await users.find(
       { _id: { $in: Array.from(actorIds).map(id => new mongoose.Types.ObjectId(id)) } },
-      { _id: 1, user_id: 1, 'bio.first_name': 1, 'bio.last_name': 1 }
+      { _id: 1, user_id: 1, 'bio.first_name': 1, 'bio.last_name': 1,profile_photo:1 }
     ).lean();
     
     // Create actor info map
@@ -368,7 +371,8 @@ postsToReturn.forEach(post => {
       actorMap.set(actor._id.toString(), {
         name: `${actor.bio?.first_name || ''} ${actor.bio?.last_name || ''}`.trim() || actor.user_id,
         id: actor._id,
-        username: actor.user_id // Add this line to store the username
+        username: actor.user_id,
+        profilePicture: actor.profile_photo 
       });
     });
 
@@ -406,7 +410,8 @@ postsToReturn.forEach(post => {
               type: post.activityType,
               actorName: actorInfo.name,
               actorUserName: actorInfo.username, // Use the username from actorMap
-              actorId: actorInfo.id
+              actorId: actorInfo.id,
+              actorPicture: actorInfo.profilePicture
             };
           }
         }
@@ -436,9 +441,9 @@ postsToReturn.forEach(post => {
         };
       }
     }
+      
         // Remove temp fields
         const { activityType, activityUserId, ...cleanPost } = post;
-        
         return {
           ...cleanPost,
           author,
@@ -449,7 +454,6 @@ postsToReturn.forEach(post => {
         };
       })
     );
-    
     // Calculate next cursor from the last post's date
     const nextCursor = hasNextPage && postsToReturn.length > 0
       ? Math.floor(new Date(postsToReturn[postsToReturn.length - 1].date).getTime() / 1000)
