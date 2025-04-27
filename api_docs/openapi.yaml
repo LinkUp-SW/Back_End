@@ -3444,9 +3444,6 @@ paths:
                         content:
                           type: string
                           example: "Excited to share my latest project!"
-                        date:
-                          type: string
-                          format: date-time
                         media:
                           type: object
                           properties:
@@ -3472,7 +3469,7 @@ paths:
                         isEdited:
                           type: boolean
                           example: false
-                        Date:
+                        date:
                           type: number
                           example: 1745266574
                         commentsCount:
@@ -3524,13 +3521,19 @@ paths:
                             type:
                               type: string
                               example: "comment"
-                              enum: ["post", "comment", "reaction", "repost"]
+                              enum: ["comment", "reaction", "repost"]
+                            actorUserName:
+                              type: string
+                              example: "jane-smith23"
                             actorName:
                               type: string
                               example: "Jane Smith"
                             actorId:
                               type: string
                               example: "6459def789ghi012"
+                              actorPicture:
+                                type: string
+                                example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1745265655/user_uploads/images/1745265652787-profile.png"
                   nextCursor:
                     type: integer
                     example: 1745190000
