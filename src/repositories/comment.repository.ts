@@ -298,7 +298,6 @@ export const getComments = async (
         // Process replies for this root comment
         const repliesWithAuthors: Record<string, any> = {};
         const replies = repliesByParentId.get(rootId) || [];
-        
         for (const reply of replies) {
           const replyId = reply._id.toString();
           const replyAuthorInfo = userInfoMap.get(reply.user_id.toString());
@@ -330,6 +329,7 @@ export const getComments = async (
           ...transformedRootComment,
           author: rootAuthorInfo,
           userReaction: userReactionsMap.get(rootId) || null,
+          childrenCount:replyCountByParentId.get(rootId) ||null,
           children: repliesWithAuthors
         };
       }
