@@ -183,44 +183,48 @@ export const getPostsCursorBased = async (
     // Convert string IDs to ObjectIds
     const userObjectIds = userIdsToFetch.map(id => new mongoose.Types.ObjectId(id));
     
-    // If cursor is provided, create a Date object for comparison
-    const cursorDate = cursor ? new Date(cursor * 1000) : null;
-
-    // First, get all activity IDs (posts and interactions)
+    // If cursor is provided, create a proper date filter using Unix timestamp directly
+    let dateFilter = {};
+    if (cursor) {
+      // Create filter for Unix timestamps (don't convert to Date object)
+      dateFilter = { date: { $lt: cursor } };
+    }
+    const adjustedLimit = limit * 2; // Request double to account for filtering
+    //get all activity IDs (posts and interactions)
     const activityQuery: PipelineStage[] = [
 
       // start with direct posts
-      { $match: { user_id: { $in: userIdsToFetch }, ...cursorDate } },
+      { $match: { user_id: { $in: userIdsToFetch }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
       { $project: { _id: 1, date: 1, type: { $literal: 'post' }, actor: '$user_id' } },
   
-      // ❷ reactions on posts -------------------------------------------------
+      //  reactions on posts 
       { $unionWith: {
           coll: 'reacts',
           pipeline: [
-            { $match: { user_id: { $in: userObjectIds }, target_type: targetTypeEnum.post, ...cursorDate } },
+            { $match: { user_id: { $in: userObjectIds }, target_type: targetTypeEnum.post, ...(cursor ? { date: { $lt: cursor } } : {}) } },
             { $project: { _id: '$target_id', date: 1, type: { $literal: 'reaction' }, actor: '$user_id' } }
           ]
         } },
   
-      // ❸ comments on posts --------------------------------------------------
+      //  comments on posts
       { $unionWith: {
           coll: 'comments',
           pipeline: [
-            { $match: { user_id: { $in: userObjectIds }, ...cursorDate } },
+            { $match: { user_id: { $in: userObjectIds }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
             { $project: { _id: '$post_id', date: 1, type: { $literal: 'comment' }, actor: '$user_id' } }
           ]
         } },
   
-      // ❹ reposts ------------------------------------------------------------
+      //  reposts
       { $unionWith: {
           coll: 'reposts',
           pipeline: [
-            { $match: { user_id: { $in: userObjectIds }, ...cursorDate } },
+            { $match: { user_id: { $in: userObjectIds }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
             { $project: { _id: '$post_id', date: 1, type: { $literal: 'repost' }, actor: '$user_id' } }
           ]
         } },
   
-      // ❺ dedupe (keep most-recent activity on the same post)
+      //  dedupe (keep most-recent activity on the same post)
       { $group: {
         _id: '$_id',                       // post id
         lastActivity: { $max: '$date' },
@@ -229,7 +233,7 @@ export const getPostsCursorBased = async (
       } },
   
       { $sort : { lastActivity: -1 } },
-      { $limit: limit + 1 }                  // one extra to know if there’s more
+      { $limit: adjustedLimit + 1 }                  // one extra to know if there’s more
     ];
     
     // Execute the first query to get activity IDs
@@ -347,17 +351,12 @@ export const getPostsCursorBased = async (
         orderedPosts.push(post);
       }
     }
-    // Determine if there are more posts
-    const hasNextPage = orderedPosts.length > limit;
-    
-    // Get final post list (remove extra post used for pagination)
-    const postsToReturn = hasNextPage ? orderedPosts.slice(0, limit) : orderedPosts;
     const actorIds = new Set<string>();
-postsToReturn.forEach(post => {
-  if (post.activityType !== 'post' && post.actorId) {
-    actorIds.add(post.actorId.toString());
-  }
-});
+    orderedPosts.forEach(post => {
+      if (post.activityType !== 'post' && post.actorId) {
+        actorIds.add(post.actorId.toString());
+      }
+    });
     
     // Fetch all actor information in one query
     const actorData = await users.find(
@@ -378,7 +377,7 @@ postsToReturn.forEach(post => {
 
     // Enhance posts with reactions data
     const enhancedPosts = await Promise.all(
-      postsToReturn.map(async (post) => {
+      orderedPosts.map(async (post) => {
         const isPublicPost = post.public_post === true;
         const isFromConnection = connectionIds.includes(post.user_id.toString());
         // Skip this post if it's private and not from a connection
@@ -454,12 +453,15 @@ postsToReturn.forEach(post => {
         };
       })
     );
-    // Calculate next cursor from the last post's date
-    const nextCursor = hasNextPage && postsToReturn.length > 0
-      ? Math.floor(new Date(postsToReturn[postsToReturn.length - 1].date).getTime() / 1000)
-      : null;
     const filteredPosts = enhancedPosts.filter(post => post !== null);
-    return { posts: filteredPosts, nextCursor };
+    const hasMorePosts = filteredPosts.length > limit;
+    const finalPosts = hasMorePosts ? filteredPosts.slice(0, limit) : filteredPosts;
+    // Calculate next cursor from the last post's date
+    const nextCursor = hasMorePosts && finalPosts.length > 0
+      ? finalPosts[finalPosts.length - 1].date
+      : null;
+      console.log(finalPosts[finalPosts.length - 1])
+    return { posts: finalPosts, nextCursor };
   } catch (err) {
     if (err instanceof Error) {
       throw new Error(`Error fetching posts feed: ${err.message}`);
