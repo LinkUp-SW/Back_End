@@ -3386,7 +3386,191 @@ paths:
                     example: "Server error"
                   error:
                     type: object
-
+      /api/v1/post/posts/feed:
+  /api/v1/post/posts/feed:
+    get:
+      tags:
+        - Posts
+      summary: Get posts feed
+      description: >
+        Retrieves a feed of posts from user's connections and followed users.
+        The feed includes posts created by connections/followed users as well as their interactions
+        (comments, reactions, reposts) with other posts. Results are paginated with cursor-based
+        pagination and sorted by most recent activity.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Timestamp-based cursor for pagination (Unix timestamp of oldest post in previous batch)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of posts to return per page
+      responses:
+        '200':
+          description: Posts feed retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "6458abc123def456"
+                        user_id:
+                          type: string
+                          example: "6806a1938db9403282340f11"
+                        content:
+                          type: string
+                          example: "Excited to share my latest project!"
+                        date:
+                          type: string
+                          format: date-time
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: array
+                              items:
+                                type: string
+                              example: ["https://example.com/image1.jpg"]
+                            media_type:
+                              type: string
+                              example: "image"
+                        comments_disabled:
+                          type: string
+                          example: "all"
+                        public_post:
+                          type: boolean
+                          example: true
+                        tagged_users:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Amr-Doma81","Darwin-Núñez32"]
+                        isEdited:
+                          type: boolean
+                          example: false
+                        Date:
+                          type: number
+                          example: 1745266574
+                        commentsCount:
+                          type: number
+                          example: 5
+                        repostsCount:
+                          type: number
+                          example: 2
+                        author:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "6457abc123def456"
+                            username:
+                              type: string
+                              example: "johndoe"
+                            firstName:
+                              type: string
+                              example: "John"
+                            lastName:
+                              type: string
+                              example: "Doe"
+                            headline:
+                              type: string
+                              example: "Software Engineer"
+                            profilePicture:
+                              type: string
+                              example: "https://example.com/profile.jpg"
+                        topReactions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              reaction:
+                                type: string
+                                example: "like"
+                        reactionsCount:
+                          type: number
+                          example: 15
+                        userReaction:
+                          type: string
+                          example: "like"
+                          nullable: true
+                        activityContext:
+                          type: object
+                          nullable: true
+                          properties:
+                            type:
+                              type: string
+                              example: "comment"
+                              enum: ["post", "comment", "reaction", "repost"]
+                            actorName:
+                              type: string
+                              example: "Jane Smith"
+                            actorId:
+                              type: string
+                              example: "6459def789ghi012"
+                  nextCursor:
+                    type: integer
+                    example: 1745190000
+                    nullable: true
+                    description: Timestamp to use as cursor for the next page of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
   /api/v1/post/posts/{postId}:
     patch:
           tags:
