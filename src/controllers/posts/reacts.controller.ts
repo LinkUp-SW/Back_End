@@ -136,9 +136,12 @@ export const removeReaction = async (req: Request, res: Response): Promise<Respo
         { $pull: { "activity.reacts": removedReact._id } }
     );
     }
+    const { topReacts, totalCount } = await getTopReactions(target._id, target_type);
     return res.status(200).json({
         message: 'Reaction removed successfully',
-        reaction: removedReact
+        reaction: removedReact,
+        topReactions: topReacts,
+        totalCount: totalCount
         }); 
     }catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import comments from '../models/comments.model.ts';
 import users from '../models/users.model.ts';
 import { convert_idIntoUser_id } from './user.repository.ts';
-import { deleteCommentReactions, getTopReactions } from './reacts.repository.ts';
+import { deleteCommentReactions, getTopReactions, ReactionRepository } from './reacts.repository.ts';
 import { targetTypeEnum } from '../models/reactions.model.ts';
 
 export class CommentRepository {
@@ -138,14 +138,15 @@ export const getComments = async (
     cursor: number,
     limit: number,
     postId: string,
-    replyLimit: number
+    replyLimit: number,
+    userId?: string
   ): Promise<{ count: number; comments: Record<string, any>; nextCursor: number | null }> => {
     try {
       // Fetch root comments and count in a single aggregation
       const [rootCommentResults, countResults] = await Promise.all([
         comments
           .find({ post_id: postId, parentId: null })
-          .sort({ date: 1 })
+          .sort({ date: -1 })
           .skip(cursor)
           .limit(limit)
           .lean()
@@ -153,12 +154,11 @@ export const getComments = async (
         
         comments.countDocuments({
           post_id: postId,
-          parentId: { $exists: false }
+          parentId: null
         })
       ]);
       const rootComments = rootCommentResults;
       const totalRootComments = countResults;
-      
       if (rootComments.length === 0) {
         return { count: 0, comments: {}, nextCursor: null };
       }
@@ -169,7 +169,7 @@ export const getComments = async (
       // Fetch all replies in one query
       const allReplies = await comments
         .find({ parentId: { $in: rootCommentIds } })
-        .sort({ date: 1 })
+        .sort({ date: -1 })
         .lean()
         .exec();
       
@@ -243,6 +243,33 @@ export const getComments = async (
         replyReactionsMap.set(replyId, replyReactionsResults[index]);
       });
 
+      // Get current user's reactions if userId is provided
+      const userReactionsMap = new Map();
+      if (userId) {
+        const reactionRepository = new ReactionRepository();
+        
+        // Get user's reactions to all root comments
+        const rootCommentReactionPromises = rootComments.map(comment => 
+          reactionRepository.getUserReaction(userId, comment._id.toString())
+        );
+        const rootCommentUserReactions = await Promise.all(rootCommentReactionPromises);
+        
+        // Map root comment reactions to their IDs
+        rootComments.forEach((comment, index) => {
+          userReactionsMap.set(comment._id.toString(), rootCommentUserReactions[index]?.reaction || null);
+        });
+        
+        // Get user's reactions to all replies
+        const replyReactionPromises = allReplies.map(reply => 
+          reactionRepository.getUserReaction(userId, reply._id.toString())
+        );
+        const replyUserReactions = await Promise.all(replyReactionPromises);
+        
+        // Map reply reactions to their IDs
+        allReplies.forEach((reply, index) => {
+          userReactionsMap.set(reply._id.toString(), replyUserReactions[index]?.reaction || null);
+        });
+      }
       for (const rootComment of rootComments) {
         const rootId = rootComment._id.toString();
         const rootAuthorInfo = userInfoMap.get(rootComment.user_id.toString());
@@ -271,7 +298,6 @@ export const getComments = async (
         // Process replies for this root comment
         const repliesWithAuthors: Record<string, any> = {};
         const replies = repliesByParentId.get(rootId) || [];
-        
         for (const reply of replies) {
           const replyId = reply._id.toString();
           const replyAuthorInfo = userInfoMap.get(reply.user_id.toString());
@@ -292,6 +318,7 @@ export const getComments = async (
               mediaType: 'none'
             },
             author: replyAuthorInfo,
+            userReaction: userReactionsMap.get(replyId) || null,
             reactions: replyReactions.topReacts,
             reactionsCount: replyReactions.totalCount
           };
@@ -301,7 +328,9 @@ export const getComments = async (
         result[rootId] = {
           ...transformedRootComment,
           author: rootAuthorInfo,
-          children: repliesWithAuthors
+          userReaction: userReactionsMap.get(rootId) || null,
+          childrenCount:replyCountByParentId.get(rootId) ||null,
+          children: Object.values(repliesWithAuthors)
         };
       }
       
@@ -311,7 +340,7 @@ export const getComments = async (
       
       return {
         count: rootComments.length,
-        comments: result,
+        comments: Object.values(result),
         nextCursor
       };
     } catch (err) {
@@ -340,7 +369,7 @@ export const getReplies = async (
       const [replyResults, totalRepliesCount] = await Promise.all([
         comments
           .find({ parentId: commentId })
-          .sort({ date: 1 })
+          .sort({ date: -1 })
           .skip(cursor)
           .limit(limit)
           .lean()
@@ -413,7 +442,7 @@ export const getReplies = async (
       
       return {
         count: replyResults.length,
-        replies: result,
+        replies: Object.values(result),
         nextCursor
       };
     } catch (err) {
