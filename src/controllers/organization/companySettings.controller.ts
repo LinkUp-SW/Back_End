@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import organizations from "../../models/organizations.model.ts";
-import users from "../../models/users.model.ts"; // Add this import
+import users, { usersInterface } from "../../models/users.model.ts"; // Add this import
 import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
 
 export const makeAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -292,4 +292,66 @@ export const getBlockedFollowers = async (req: Request, res: Response, next: Nex
     } catch (error) {
         next(error);
     }
+}
+
+export const getFollowers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
+        if (!isAdmin) return;
+
+        // Get the organization with populated followers
+        const organizationWithFollowers = await organizations.findById(organization_id).populate("followers");
+        if (!organizationWithFollowers) return;
+    
+        res.status(200).json({ followers: organizationWithFollowers.followers });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const followCompany = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        const userId = user as { _id: string };
+        // Validate user is not already a follower
+        const isAlreadyFollower = organization.followers.some(
+            (followerId: any) => followerId.toString() === userId.toString()
+        );
+        
+        if (isAlreadyFollower) {
+            res.status(400).json({ message: "User is already a follower" });
+            return;
+        }
+        
+        // Add user ID to followers list
+        organization.followers.push(user);
+        
+        await organization.save();
+
+        res.status(200).json({ 
+            message: "User followed successfully", 
+            followers: organization.followers 
+        });
+    } catch (error) {
+        next(error);
+    }
+    
 }
