@@ -212,7 +212,7 @@ export const getComments = async (
         replyCountByParentId.set(parentId, replyCountByParentId.get(parentId) + 1);
         
         // Only add the reply if we're still under the limit
-        if (repliesByParentId.get(parentId).length+1 < replyLimit) {
+        if (repliesByParentId.get(parentId).length < replyLimit) {
           repliesByParentId.get(parentId).push(reply);
         }
       }
