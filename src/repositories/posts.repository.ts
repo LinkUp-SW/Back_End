@@ -3,6 +3,7 @@ import posts from "../models/posts.model.ts";
 import users from "../models/users.model.ts";
 import { getTopReactions, ReactionRepository } from "./reacts.repository.ts";
 import { targetTypeEnum } from "../models/reactions.model.ts";
+import { convert_idIntoUser_id } from "./user.repository.ts";
 
 export class PostRepository {
   async create(
@@ -130,6 +131,12 @@ export const getSavedPostsCursorBased = async (
       if (post) {
         const authorInfo = authorMap.get(post.user_id.toString());
         const plainPost = post.toObject ? post.toObject() : post;
+        if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
+                    const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
+                    if (userIds) {
+                        plainPost.tagged_users = userIds;
+                    }
+                }
         enrichedPosts.push({
           ...plainPost,
           author: authorInfo || null
