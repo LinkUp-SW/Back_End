@@ -8764,7 +8764,7 @@ paths:
                     example: "Everyone"
                   profileVisibility:
                     type: string
-                    enum: ["Public", "Private", "Connections only"]
+                    enum: ["Public", "Connections only"]
                     description: Who can view your full profile
                     example: "Public"
         '401':
