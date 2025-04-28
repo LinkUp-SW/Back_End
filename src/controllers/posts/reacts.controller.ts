@@ -60,11 +60,11 @@ export const reactOnPost = async (req: Request, res: Response): Promise<Response
             user.save();
     }
             
-        const { topReacts, totalCount } = await getTopReactions(target._id, target_type);
+        const { finalArray, totalCount } = await getTopReactions(target._id, target_type);
         return res.status(200).json({
         message: 'Reaction added successfully',
         reaction: react,
-        topReactions: topReacts,
+        topReactions: finalArray,
         totalCount: totalCount
         });
     } catch (error) {
@@ -136,11 +136,11 @@ export const removeReaction = async (req: Request, res: Response): Promise<Respo
         { $pull: { "activity.reacts": removedReact._id } }
     );
     }
-    const { topReacts, totalCount } = await getTopReactions(target._id, target_type);
+    const { finalArray, totalCount } = await getTopReactions(target._id, target_type);
     return res.status(200).json({
         message: 'Reaction removed successfully',
         reaction: removedReact,
-        topReactions: topReacts,
+        topReactions: finalArray,
         totalCount: totalCount
         }); 
     }catch (error) {
