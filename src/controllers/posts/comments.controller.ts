@@ -195,7 +195,7 @@ const getCommentsController = async (req: Request, res: Response) => {
             return res.status(404).json({ message: "Post does not exist" });
         }
         // Call the getComments function
-        const result = await getComments(cursor, limit, post_id,replyLimit);
+        const result = await getComments(cursor, limit, post_id,replyLimit,user._id!.toString());
     
         // Return the result as a JSON response
         res.status(200).json(result);

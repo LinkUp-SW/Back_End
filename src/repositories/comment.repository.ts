@@ -291,7 +291,7 @@ export const getComments = async (
             link: '',
             mediaType: 'none'
           },
-          reactions: rootReactions.topReacts,
+          topReactions: rootReactions.finalArray,
           reactionsCount: rootReactions.totalCount
         };
   
@@ -319,7 +319,7 @@ export const getComments = async (
             },
             author: replyAuthorInfo,
             userReaction: userReactionsMap.get(replyId) || null,
-            reactions: replyReactions.topReacts,
+            topReactions: replyReactions.finalArray,
             reactionsCount: replyReactions.totalCount
           };
         }
