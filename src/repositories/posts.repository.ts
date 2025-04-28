@@ -415,10 +415,23 @@ export const getPostsCursorBased = async (
             activityContext = {
               type: post.activityType,
               actorName: actorInfo.name,
-              actorUserName: actorInfo.username, // Use the username from actorMap
+              actorUsername: actorInfo.username, // Use the username from actorMap
               actorId: actorInfo.id,
               actorPicture: actorInfo.profilePicture
             };
+
+            if (post.activityType === 'reaction') {
+              // Fetch the actual reaction data from the reacts collection
+              const reaction = await new ReactionRepository().getUserReaction(
+                post.actorId.toString(),
+                post._id.toString()
+              );
+              
+              if (reaction) {
+                // Add the specific reaction type to the context
+                activityContext.type = reaction.reaction;
+              }
+            }
           }
         }
         let author = post.author;
@@ -447,9 +460,14 @@ export const getPostsCursorBased = async (
         };
       }
     }
-      
-        // Remove temp fields
-        const { activityType, activityUserId, ...cleanPost } = post;
+    // Remove temp fields
+    const { activityType, activityUserId, ...cleanPost } = post;
+    if (cleanPost.tagged_users && cleanPost.tagged_users.length > 0) {
+      const userIds = await convert_idIntoUser_id(cleanPost.tagged_users);
+      if (userIds) {
+          cleanPost.tagged_users = userIds;
+      }
+    }
         return {
           ...cleanPost,
           author,
@@ -467,7 +485,6 @@ export const getPostsCursorBased = async (
     const nextCursor = hasMorePosts && finalPosts.length > 0
       ? finalPosts[finalPosts.length - 1].date
       : null;
-      console.log(finalPosts[finalPosts.length - 1])
     return { posts: finalPosts, nextCursor };
   } catch (err) {
     if (err instanceof Error) {
