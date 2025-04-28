@@ -330,7 +330,7 @@ export const getComments = async (
           author: rootAuthorInfo,
           userReaction: userReactionsMap.get(rootId) || null,
           childrenCount:replyCountByParentId.get(rootId) ||null,
-          children: repliesWithAuthors
+          children: Object.values(repliesWithAuthors)
         };
       }
       
@@ -340,7 +340,7 @@ export const getComments = async (
       
       return {
         count: rootComments.length,
-        comments: result,
+        comments: Object.values(result),
         nextCursor
       };
     } catch (err) {
@@ -369,7 +369,7 @@ export const getReplies = async (
       const [replyResults, totalRepliesCount] = await Promise.all([
         comments
           .find({ parentId: commentId })
-          .sort({ date: 1 })
+          .sort({ date: -1 })
           .skip(cursor)
           .limit(limit)
           .lean()
@@ -442,7 +442,7 @@ export const getReplies = async (
       
       return {
         count: replyResults.length,
-        replies: result,
+        replies: Object.values(result),
         nextCursor
       };
     } catch (err) {
