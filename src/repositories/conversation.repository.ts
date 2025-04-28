@@ -144,9 +144,13 @@ export class conversationRepository {
     if (isUser1) {
       conversation.unread_count_user1 = 0;
       conversation.user2_sent_messages.forEach(msg => msg.is_seen = true);
+      conversation.user1_conversation_type.push('');
+      conversation.user1_conversation_type.filter(type => type !== conversationType.unRead); // Remove unread type
     } else {
       conversation.unread_count_user2 = 0;
       conversation.user1_sent_messages.forEach(msg => msg.is_seen = true);
+      conversation.user2_conversation_type.push('');
+      conversation.user2_conversation_type.filter(type => type !== conversationType.unRead);
     }
 
     await conversation.save();
