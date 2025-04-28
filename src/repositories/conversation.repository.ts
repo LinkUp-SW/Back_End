@@ -122,9 +122,9 @@ export class conversationRepository {
     
     // Change user conversation type to unread
     if (isUser1) {
-      conversation.user1_conversation_type = [conversationType.unRead];
+      conversation.user1_conversation_type.push(conversationType.unRead);
     } else {
-      conversation.user2_conversation_type = [conversationType.unRead];
+      conversation.user2_conversation_type.push(conversationType.unRead);
     }
 
     await conversation.save();
