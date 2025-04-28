@@ -392,7 +392,7 @@ export const getPostsCursorBased = async (
           return null; // This post will be filtered out
         }
         // 1. Get top reactions
-        const { topReacts, totalCount } = await getTopReactions(
+        const { finalArray, totalCount } = await getTopReactions(
           post._id.toString(),
           targetTypeEnum.post
         );
@@ -471,7 +471,7 @@ export const getPostsCursorBased = async (
         return {
           ...cleanPost,
           author,
-          topReactions: topReacts,
+          topReactions: finalArray,
           reactionsCount: totalCount,
           userReaction,
           activityContext
