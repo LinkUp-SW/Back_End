@@ -19,6 +19,7 @@ export enum conversationType {
     inMail = "InMail",
     starred = "Starred",
     unRead = "Unread",
+    read = "Read",
 }
 
 export interface conversationsInterface extends mongoose.Document {
