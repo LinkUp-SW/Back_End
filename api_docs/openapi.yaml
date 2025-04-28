@@ -1806,8 +1806,16 @@ paths:
               properties:
                 profileVisibility:
                   type: string
-                  enum: [public, connections, private]
+                  enum: [Public, Connections only]
+                  example: "Connections only"
                   description: Profile visibility level
+            examples:
+              Public:
+                value:
+                  profileVisibility: "Public"
+              Connections:
+                value:
+                  profileVisibility: "Connections only"
       responses:
         '200':
           description: Privacy settings updated successfully
@@ -3222,6 +3230,12 @@ paths:
                   resume:
                     type: string
                     example: "https://example.com/resume.pdf"
+                  number_of_saved_jobs:
+                    type: integer
+                    example: 3
+                  number_of_saved_posts:
+                    type: integer
+                    example: 5
                   
 
         '401':
@@ -6651,6 +6665,9 @@ paths:
                         type: integer
                         example: 5
                         description: Total number of pages
+                      nextCursor:
+                        type: number
+                        example: 2
         '400':
           description: Invalid request parameters
           content:

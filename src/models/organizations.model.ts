@@ -3,6 +3,7 @@ import { postsInterface } from "./posts.model.ts";
 import { usersInterface } from "./users.model.ts";
 import { conversationsInterface } from "./conversations.model.ts";
 
+const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v1719229880/meme_k18ky2_c_crop_w_674_h_734_x_0_y_0_u0o1yz.png";
 
 export enum organizationSizeEnum {
     small_1_10 = "1-10 employees",
@@ -63,7 +64,9 @@ const organizationsSchema = new Schema<organizationsInterface>({
     name: { type: String },
     category_type: { type: String, enum: Object.values(categoryTypeEnum) },
     website: { type: String},
-    logo: { type: String},
+    logo: { type: String,
+        default: DEFAULT_IMAGE_URL,
+    },
     tagline: { type: String},
     description: { type: String},
     industry: { type: String },

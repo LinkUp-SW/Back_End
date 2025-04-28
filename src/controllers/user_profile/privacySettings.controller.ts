@@ -283,7 +283,7 @@ export const getFollowPrimarySetting = async (req: Request, res: Response): Prom
 
     // Return the follow primary setting
     res.status(200).json({ 
-      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary ?? false
+      isFollowPrimary: viewerUser.privacy_settings.make_follow_primary ?? false,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
