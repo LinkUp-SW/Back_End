@@ -20,16 +20,18 @@ export interface reactsInterface extends mongoose.Document{
     target_id: ObjectId //post or comment Id
     target_type: targetTypeEnum;
     reaction: reactsEnum;
+    date: number
 }
 const reactsSchema = new Schema<reactsInterface>({
     user_id: { type: Schema.Types.ObjectId, ref: "users"},
     target_id:{ type: Schema.Types.ObjectId},
     target_type:{ type: String, enum: Object.values(targetTypeEnum)},
-    reaction:{ type: String, enum: Object.values(reactsEnum)}
-}, { timestamps:{
-    createdAt:true,
-    updatedAt:false
-}});
+    reaction:{ type: String, enum: Object.values(reactsEnum)},
+    date: { 
+        type: Number, 
+        default: () => Math.floor(Date.now() / 1000) // Unix timestamp in seconds
+    },
+});
 reactsSchema.index({ user_id: 1, target_id: 1 }, { unique: true });
 const reacts = mongoose.model<reactsInterface>('reacts', reactsSchema);
 
