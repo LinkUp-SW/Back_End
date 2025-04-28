@@ -6659,6 +6659,9 @@ paths:
                         type: integer
                         example: 5
                         description: Total number of pages
+                      nextCursor:
+                        type: number
+                        example: 2
         '400':
           description: Invalid request parameters
           content:
