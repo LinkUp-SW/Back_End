@@ -2,9 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import asyncHandler from '../../middleware/asyncHandler.ts';
 import { CustomError } from '../../utils/customError.utils.ts';
 import { NotificationRepository } from '../../repositories/notification.repository.ts';
+import { UserRepository } from '../../repositories/user.repository.ts';
 
 const notificationRepo = new NotificationRepository();
+const userRepository = new UserRepository();
 
+/**
+ * Get all notifications for the logged-in user
+ */
 /**
  * Get all notifications for the logged-in user
  */
@@ -19,7 +24,46 @@ const getNotifications = asyncHandler(async (req: Request, res: Response, next: 
   const limit = parseInt(req.query.limit as string) || 20;
   
   // Get notifications and total count
-  const { notifications, total } = await notificationRepo.getUserNotifications(userId as string, limit, page);
+  const { notifications: rawNotifications, total } = await notificationRepo.getUserNotifications(userId as string, limit, page);
+  
+  const unReadCount = await notificationRepo.getUnreadNotificationsCount(userId as string);
+  
+
+  if (!rawNotifications || rawNotifications.length === 0) {
+    return res.status(200).json({
+      notifications: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false
+      }
+    });
+  }
+
+  // Format notifications with sender details
+  const formattedNotifications = await Promise.all(
+    rawNotifications.map(async (notification) => {
+      const sender = await userRepository.findByUserId(notification.sender_id);
+      
+      return {
+        id: notification._id,
+        sender: {
+          id: notification.sender_id,
+          firstName: sender?.bio?.first_name || '',
+          lastName: sender?.bio?.last_name || '',
+          profilePhoto: sender?.profile_photo || null
+        },
+        createdAt: notification.created_at,
+        content: notification.content || '',
+        referenceId: notification.reference_id || null,
+        type: notification.type,
+        isRead: notification.is_read,
+      };
+    })
+  );
   
   // Calculate pagination metadata
   const totalPages = Math.ceil(total / limit);
@@ -27,7 +71,7 @@ const getNotifications = asyncHandler(async (req: Request, res: Response, next: 
   const hasPreviousPage = page > 1;
   
   return res.status(200).json({
-    notifications,
+    notifications: formattedNotifications,
     pagination: {
       page,
       limit,
@@ -35,7 +79,8 @@ const getNotifications = asyncHandler(async (req: Request, res: Response, next: 
       totalPages,
       hasNextPage,
       hasPreviousPage
-    }
+    },
+    unReadCount: unReadCount || 0
   });
 });
 

@@ -25,6 +25,9 @@ router.get('/conversation/unread-messages-count',authorizeMessaging,messageContr
 // Mark messages in conversation as read
 router.put('/conversations/:conversationId/read',authorizeMessaging,messageController.markMessagesInConversationAsRead);
 
+//Mark conversation as unread
+router.put('/conversations/:conversationId/unread',authorizeMessaging,messageController.markConversationAsUnread);
+
 // Mark messages as seen
 router.put('/messages/:conversationId/seen',authorizeMessaging,messageController.markMessagesAsSeen);
 

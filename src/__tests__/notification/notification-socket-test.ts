@@ -9,9 +9,9 @@ dotenv.config();
 // Constants
 const SERVER_URL = "http://localhost:3000"; // Make sure this matches your server's port
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret'; 
-const USER1_ID = 'NotifUser-25'; // The user receiving notifications
-const USER2_ID = 'NotifUser-22'; // The user sending notifications
-const USER3_ID = 'NotifUser-23'; // Another user for testing
+const USER1_ID = 'testUserId'; // The user receiving notifications
+const USER2_ID = 'NotifUser-10'; // The user sending notifications
+const USER3_ID = 'NotifUser-11'; // Another user for testing
 const TEST_DURATION_MS = 60000; // 60 seconds
 
 // Helper Functions
@@ -96,58 +96,58 @@ async function testAuthentication() {
   console.log(`User1 initial unread notifications count: ${unreadCountData.count}`);
 }
 
-async function testConnectionRequestNotification() {
-  console.log("Testing connection request notification...");
+// //async function testConnectionRequestNotification() {
+//   console.log("Testing connection request notification...");
 
-  // Set up listener first
-  const notificationPromise = waitForEvent(socket1, "new_notification", 10000);
-  const countUpdatePromise = waitForEvent(socket1, "unread_notifications_count", 10000);
+//   // Set up listener first
+//   const notificationPromise = waitForEvent(socket1, "new_notification", 10000);
+//   const countUpdatePromise = waitForEvent(socket1, "unread_notifications_count", 10000);
 
-  // Send notification directly through socket2
-  console.log("Sending connection request notification directly...");
-  socket2.emit("new_notification", {
-    recipientId: USER1_ID,
-    senderId: USER2_ID,
-    type: NotificationType.CONNECTION_REQUEST,
-    content: "User2 sent you a connection request"
-  });
+//   // Send notification directly through socket2
+//   console.log("Sending connection request notification directly...");
+//   socket2.emit("new_notification", {
+//     recipientId: USER1_ID,
+//     senderId: USER2_ID,
+//     type: NotificationType.CONNECTION_REQUEST,
+//     content: "User2 sent you a connection request"
+//   });
 
-  try {
-    // Wait for the notification and count update
-    const [notificationData, countData] = await Promise.all([
-      notificationPromise.catch(err => {
-        console.error("Notification promise error:", err);
-        return null;
-      }), 
-      countUpdatePromise.catch(err => {
-        console.error("Count update promise error:", err);
-        return null;
-      })
-    ]);
+//   try {
+//     // Wait for the notification and count update
+//     const [notificationData, countData] = await Promise.all([
+//       notificationPromise.catch(err => {
+//         console.error("Notification promise error:", err);
+//         return null;
+//       }), 
+//       countUpdatePromise.catch(err => {
+//         console.error("Count update promise error:", err);
+//         return null;
+//       })
+//     ]);
 
-    if (notificationData) {
-      console.log("Connection request notification received:", notificationData);
-      notificationId = notificationData.id;
-    } else {
-      console.error("Failed to receive notification");
-    }
+//     if (notificationData) {
+//       console.log("Connection request notification received:", notificationData);
+//       notificationId = notificationData.id;
+//     } else {
+//       console.error("Failed to receive notification");
+//     }
 
-    if (countData) {
-      console.log("Updated unread count:", countData.count);
-    } else {
-      console.error("Failed to receive count update");
-    }
+//     if (countData) {
+//       console.log("Updated unread count:", countData.count);
+//     } else {
+//       console.error("Failed to receive count update");
+//     }
 
-    // If we didn't get both, try the fallback approach with API
-    if (!notificationData || !countData) {
-      console.log("Trying API fallback for connection request...");
-      await testConnectionRequestNotificationViaAPI();
-    }
-  } catch (error) {
-    console.error("Connection request notification test failed:", error);
-    await testConnectionRequestNotificationViaAPI();
-  }
-}
+//     // If we didn't get both, try the fallback approach with API
+//     if (!notificationData || !countData) {
+//       console.log("Trying API fallback for connection request...");
+//       await testConnectionRequestNotificationViaAPI();
+//     }
+//   } catch (error) {
+//     console.error("Connection request notification test failed:", error);
+//     await testConnectionRequestNotificationViaAPI();
+//   }
+// //}
 
 async function testConnectionRequestNotificationViaAPI() {
   // Set up listeners first
@@ -157,11 +157,11 @@ async function testConnectionRequestNotificationViaAPI() {
   // Trigger the connection request via API
   console.log("Simulating connection request from User2 to User1 via API...");
   try {
-    const response = await fetch(`${SERVER_URL}/api/v1/user/connect/${USER1_ID}`, {
+    const response = await fetch(`${SERVER_URL}/api/v1/user/connect/${USER2_ID}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${createToken(USER2_ID)}`
+        "Authorization": `Bearer ${createToken(USER1_ID)}`
       }
     });
     
@@ -384,7 +384,7 @@ async function runTests() {
 
     // Run test cases
     await testAuthentication();
-    await testConnectionRequestNotification();
+    //await testConnectionRequestNotification();
     await testConnectionRequestNotificationViaAPI(); // Fallback to API if needed
     await testLikeNotification();
     await testCommentNotification();

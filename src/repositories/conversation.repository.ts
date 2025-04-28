@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import conversations, { MessageInterface } from "../models/conversations.model.ts";
+import conversations, { MessageInterface, conversationType } from "../models/conversations.model.ts";
 import { UserRepository } from "./user.repository.ts";
 import { CustomError } from "../utils/customError.utils.ts";
 
@@ -35,6 +35,7 @@ export class conversationRepository {
     }
     return conversation;
   }
+
 
 
   async getUnseenCountForEachConversationBelongingToUser(userId: string) {
@@ -108,6 +109,26 @@ export class conversationRepository {
     .sort({ last_message_time: -1 })
     .populate('user1_id', 'user_id profile_photo bio')
     .populate('user2_id', 'user_id profile_photo bio');
+  }
+
+  async markConversationAsUnread(conversationId: string, userId: string) {
+    const conversation = await conversations.findById(conversationId);
+    if (!conversation) {
+      throw new CustomError('Conversation not found', 404);
+    }
+
+    // Determine if reader is user1 or user2
+    const isUser1 = conversation.user1_id.toString() === userId;
+    
+    // Change user conversation type to unread
+    if (isUser1) {
+      conversation.user1_conversation_type = [conversationType.unRead];
+    } else {
+      conversation.user2_conversation_type = [conversationType.unRead];
+    }
+
+    await conversation.save();
+    return conversation;
   }
 
   async markConversationAsRead(conversationId: string, userId: string) {

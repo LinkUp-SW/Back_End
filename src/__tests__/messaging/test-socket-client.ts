@@ -4,6 +4,10 @@ import { readFileSync, statSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from "url";
 import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config();
+
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -14,17 +18,89 @@ const __dirname = path.dirname(__filename);
 const SERVER_URL = "http://localhost:3000"; // Make sure this matches your server's port
 const JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 const USER1_ID = "testUserId"; // Use an actual user ID from your database
-const USER2_ID = "User-1"; // Use another actual user ID
-const USER3_ID = "User-2"; // <-- Add a third user ID
+const USER2_ID = "User-30"; // Use another actual user ID
+const USER3_ID = "User-31"; // <-- Add a third user ID
 
 // NOTE: You'll need valid Conversation and Message IDs from your test database setup
 // Ensure conversations exist between USER1_ID and USER2_ID, and between USER1_ID and USER3_ID
-const TEST_CONVERSATION_ID_AB = "67ff95e27b8a31cde8909569"; // Conversation between User1 and User2
-const TEST_MESSAGE_ID_AB = "67ff95e47b8a31cde8909573"; // A message ID within CONVERSATION_ID_AB
+const TEST_CONVERSATION_ID_AB = "680fc1a9e88f5eabc097ef80"; // Conversation between User1 and User2
+const TEST_MESSAGE_ID_AB = "680fc1aae88f5eabc097ef9a"; // A message ID within CONVERSATION_ID_AB
 
-const TEST_CONVERSATION_ID_AC = "67ff95e67b8a31cde8909580"; // <-- Conversation between User1 and User3
-const TEST_MESSAGE_ID_AC = "67ff95e77b8a31cde890958a"; // <-- A message ID within CONVERSATION_ID_AC
+const TEST_CONVERSATION_ID_AC = "680fc1abe88f5eabc097efa5"; // <-- Conversation between User1 and User3
+const TEST_MESSAGE_ID_AC = "680fc1ace88f5eabc097efbf"; // <-- A message ID within CONVERSATION_ID_AC
 
+// Realistic message templates for different conversation contexts
+const messageTemplates = {
+  greeting: [
+    "Hey there! How's your day going?",
+    "Hi! I've been meaning to catch up with you.",
+    "Hello! Do you have a moment to chat about the project?",
+    "Hey, how are things with the new role?",
+    "Good morning! Ready for today's meeting?"
+  ],
+  
+  response: [
+    "I'm doing well, thanks for asking! How about you?",
+    "Great to hear from you! I've been pretty busy with the new project.",
+    "Hey! Yes, I was just about to reach out about that.",
+    "Things are going well! Just getting used to the new team structure.",
+    "Morning! Yes, I've prepared the slides for the presentation."
+  ],
+  
+  projectDiscussion: [
+    "Have you had a chance to review the latest design mockups?",
+    "What do you think about the approach we're taking with the API?",
+    "I've been working on the database schema. Would you mind taking a look?",
+    "The client suggested some changes to the UI. I've documented them in Figma.",
+    "Do you think we should prioritize the mobile experience for this release?"
+  ],
+  
+  technical: [
+    "I'm having an issue with the authentication flow. The tokens aren't being stored correctly.",
+    "Do you think we should switch to a microservices architecture for this component?",
+    "The performance tests are showing some bottlenecks in the data processing pipeline.",
+    "I've implemented the new caching layer we discussed. It improved response times by 40%!",
+    "How would you handle the edge case where users try to access expired content?"
+  ],
+  
+  mediaShare: [
+    "I'm sending you the project documentation we discussed.",
+    "Here's the presentation for tomorrow's meeting.",
+    "Check out these reference designs I found - might be useful for our UI.",
+    "I've attached the report with the latest analytics data.",
+    "Here's the screenshot of the error I'm getting on production."
+  ],
+  
+  closing: [
+    "Thanks for your help with this! Really appreciate it.",
+    "Let's catch up more about this tomorrow during the standup.",
+    "Let me know if you need anything else from my side.",
+    "I'll incorporate your feedback and send an updated version soon.",
+    "Have a great rest of your day! Talk soon."
+  ],
+  
+  professional: [
+    "Could you share your thoughts on the market trends we're seeing?",
+    "I'd value your perspective on how we should position the product.",
+    "The board is asking for more detailed projections for Q4.",
+    "Have you seen the latest industry report? Some interesting insights there.",
+    "Our competitors just announced a new feature set. Should we respond?"
+  ],
+  
+  casual: [
+    "Did you watch the game last night? What a finish!",
+    "How was your weekend getaway? Saw some great photos!",
+    "Have you tried that new restaurant downtown?",
+    "Any vacation plans coming up this summer?",
+    "That book you recommended was amazing! Just finished it."
+  ]
+};
+
+// Helper function to get a random message from a specific category
+function getRandomMessage(category: keyof typeof messageTemplates): string {
+  const templates = messageTemplates[category];
+  return templates[Math.floor(Math.random() * templates.length)];
+}
 
 // Ensure test files exist and paths are correct relative to the test script
 const testFiles = [
@@ -89,7 +165,6 @@ function listenForEvents(socket: Socket, eventName: string, count: number, timeo
   });
 }
 
-
 // Helper to convert a file to a base64 data URL
 function fileToBase64DataURL(filePath: string): string {
   try {
@@ -124,13 +199,20 @@ function getMimeType(filePath: string): string {
   }
 }
 
-
 // --- Socket Connections ---
 // Use autoConnect: false to control connection in tests
 // Add reconnection: false to prevent auto-reconnect on disconnect
-const socket1 = io(SERVER_URL, { transports: ["websocket"], autoConnect: false, reconnection: false });
-const socket2 = io(SERVER_URL, { transports: ["websocket"], autoConnect: false, reconnection: false });
-const socket3 = io(SERVER_URL, { transports: ["websocket"], autoConnect: false, reconnection: false }); // <-- Socket for the third user
+
+const socketOptions = {
+  reconnectionDelayMax: 10000,
+  reconnectionAttempts: 10,
+  timeout: 20000,
+  transports: ['websocket']
+};
+
+const socket1 = io(SERVER_URL, socketOptions );
+const socket2 = io(SERVER_URL, socketOptions);
+const socket3 = io(SERVER_URL, socketOptions); // <-- Socket for the third user
 
 
 // --- Test Cases (using async/await) ---
@@ -194,18 +276,30 @@ async function testMessageExchange() {
     data.senderId === USER1_ID && data.conversationId === TEST_CONVERSATION_ID_AB
   );
 
-  // User1 sends a message to User2
+  // User1 sends a more realistic greeting message to User2
+  const greeting = getRandomMessage("greeting");
   socket1.emit("private_message", {
     to: USER2_ID,
-    message: "Hello from User1 (to User2)!",
+    message: greeting,
   });
 
   // Wait for the message to be received by User2
   const receivedMessage = await messagePromise;
   console.log("User2 received message:", receivedMessage.message.message);
 
-  // Optional: User1 could wait for 'message_sent' confirmation if needed
-  // await waitForEvent(socket1, "message_sent");
+  // Now User2 sends a realistic response back to User1
+  const responsePromise = waitForEvent(socket1, "new_message", 10000, (data: any) =>
+    data.senderId === USER2_ID && data.conversationId === TEST_CONVERSATION_ID_AB
+  );
+  
+  const responseMsg = getRandomMessage("response");
+  socket2.emit("private_message", {
+    to: USER1_ID,
+    message: responseMsg,
+  });
+  
+  const receivedResponse = await responsePromise;
+  console.log("User1 received response:", receivedResponse.message.message);
 }
 
 
@@ -231,10 +325,11 @@ async function testMultipleConversations() {
         });
     });
 
-    // User1 sends a message to User3
+    // User1 sends a technical discussion message to User3
+    const technicalMsg = getRandomMessage("technical");
     socket1.emit("private_message", {
         to: USER3_ID,
-        message: "Hello from User1 (to User3)!",
+        message: technicalMsg,
     });
 
     // Wait for User3 to receive the message and confirm User2 did not
@@ -379,9 +474,11 @@ async function testMediaMessageExchange() {
     data.senderId === USER1_ID && data.conversationId === TEST_CONVERSATION_ID_AB && data.message?.media?.length > 0
   );
 
+  // Use a more natural media sharing message
+  const mediaMessage = getRandomMessage("mediaShare");
   socket1.emit("private_message", {
     to: USER2_ID, // Sending to User2
-    message: "Real files incoming!",
+    message: mediaMessage,
     media: media
   });
 
@@ -504,6 +601,63 @@ async function testReadReceipts() {
   console.log(`User1 received unread count update: ${unreadCountData1.count}`);
 }
 
+// New test function for realistic conversation flow
+async function testRealisticConversationFlow() {
+  console.log("Testing realistic conversation flow between User1 and User2...");
+
+  // First message from User1 - greeting
+  const greeting = getRandomMessage("greeting");
+  console.log(`[User1 → User2]: ${greeting}`);
+  const greetingPromise = waitForEvent(socket2, "new_message", 5000);
+  socket1.emit("private_message", {
+    to: USER2_ID,
+    message: greeting,
+  });
+  await greetingPromise;
+  
+  // User2 responds with a response
+  const response = getRandomMessage("response");
+  console.log(`[User2 → User1]: ${response}`);
+  const responsePromise = waitForEvent(socket1, "new_message", 5000);
+  socket2.emit("private_message", {
+    to: USER1_ID,
+    message: response,
+  });
+  await responsePromise;
+  
+  // User1 follows up with project discussion
+  const projectMsg = getRandomMessage("projectDiscussion");
+  console.log(`[User1 → User2]: ${projectMsg}`);
+  const projectPromise = waitForEvent(socket2, "new_message", 5000);
+  socket1.emit("private_message", {
+    to: USER2_ID,
+    message: projectMsg,
+  });
+  await projectPromise;
+  
+  // User2 responds with technical details
+  const technicalMsg = getRandomMessage("technical");
+  console.log(`[User2 → User1]: ${technicalMsg}`);
+  const technicalPromise = waitForEvent(socket1, "new_message", 5000);
+  socket2.emit("private_message", {
+    to: USER1_ID,
+    message: technicalMsg,
+  });
+  await technicalPromise;
+  
+  // User1 acknowledges with closing message
+  const closingMsg = getRandomMessage("closing");
+  console.log(`[User1 → User2]: ${closingMsg}`);
+  const closingPromise = waitForEvent(socket2, "new_message", 5000);
+  socket1.emit("private_message", {
+    to: USER2_ID,
+    message: closingMsg,
+  });
+  await closingPromise;
+  
+  console.log("Realistic conversation flow completed successfully");
+}
+
 async function testDisconnection() {
   console.log("Testing disconnection (User1)...");
 
@@ -575,7 +729,7 @@ async function testMessageError_InvalidMedia() {
   // Send a message with invalid media (e.g., not starting with data:)
   socket1.emit("private_message", {
     to: USER2_ID,
-    message: "Invalid media test",
+    message: "Here's a screenshot of the error I'm getting. Could you take a look?",
     media: ["not_a_data_url"]
   });
 
@@ -593,7 +747,7 @@ async function testMessageError_TooMuchMedia() {
 
   socket1.emit("private_message", {
     to: USER2_ID,
-    message: "Too much media test",
+    message: "I've got multiple screenshots of our app flow to share with you.",
     media: excessiveMedia
   });
 
@@ -607,7 +761,8 @@ async function testMessageError_TooMuchMedia() {
 const testCases = [
   { name: "Authentication and Initial Presence", func: testAuthenticationAndPresence },
   { name: "Message Exchange (User1 <-> User2)", func: testMessageExchange },
-  { name: "Multiple Conversations (User1 <-> User3) & Isolation", func: testMultipleConversations }, // <-- New test case
+  { name: "Multiple Conversations (User1 <-> User3) & Isolation", func: testMultipleConversations },
+  { name: "Realistic Conversation Flow", func: testRealisticConversationFlow },
   { name: "Media Message Exchange (User1 <-> User2)", func: testMediaMessageExchange },
   { name: "Typing Indicators (User1 <-> User2)", func: testTypingIndicators },
   { name: "Message Reactions (User1 <-> User2)", func: testMessageReactions },
@@ -622,20 +777,28 @@ const testCases = [
 // Main test runner function
 async function runTestsSequentially() {
   console.log("Starting comprehensive WebSocket test client...");
+  let passCount = 0;
+  let failCount = 0;
+  
   for (const testCase of testCases) {
     console.log(`\n=== Running test: ${testCase.name} ===`);
     try {
       await testCase.func();
       console.log(`=== Test "${testCase.name}" PASSED ===`);
+      passCount++;
     } catch (error) {
       console.error(`=== Test "${testCase.name}" FAILED ===`);
       console.error(error);
+      failCount++;
       // Stop execution on first failure
       gracefulShutdown(1); // Exit with a non-zero code to indicate failure
       return;
     }
   }
 
+  console.log("\n=== Test Summary ===");
+  console.log(`Passed: ${passCount}/${testCases.length}`);
+  console.log(`Failed: ${failCount}/${testCases.length}`);
   console.log("\nAll tests completed successfully!");
   gracefulShutdown(0); // Exit with code 0 for success
 }

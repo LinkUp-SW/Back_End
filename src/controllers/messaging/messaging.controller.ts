@@ -112,11 +112,14 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
     );
     
     const lastMessage = allMessages.length > 0 ? allMessages[0] : null;
+
+    console.log('Recieved:', receivedMessages);
     
     const unreadCount: number = receivedMessages.filter((msg) => !msg.is_seen).length;
+    console.log('unreadCount:', unreadCount);
     return {
       conversationId: conversation._id,
-      conversationType: conversation.type,
+      conversationType: isUser1 ? conversation.user1_conversation_type : conversation.user2_conversation_type,
       otherUser: {
         userId: otherUser.user_id,
         firstName: otherUser.bio?.first_name || '',
@@ -130,9 +133,13 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
         isOwnMessage: (isUser1 && sentMessages.includes(lastMessage)) || 
                       (!isUser1 && receivedMessages.includes(lastMessage))
       } : null,
+      
       unreadCount
     };
   });
+
+  
+
   const formattedConversations = await Promise.all(formattedConversationsPromises);
   
   return res.status(200).json({ 
@@ -364,26 +371,25 @@ const getUnseenMessagesCountByConversation = asyncHandler(async (req: Request, r
 
 
 /**
- * Mark a conversation as read
- * 
- * @route PUT /api/v1/messages/conversations/:conversationId/read
- * @access Private - Requires authentication
- * @param {Request} req - Express request object with conversationId in params
- * @param {Response} res - Express response object
- * @param {NextFunction} next - Express next middleware function
- * @param {string} conversationId - ID of the conversation to mark as read
- * @param {string} userId - ID of the user marking the conversation as read
- * * @returns {Promise<Response>} JSON success message
- * @throws {CustomError} 401 - If user is not authenticated
- * @throws {CustomError} 400 - If conversation ID is invalid
- * @throws {CustomError} 404 - If conversation is not found
- * @throws {CustomError} 403 - If user does not have access to the conversation
- * @throws {CustomError} 500 - If marking as read fails
- * @description Marks a conversation as read for the logged-in user.
+ * Mark a conversation as unread
  */
-const markConversationAsRead = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+
+const markConversationAsUnread = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const userId = req.user
   const { conversationId } = req.params;
+  
+  if (!userId) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+    throw new CustomError('Invalid conversation ID', 400);
+  }
+  
+  // Use repository method to mark conversation as unread
+  await conversationRepo.markConversationAsUnread(conversationId, userId as string);
+  
+  return res.status(200).json({ message: 'Conversation marked as unread' });
 });
 
 
@@ -686,6 +692,7 @@ export {
   getConversation,
   // blockUser,
   // unblockUser,
+  markConversationAsUnread,
   getUnseenMessagesCount,
   markMessagesInConversationAsRead,
   getUnseenMessagesCountByConversation,
