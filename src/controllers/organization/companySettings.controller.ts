@@ -285,10 +285,89 @@ export const getBlockedFollowers = async (req: Request, res: Response, next: Nex
         if (!isAdmin) return;
 
         // Get the organization with populated blocked users
-        const organizationWithBlocked = await organizations.findById(organization_id).populate("blocked");
+        const organizationWithBlocked = await organizations.findById(organization_id)
+        .populate({
+            path: "blocked",
+            select: "user_id bio.first_name bio.last_name bio.headline profile_photo"
+        });
         if (!organizationWithBlocked) return;
     
         res.status(200).json({ blocked_followers: organizationWithBlocked.blocked });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const followOrganization = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        const userIdStr = user._id?.toString();
+        // Validate user is not already a follower
+        const isAlreadyFollower = organization.followers.some(
+            (followerId: any) => followerId.toString() === userIdStr
+        );
+        
+        if (isAlreadyFollower) {
+            res.status(400).json({ message: "User is already a follower" });
+            return;
+        }
+        
+        // Add user ID to followers list
+        organization.followers.push(user);
+        
+        await organization.save();
+
+        res.status(200).json({ 
+            message: "User followed successfully", 
+            followers: organization.followers 
+        });
+    } catch (error) {
+        next(error);
+    }
+    
+}
+
+export const unfollowOrganization = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        const userIdStr = user._id?.toString();
+        // Validate user is a follower
+        const isFollower = organization.followers.some(
+            (followerId: any) => followerId.toString() === userIdStr
+        );
+        
+        if (!isFollower) {
+            res.status(400).json({ message: "User is not a follower" });
+            return;
+        }
+        
+        // Remove user ID from followers list
+        organization.followers = organization.followers.filter(
+            (followerId: any) => followerId.toString() !== userIdStr
+        );
+        
+        await organization.save();
+
+        res.status(200).json({ 
+            message: "User unfollowed successfully", 
+            followers: organization.followers 
+        });
     } catch (error) {
         next(error);
     }
@@ -310,48 +389,15 @@ export const getFollowers = async (req: Request, res: Response, next: NextFuncti
         if (!isAdmin) return;
 
         // Get the organization with populated followers
-        const organizationWithFollowers = await organizations.findById(organization_id).populate("followers");
+        const organizationWithFollowers = await organizations.findById(organization_id)
+        .populate({
+            path: "followers",
+            select: "user_id bio.first_name bio.last_name bio.headline profile_photo"
+        });
         if (!organizationWithFollowers) return;
     
         res.status(200).json({ followers: organizationWithFollowers.followers });
     } catch (error) {
         next(error);
     }
-}
-
-export const followCompany = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const user = await validateTokenAndGetUser(req, res);
-        if (!user) return;
-
-        const { organization_id } = req.params;
-        
-        // Get organization profile and validate it exists
-        const organization = await getCompanyProfileById(organization_id, res);
-        if (!organization) return;
-        
-        const userId = user as { _id: string };
-        // Validate user is not already a follower
-        const isAlreadyFollower = organization.followers.some(
-            (followerId: any) => followerId.toString() === userId.toString()
-        );
-        
-        if (isAlreadyFollower) {
-            res.status(400).json({ message: "User is already a follower" });
-            return;
-        }
-        
-        // Add user ID to followers list
-        organization.followers.push(user);
-        
-        await organization.save();
-
-        res.status(200).json({ 
-            message: "User followed successfully", 
-            followers: organization.followers 
-        });
-    } catch (error) {
-        next(error);
-    }
-    
 }
