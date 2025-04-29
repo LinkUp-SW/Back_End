@@ -542,3 +542,34 @@ export const convert_idIntoUser_id = async (
     return undefined;
   }
 };
+
+
+export async function getFormattedAuthor(userId: string) {
+  try {
+    const userDoc = await Users.findOne(
+      { _id: userId },
+      {
+        user_id: 1,
+        "bio.first_name": 1,
+        "bio.last_name": 1,
+        "bio.headline": 1,
+        profile_photo: 1
+      }
+    ).lean();
+    
+    if (!userDoc) {
+      return null;
+    }
+    
+    return {
+      username: userDoc.user_id,
+      firstName: userDoc.bio?.first_name || "",
+      lastName: userDoc.bio?.last_name || "",
+      headline: userDoc.bio?.headline || "",
+      profilePicture: userDoc.profile_photo || ""
+    };
+  } catch (err) {
+    console.error("Error fetching author info:", err);
+    return null;
+  }
+}
