@@ -159,7 +159,7 @@ export const getComments = async (
       const rootComments = rootCommentResults;
       const totalRootComments = countResults;
       if (rootComments.length === 0) {
-        return { count: 0, comments: {}, nextCursor: null };
+        return { count: 0, comments: [], nextCursor: null };
       }
       
       // Get all root comment IDs for reply fetching
@@ -380,7 +380,7 @@ export const getReplies = async (
       ]);
       
       if (replyResults.length === 0) {
-        return { count: 0, replies: {}, nextCursor: null };
+        return { count: 0, replies: [], nextCursor: null };
       }
       
       // Collect all unique user IDs
