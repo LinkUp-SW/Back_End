@@ -200,6 +200,15 @@ export const blockFollower = async (req: Request, res: Response, next: NextFunct
         const organizationWithFollowers = await organizations.findById(organization_id).populate("followers");
         if (!organizationWithFollowers) return;
             
+        // Check if follower is also an admin
+        const isFollowerAnAdmin = organizationWithFollowers.admins.some(
+            (adminId: any) => adminId.toString() === follower_id
+        );
+        
+        if (isFollowerAnAdmin) {
+            res.status(400).json({ message: "Cannot block an admin user" });
+            return;
+        }
 
         const followerIndex = organizationWithFollowers.followers.findIndex(
             (follower: any) => follower._id.toString() === follower_id
@@ -218,7 +227,6 @@ export const blockFollower = async (req: Request, res: Response, next: NextFunct
 
         res.status(200).json({ 
             message: "Follower blocked successfully", 
-            followers: organizationWithFollowers.followers 
         });
     } catch (error) {
         next(error);
