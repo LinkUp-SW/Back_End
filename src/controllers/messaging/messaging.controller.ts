@@ -109,7 +109,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
         throw new CustomError('You cannot send messages to this user', 403);
       }
 
-      if (conversation.user1_conversation_type.includes('unRead')) {
+      if (conversation.user1_conversation_type.includes('Unread')) {
         totalConversationUnreadCount += 1
       }
 
@@ -119,14 +119,10 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
         throw new CustomError('You cannot send messages to this user', 403);
       }
 
-      if (conversation.user2_conversation_type.includes('unRead')) {
+      if (conversation.user2_conversation_type.includes('Unread')) {
         totalConversationUnreadCount += 1
       }
     }
-
-
-
-    
 
     // Get last message and unread count
     const sentMessages = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
@@ -173,7 +169,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
   
   return res.status(200).json({ 
     conversations: formattedConversations,
-    unreadCount: totalConversationUnreadCount
+    conversationUnreadCount: totalConversationUnreadCount
   });
 });
 
