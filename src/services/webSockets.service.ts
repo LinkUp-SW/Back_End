@@ -184,7 +184,7 @@ export class WebSocketService {
         conversation = await this.conversationRepo.createConversation(senderId, receiverId);
       }
   
-      await this.conversationRepo.addMessage(
+      const newMessage = await this.conversationRepo.addMessage(
         conversation._id.toString(),
         senderId,
         message,
@@ -200,7 +200,8 @@ export class WebSocketService {
           message,
           media: mediaUrls,
           timestamp: new Date(),
-          is_seen: false
+          is_seen: false,
+          messageId: newMessage.messageId,
         }
       };
   

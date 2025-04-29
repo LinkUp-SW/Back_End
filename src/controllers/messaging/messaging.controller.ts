@@ -442,53 +442,53 @@ const markMessagesInConversationAsRead = asyncHandler(async (req: Request, res: 
  * @throws {CustomError} 403 - If user does not have access to the conversation
  * @throws {CustomError} 500 - If message sending fails
  */
-const sendMessage = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-  const userId = req.user
-  const { conversationId } = req.params;
-  const { message, media, mediaTypes } = req.body;
+// const sendMessage = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+//   const userId = req.user
+//   const { conversationId } = req.params;
+//   const { message, media, mediaTypes } = req.body;
 
-  if (!userId) {
-    throw new CustomError('User not authenticated', 401);
-  }
+//   if (!userId) {
+//     throw new CustomError('User not authenticated', 401);
+//   }
 
-  if (!mongoose.Types.ObjectId.isValid(conversationId)) {
-    throw new CustomError('Invalid conversation ID', 400);
-  }
+//   if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+//     throw new CustomError('Invalid conversation ID', 400);
+//   }
   
-  if (!message) {
-    throw new CustomError('Message is required', 400);
-  }
+//   if (!message) {
+//     throw new CustomError('Message is required', 400);
+//   }
 
-  // Use repository method to send message
-  const newConversation = await conversationRepo.addMessage(conversationId, userId as string, message, media, mediaTypes);
-  if (!newConversation) {
-    throw new CustomError('Failed to send message', 500); 
-  }
-  // Format the response to include messageId and other details
-  const isUser1 = newConversation.user1_id.toString() === userId.toString();
-  const otherUser = isUser1 ? newConversation.user2_id : newConversation.user1_id;
-  const otherUserDetails = await userRepo.findByUserId(otherUser as string);
-  if (!otherUserDetails) {
-    throw new CustomError('Other user not found', 404);
-  }
-  const sentMessage = isUser1 ? newConversation.user1_sent_messages : newConversation.user2_sent_messages;
-  const messageDetails = sentMessage.find((msg) => msg.message === message && msg.timestamp.getSeconds === newConversation.last_message_time.getSeconds); //  
-  if (!messageDetails) {
-    throw new CustomError('Message details not found', 404);
-  }
-  const formattedMessage = {
-    senderId: isUser1 ? newConversation.user1_id : newConversation.user2_id,
-    senderName: `${otherUserDetails.bio?.first_name || ''} ${otherUserDetails.bio?.last_name || ''}`,
-    message: messageDetails.message,
-    media: messageDetails.media || [],
-    timestamp: messageDetails.timestamp,
-    reacted: messageDetails.reacted,
-    isSeen: messageDetails.is_seen,
-    isOwnMessage: isUser1
-  };
-  return res.status(200).json({ message: formattedMessage });
-}
-);
+//   // Use repository method to send message
+//   const newConversation = await conversationRepo.addMessage(conversationId, userId as string, message, media, mediaTypes);
+//   if (!newConversation) {
+//     throw new CustomError('Failed to send message', 500); 
+//   }
+//   // Format the response to include messageId and other details
+//   const isUser1 = newConversation.user1_id.toString() === userId.toString();
+//   const otherUser = isUser1 ? newConversation.user2_id : newConversation.user1_id;
+//   const otherUserDetails = await userRepo.findByUserId(otherUser as string);
+//   if (!otherUserDetails) {
+//     throw new CustomError('Other user not found', 404);
+//   }
+//   const sentMessage = isUser1 ? newConversation.user1_sent_messages : newConversation.user2_sent_messages;
+//   const messageDetails = sentMessage.find((msg) => msg.message === message && msg.timestamp.getSeconds === newConversation.last_message_time.getSeconds); //  
+//   if (!messageDetails) {
+//     throw new CustomError('Message details not found', 404);
+//   }
+//   const formattedMessage = {
+//     senderId: isUser1 ? newConversation.user1_id : newConversation.user2_id,
+//     senderName: `${otherUserDetails.bio?.first_name || ''} ${otherUserDetails.bio?.last_name || ''}`,
+//     message: messageDetails.message,
+//     media: messageDetails.media || [],
+//     timestamp: messageDetails.timestamp,
+//     reacted: messageDetails.reacted,
+//     isSeen: messageDetails.is_seen,
+//     isOwnMessage: isUser1
+//   };
+//   return res.status(200).json({ message: formattedMessage });
+// }
+// );
 
 /** 
   * Mark messages as seen in a conversation
@@ -560,7 +560,7 @@ const deleteMessage = asyncHandler(async (req: Request, res: Response, next: Nex
   // Use repository method to delete message
   await conversationRepo.deleteMessage(conversationId, messageId, userId as string);
   
-  return res.status(200).json({ message: 'Message deleted successfully' });
+  return res.status(200).json({ message: 'Message deleted successfully',isDeleted: true });
 });
 
 /**
@@ -696,7 +696,7 @@ export {
   getUnseenMessagesCount,
   markMessagesInConversationAsRead,
   getUnseenMessagesCountByConversation,
-  sendMessage,
+  //sendMessage,
   markMessagesAsSeen,
   deleteMessage,
   deleteConversation,

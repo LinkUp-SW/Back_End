@@ -96,7 +96,7 @@ export class conversationRepository {
     conversation.last_message_text = message;
 
     await conversation.save();
-    return conversation;
+    return {conversation,messageId: newMessage.messageId};
   }
 
   async getUserConversations(userId: string) {
@@ -373,6 +373,7 @@ export class conversationRepository {
     }
 
     message.message = newMessage;
+    message.isEdited = true; 
 
     await conversation.save();
     return conversation;
