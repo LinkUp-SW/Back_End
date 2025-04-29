@@ -29,7 +29,6 @@ export class CommentRepository {
       content: content,
       parentId: parentId || null,
       media: media || null,
-      date: new Date(),
       tagged_users:taggedUsers
     });
     const authorInfo = {
