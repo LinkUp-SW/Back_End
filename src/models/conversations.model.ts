@@ -11,7 +11,7 @@ export interface MessageInterface {
     is_seen: boolean;
     media_type?: string[]; // For identifying type of media (image, video, document)
     typing?: boolean;
-    isEdited?: boolean; // For identifying if the message is edited
+    is_edited?: boolean; // For identifying if the message is edited
 }
 
 export enum conversationType {

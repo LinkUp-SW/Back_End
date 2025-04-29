@@ -373,7 +373,7 @@ export class conversationRepository {
     }
 
     message.message = newMessage;
-    message.isEdited = true; // Initialize isEdited if it doesn't exist
+    message.is_edited = true; // Initialize isEdited if it doesn't exist
 
     await conversation.save();
     return conversation;
