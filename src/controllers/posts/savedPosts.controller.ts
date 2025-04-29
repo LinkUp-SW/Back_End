@@ -53,10 +53,8 @@ const savePost = async (req: Request, res: Response): Promise<Response | void> =
 const displaySavedPosts = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
 
-        const {
-            limit,
-            cursor
-        } =req.body;
+        const cursor = parseInt(req.query.cursor as string) || 0;
+        const limit = parseInt(req.query.limit as string) || 10;
         if (!limit ){
             return res.status(400).json({message:'Required fields missing' })
         }

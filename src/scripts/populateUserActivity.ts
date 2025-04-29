@@ -5,7 +5,7 @@ import posts from "../models/posts.model.ts";
 import comments from "../models/comments.model.ts";
 import { postsInterface } from "../models/posts.model.ts";
 import { commentsInterface } from "../models/comments.model.ts";
-
+import reacts, { reactsEnum, targetTypeEnum } from "../models/reactions.model.ts";
 dotenv.config();
 const DATABASE_URL = process.env.DATABASE_URL || "";
 
@@ -54,10 +54,26 @@ const populateUserActivity = async () => {
             user.activity.comments.push(comment._id as commentsInterface);
         }
 
-        // Add 20 posts to reacted_posts (simulating reactions)
+        const reactTypes = Object.values(reactsEnum);
         for (let i = 0; i < 20; i++) {
-            const reactedPost = postsArray[i % postsArray.length]._id; // React to posts in a round-robin manner
-            user.activity.reacted_posts.push(reactedPost as postsInterface);
+            const targetPost = postsArray[i % postsArray.length];
+            
+            // Create a reaction document
+            const reaction = await reacts.create({
+                user_id: user._id,
+                target_id: targetPost._id,
+                target_type: targetTypeEnum.post,
+                reaction: reactTypes[Math.floor(Math.random() * reactTypes.length)]
+            });
+            
+            // Store the reaction ID in user's activity
+            user.activity.reacts.push(reaction);
+            
+            // Optionally, update the post to include this reaction
+            // This depends on how your post schema handles reactions
+            await posts.findByIdAndUpdate(targetPost._id, {
+                $push: { reacts: reaction._id }
+            });
         }
 
         // Save the updated user document

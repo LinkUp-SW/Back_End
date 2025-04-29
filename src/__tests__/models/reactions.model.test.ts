@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import reacts, { reactsEnum } from "../../models_to_delete/reactions.model.ts";
+import reacts, { reactsEnum } from "../../models/reactions.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");
@@ -18,7 +18,7 @@ describe("Reacts Model", () => {
     it("should create a reacts document successfully", async () => {
         const reactDoc = new reacts({
             user_id: new mongoose.Types.ObjectId(),
-            reaction: reactsEnum.laugh
+            reaction: reactsEnum.funny
         });
 
         await expect(reactDoc.save()).resolves.toBeDefined();
@@ -41,7 +41,7 @@ describe("Reacts Model", () => {
     it("should validate the user_id data type", async () => {
         const reactDoc = new reacts({
             user_id: "not-an-object-id",
-            reaction: reactsEnum.laugh
+            reaction: reactsEnum.like
         });
         await expect(reactDoc.save()).rejects.toThrow();
     }, 15000);

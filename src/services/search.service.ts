@@ -458,6 +458,12 @@ if (connectionDegree !== 'all') {
     
     // Resolve all promises
     const formattedResults = await Promise.all(formattedResultsWithPromises);
+
+    let nextPage = null;
+    if (total > skip + formattedResults.length) {
+      // There are more results available, set nextPage to the next page number
+      nextPage = safePage + 1;
+    }
     
     return {
       people: formattedResults,
@@ -465,7 +471,8 @@ if (connectionDegree !== 'all') {
         total,
         page: safePage,
         limit: safeLimit,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit),
+        nextCursor: nextPage
       }
     };
   } catch (error) {

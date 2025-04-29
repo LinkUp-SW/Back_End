@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import { mediaInterface } from "../models_to_delete/media.model.ts";
-import { reactsEnum } from "./reactions.model.ts";
+import { reactsEnum } from "../models/reactions.model.ts";
 
 
 

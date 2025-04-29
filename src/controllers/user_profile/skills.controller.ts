@@ -394,4 +394,106 @@ const getUserSections = async (req: Request, res: Response, next: NextFunction):
     }
 };
 
-export { addSkill, updateSkill, deleteSkill, getUserSections };
+const endorseSkill = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { userId } = req.params;
+        const { skillId } = req.params;
+
+        // Find the target user whose skill is being endorsed
+        const targetUser = await users.findOne({ user_id: userId });
+        if (!targetUser) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        // Find the skill to endorse
+        const skillIndex = targetUser.skills.findIndex((skill) => skill._id === skillId);
+        if (skillIndex === -1) {
+            res.status(404).json({ message: 'Skill not found' });
+            return;
+        }
+    
+        const userIdStr = user._id?.toString();
+        
+        // Verify user ID exists before proceeding
+        if (!userIdStr) {
+            res.status(400).json({ message: 'Invalid user ID' });
+            return;
+        }
+        
+        const alreadyEndorsed = targetUser.skills[skillIndex].endorsments.some(
+            endorserId => endorserId?.toString() === userIdStr
+        );
+        
+        if (alreadyEndorsed) {
+            res.status(400).json({ message: 'You have already endorsed this skill' });
+            return;
+        }
+
+        targetUser.skills[skillIndex].endorsments.push(user);
+        await targetUser.save();
+
+        res.status(200).json({ 
+            message: 'Skill endorsed successfully',
+            endorsements_count: targetUser.skills[skillIndex].endorsments.length
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const removeEndorsement = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { userId } = req.params;
+        const { skillId } = req.params;
+
+        // Find the target user
+        const targetUser = await users.findOne({ user_id: userId });
+        if (!targetUser) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        // Find the skill
+        const skillIndex = targetUser.skills.findIndex((skill) => skill._id === skillId);
+        if (skillIndex === -1) {
+            res.status(404).json({ message: 'Skill not found' });
+            return;
+        }
+
+        const userIdStr = user._id?.toString();
+
+        // Verify user ID exists before proceeding
+        if (!userIdStr) {
+            res.status(400).json({ message: 'Invalid user ID' });
+            return;
+        }
+        const endorsementIndex = targetUser.skills[skillIndex].endorsments.findIndex(
+            endorserId => endorserId.toString() === userIdStr
+        );
+        
+        if (endorsementIndex === -1) {
+            res.status(400).json({ message: 'You have not endorsed this skill' });
+            return;
+        }
+
+        // Remove endorsement
+        targetUser.skills[skillIndex].endorsments.splice(endorsementIndex, 1);
+        await targetUser.save();
+
+        res.status(200).json({ 
+            message: 'Endorsement removed successfully',
+            endorsements_count: targetUser.skills[skillIndex].endorsments.length
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export { addSkill, updateSkill, deleteSkill, getUserSections, endorseSkill, removeEndorsement };
