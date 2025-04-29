@@ -388,8 +388,8 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           date: { type: Date },
         },
       ],
-      followers: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
-      following: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
+      followers: [{ type: Schema.Types.ObjectId, ref: "users", unique: true }], // Reference to the user's ObjectId
+      following: [{ type: Schema.Types.ObjectId, ref: "users", unique: true }], // Reference to the user's ObjectId
       privacy_settings: {
         flag_account_status: { 
             type: String, 

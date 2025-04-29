@@ -131,8 +131,8 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
       }
       
       if (platform === 'web') {
-        successUrl = `${process.env.FRONTEND_URL}/payment?status={success}`
-        cancelUrl = `${process.env.FRONTEND_URL}/payment?status={cancel}`;
+        successUrl = `${process.env.FRONTEND_URL}/payment?status=success`
+        cancelUrl = `${process.env.FRONTEND_URL}/payment?status=cancel`;
       } else if (platform === 'ios' || platform === 'android') {
         successUrl = `${process.env.APP_URL}/subscription/success`;
         cancelUrl = `${process.env.APP_URL}/subscription/cancel`;

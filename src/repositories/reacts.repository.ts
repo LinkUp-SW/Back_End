@@ -55,7 +55,7 @@ export class ReactionRepository {
  * @param targetType - The type of target (post, comment)
  * @returns Promise containing an array of the top 3 reactions and their counts
  */
-export const getTopReactions = async (targetId: string, targetType: targetTypeEnum): Promise<{topReacts: any[], totalCount: number}> => {
+export const getTopReactions = async (targetId: string, targetType: targetTypeEnum): Promise<{finalArray: any[], totalCount: number}> => {
     // Get top 3 reactions
     const topReacts = await reactions.aggregate([
         // Match documents for the specific target
@@ -75,9 +75,11 @@ export const getTopReactions = async (targetId: string, targetType: targetTypeEn
         target_id: targetId, 
         target_type: targetType 
     });
-
+    let finalArray = topReacts.map(function (obj) {
+      return obj.reaction;
+    });
     return {
-        topReacts,
+        finalArray,
         totalCount
     };
 }
