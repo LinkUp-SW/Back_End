@@ -9,26 +9,26 @@ import { CommentRepository } from "./comment.repository.ts";
 
 export class PostRepository {
   async create(
-    userId: string,
+    userId: string | null,
     content: string,
     mediaLink: string[] | null,
     mediaType: string | null,
     commentsDisabled: string | null,
     publicPost: boolean | null,
-    taggedUsers?: mongoose.Types.ObjectId[] | undefined
+    taggedUsers: string | null
   ) {
     return posts.create({
-      user_id:userId,
-      content:content,
+      user_id: userId,
+      content: content,
       media: {
-              link:mediaLink,
-              media_type:mediaType
-          },
-      comments_disabled:commentsDisabled,
-      public_post:publicPost,
-      tagged_users:taggedUsers
-     
+        link: mediaLink,
+        media_type: mediaType
+      },
+      comments_disabled: commentsDisabled,
+      public_post: publicPost,
+      tagged_users: taggedUsers
     });
+    
   }
 
   async update(postId: string,content: string,

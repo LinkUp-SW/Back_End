@@ -11,7 +11,7 @@ import { mediaTypeEnum } from "../../models/posts.model.ts";
  */
 export const createPostFromCompany = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        const user = await validateTokenAndGetUser(req, res) as { user_id: string, _id: string };
         if (!user) return;
 
         const { organization_id } = req.params;
@@ -62,13 +62,13 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
         // Create post using repository
         const postRepository = new PostRepository();
         const newPost = await postRepository.create(
-            organization_id, // Use organization_id instead of user_id
+            user.user_id,
             content,
             processedMedia,
             mediaType,
             commentsDisabled,
             publicPost,
-            taggedUsers
+            taggedUsers,
         );
         
         await newPost.save();

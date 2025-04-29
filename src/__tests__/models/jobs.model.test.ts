@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import jobs, { experienceLevelEnum, howDidYouHearAboutUsEnum, jobTypeEnum, receiveApplicantsByEnum, workplaceTypeEnum } from '../../models/jobs.model.ts';
+import jobs, { experienceLevelEnum, jobTypeEnum, receiveApplicantsByEnum, workplaceTypeEnum } from '../../models/jobs.model.ts';
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");
@@ -26,7 +26,6 @@ describe('Jobs Model Test', () => {
             receive_applicants_by: receiveApplicantsByEnum.email,
             receiving_method: 'Email',
             screening_questions: new mongoose.Types.ObjectId(),
-            how_did_you_hear_about_us: howDidYouHearAboutUsEnum.linkup,
             salary: 60000,
             applied_applications: [new mongoose.Types.ObjectId()]
         });

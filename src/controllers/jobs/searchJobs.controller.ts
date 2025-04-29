@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
-import mongoose from 'mongoose';
 import { paginatedJobQuery, getTimeAgoStage } from "../../utils/database.helper.ts";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
+import organizations from "../../models/organizations.model.ts"; 
 
 /**
  * Search for jobs using a single query term
@@ -23,7 +23,7 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
         }
         
         // Build search query - search across all relevant fields
-        const searchQuery = {
+        const searchQuery: any = {
             $or: [
                 { job_title: { $regex: query, $options: 'i' } },
                 { description: { $regex: query, $options: 'i' } },
@@ -33,6 +33,22 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
                 { organization_industry: { $regex: query, $options: 'i' } }
             ]
         };
+        
+        // If user is authenticated, exclude jobs from organizations that blocked them
+        if (user) {
+            // Find organizations that have blocked this user
+            const organizationsBlockedBy = await organizations.find(
+                { blocked: user._id },
+                { _id: 1 }
+            );
+            
+            const blockedOrgIds = organizationsBlockedBy.map(org => org._id);
+            
+            if (blockedOrgIds.length > 0) {
+                // Add condition to exclude jobs from organizations that blocked the user
+                searchQuery.organization_id = { $nin: blockedOrgIds };
+            }
+        }
         
         // Use the helper function with enhanced projection for jobs
         const extraStages = [
