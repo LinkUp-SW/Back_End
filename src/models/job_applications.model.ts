@@ -12,7 +12,6 @@ export interface jobApplicationsInterface extends mongoose.Document{
     phone_number: number;
     country_code: string;
     resume: string;
-    questions_responses: string[];
     application_status: string;
 }
 
@@ -33,7 +32,6 @@ const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
     phone_number: { type: Number },
     country_code: { type: String },
     resume: { type: String },
-    questions_responses: [{ type: String }],
     application_status: { type: String }
 });
 

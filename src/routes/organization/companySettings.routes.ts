@@ -33,4 +33,19 @@ router.get('/get-blocked-followers/:organization_id', (req, res, next) => {
     companySettingsControllers.getBlockedFollowers(req, res, next);
 });
 
+// Follow an organization
+router.post('/follow-organization/:organization_id', (req, res, next) => {
+    companySettingsControllers.followOrganization(req, res, next);
+});
+
+// Unfollow an organization
+router.delete('/unfollow-organization/:organization_id', (req, res, next) => {
+    companySettingsControllers.unfollowOrganization(req, res, next);
+});
+
+// Get all followers of an organization
+router.get('/get-followers/:organization_id', (req, res, next) => {
+    companySettingsControllers.getFollowers(req, res, next);
+});
+
 export default router;
