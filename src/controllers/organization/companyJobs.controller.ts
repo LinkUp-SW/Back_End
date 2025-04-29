@@ -91,3 +91,42 @@ export const getCompanyJobs = async (req: Request, res: Response, next: NextFunc
         next(error);
     }
 };
+
+export const changeJobStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { organization_id, job_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
+        if (!isAdmin) return;
+
+        // Extract new status from request body
+        const { job_status } = req.body;
+
+        // Update job status
+        const updatedJob = await jobs.findOneAndUpdate(
+            { _id: job_id, organization_id },
+            { job_status },
+            { new: true }
+        );
+
+        if (!updatedJob) {
+            res.status(404).json({ message: "Job not found" });
+            return;
+        }
+
+        res.status(200).json({
+            message: "Job status updated successfully",
+            job: updatedJob
+        });
+    } catch (error) {
+        next(error);
+    }
+}

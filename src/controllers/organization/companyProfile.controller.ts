@@ -37,6 +37,8 @@ export const createCompanyProfile = async (req: Request, res: Response, next: Ne
 
         await newCompanyProfile.save();
 
+        user.organizations.push(newCompanyProfile);
+
         res.status(201).json({ message: "Company profile created successfully", companyProfile: newCompanyProfile });
     } catch (error) {
         next(error);

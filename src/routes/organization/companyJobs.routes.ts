@@ -13,4 +13,9 @@ router.get('/get-jobs-from-company/:organization_id', (req, res, next) => {
     companyJobsControllers.getCompanyJobs(req, res, next);
 });
 
+// Change job status
+router.put('/change-job-status/:job_id/:organization_id', (req, res, next) => {
+    companyJobsControllers.changeJobStatus(req, res, next);
+});
+
 export default router;
