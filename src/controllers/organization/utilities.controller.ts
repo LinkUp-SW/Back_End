@@ -4,6 +4,7 @@ import { categoryTypeEnum } from "../../models/organizations.model.ts";
 import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
 import users from '../../models/users.model.ts';
 import mongoose from 'mongoose';
+import organizations from "../../models/organizations.model.ts"; // Add this import
 
 export const searchUsersByName = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -197,4 +198,40 @@ const searchOrganizations = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
-export { searchCompanies, searchEducationalInstitutions, searchOrganizations };
+/**
+ * Check if the authenticated user is a follower of a specific organization
+ */
+const checkIsFollower = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // Get authenticated user
+    const user = await validateTokenAndGetUser(req, res);
+    if (!user) return; 
+    
+    const { organization_id } = req.params;
+    
+    if (!organization_id || !mongoose.Types.ObjectId.isValid(organization_id)) {
+      res.status(400).json({ message: "Valid organization ID is required" });
+      return;
+    }
+    
+    // Get the organization from the database
+    const organization = await organizations.findById(organization_id);
+    if (!organization) {
+      res.status(404).json({ message: "Organization not found" });
+      return;
+    }
+    const userIdStr = user._id?.toString();
+    // Check if the user's ID exists in the followers array
+    const isFollower = organization.followers.some(
+      (followerId: any) => followerId.toString() === userIdStr
+    );
+    
+    res.status(200).json({
+      isFollower
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { searchCompanies, searchEducationalInstitutions, searchOrganizations, checkIsFollower };
