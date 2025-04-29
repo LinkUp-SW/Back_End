@@ -200,6 +200,7 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       isSeen: msg.is_seen,
       isOwnMessage: isUser1,
       messageId: msg.messageId,
+      isEdited: msg.is_edited ,
     });
   }
   
