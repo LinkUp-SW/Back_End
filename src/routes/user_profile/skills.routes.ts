@@ -24,4 +24,14 @@ router.get('/get-user-sections', (req, res, next) => {
     skillsControllers.getUserSections(req, res, next);
 });
 
+// POST /api/v1/user/endorse-skill/:userId/:skillId
+router.post('/endorse-skill/:userId/:skillId', (req, res, next) => {
+    skillsControllers.endorseSkill(req, res, next);
+});
+
+// delete /api/v1/user/remove-endorsement/:userId/:skillId
+router.delete('/remove-endorsement/:userId/:skillId', (req, res, next) => {
+    skillsControllers.removeEndorsement(req, res, next);
+});
+
 export default router;

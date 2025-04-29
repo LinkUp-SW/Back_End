@@ -4,13 +4,14 @@ import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { mediaTypeEnum } from '../../models/posts.model.ts';
+import { convertUser_idInto_id } from '../../repositories/user.repository.ts';
 
 
 const editPost = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
 
+        const postId = req.params.postId;
         const {
-            postId,
             content,
             mediaType,
             media,
@@ -48,6 +49,9 @@ const editPost = async (req: Request, res: Response): Promise<Response | void> =
         if (!post){
             return res.status(400).json({message:'Post does not exist ' })
         }
+         let converted_id;
+        if (taggedUsers)
+            { converted_id = await convertUser_idInto_id(taggedUsers);}
         const updatePost = await postRepository.update(
             postId,
             content,
@@ -55,7 +59,7 @@ const editPost = async (req: Request, res: Response): Promise<Response | void> =
             mediaType,
             commentsDisabled,
             publicPost,
-            taggedUsers
+            converted_id
         );
         if (updatePost){await updatePost.save();}
         return res.status(200).json({message:'Post successfully updated' })

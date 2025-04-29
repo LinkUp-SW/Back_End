@@ -1,7 +1,7 @@
 import User from '../models/users.model.ts';
 import { jobTypeEnum, experienceLevelEnum } from '../models/jobs.model.ts';
 import { statusEnum, sexEnum, accountStatusEnum, invitationsEnum } from '../models/users.model.ts';
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, ObjectId } from "mongoose";
 import { ConnectionUserInterface} from "../models/users.model.ts";
 import Users from "../models/users.model.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
@@ -10,72 +10,38 @@ export class UserRepository {
   async create(userId: string, firstName: string, lastName: string, email: string, password: string,
     country: string,
     city: string,
-    isStudent: boolean | null,
-    jobTitle: string | null,
-    school: string | null,
-    schoolStartYear: number | null,
-    schoolEndYear: number | null,
-    is16OrAbove: boolean | null,
-    birthDate: Date | null,
-    employmentType: string | null,
-    recentCompany: string | null
+    isStudent: boolean,
+    jobTitle?: string,
+    school?: ObjectId,
+    schoolStartYear?: number,
+    schoolEndYear?: number,
+    is16OrAbove?: boolean,
+    birthDate?: Date,
+    employmentType?: string,
+    recentCompany?: ObjectId
   ) {
-    return User.create({
+    const userData: any = {
       user_id: userId,
       email: email,
       password: password,
       bio: {
         first_name: firstName,
         last_name: lastName,
-        headline: "",  // Default empty headline
+        headline: "", // Default empty headline
         experience: [],
         education: [],
         website: "",
         location: {
           country_region: country,
-          city: city
+          city: city,
         },
         contact_info: {
-          phone_number: null,
-          country_code: null,
-          phone_type: null,
-          address: null,
           birthday: birthDate,
-          website: null
-        }
+        },
       },
-      education: [{
-        school: school,
-        degree: null,
-        field_of_study: null,
-        start_date: schoolStartYear ? new Date(schoolStartYear, 0) : null,
-        end_date: schoolEndYear ? new Date(schoolEndYear, 0) : null,
-        grade: null,
-        activites_and_socials: null,
-        skills: [],
-        description: null,
-        media: []
-      }],
-      work_experience: [{
-        title: jobTitle,
-        employee_type: employmentType,
-        organization: recentCompany,
-        is_current: true,
-        start_date: new Date(),
-        end_date: null,
-        location: null,
-        description: null,
-        location_type: null,
-        skills: [],
-        media: []
-      }],
       organizations: [],
       skills: [],
       liscence_certificates: [],
-      industry: null,
-      profile_photo: null,
-      cover_photo: null,
-      resume: null,
       connections: [],
       followers: [],
       following: [],
@@ -83,14 +49,14 @@ export class UserRepository {
         flag_account_status: accountStatusEnum.public,
         flag_who_can_send_you_invitations: invitationsEnum.everyone,
         flag_messaging_requests: true,
-        messaging_read_receipts: true
+        messaging_read_receipts: true,
       },
       activity: {
         posts: [],
         reposted_posts: [],
         reacted_posts: [],
         comments: [],
-        media: []
+        media: [],
       },
       status: statusEnum.finding_new_job,
       blocked: [],
@@ -98,29 +64,56 @@ export class UserRepository {
       notification: [],
       applied_jobs: [],
       saved_jobs: [],
-      sex: null,
       subscription: {
         subscribed: false,
-        subscription_started_at: null
+        subscription_started_at: null,
       },
       is_student: isStudent,
       is_verified: false,
-      is_16_or_above: is16OrAbove
-    });
+      is_16_or_above: is16OrAbove,
+    };
+  
+    if (isStudent) {
+      userData.education = [
+        {
+          _id : new mongoose.Types.ObjectId(),
+          school: school,
+          start_date: schoolStartYear ? new Date(schoolStartYear, 0) : '',
+          end_date: schoolEndYear ? new Date(schoolEndYear, 0) : '',
+          skills: [],
+          media: [],
+        },
+      ];
+    } else {
+      userData.work_experience = [
+        {
+          _id : new mongoose.Types.ObjectId(),
+          title: jobTitle,
+          employee_type: employmentType,
+          organization: recentCompany,
+          is_current: true,
+          start_date: new Date(),
+          skills: [],
+          media: [],
+        },
+      ];
+    }
+  
+    return User.create(userData);
   }
 
   async update(userId: string, firstName: string, lastName: string, email: string, password: string,
     country: string,
     city: string,
-    isStudent: boolean | null,
-    jobTitle: string | null,
-    school: string | null,
-    schoolStartYear: number | null,
-    schoolEndYear: number | null,
-    is16OrAbove: boolean | null,
-    birthDate: Date | null,
-    employmentType: string | null,
-    recentCompany: string | null
+    isStudent: boolean,
+    jobTitle?: string,
+    school?: ObjectId,
+    schoolStartYear?: number,
+    schoolEndYear?: number,
+    is16OrAbove?: boolean,
+    birthDate?: Date,
+    employmentType?: string,
+    recentCompany?: ObjectId
   ) {
     // Similarly update the update method to use the correct structure
     return User.findOneAndUpdate(
@@ -136,7 +129,6 @@ export class UserRepository {
           'bio.contact_info.birthday': birthDate,
           is_student: isStudent,
           is_16_or_above: is16OrAbove,
-          // Only set these if they're provided
           ...(school && { 'education.0.school': school }),
           ...(schoolStartYear && { 'education.0.start_date': new Date(schoolStartYear, 0) }),
           ...(schoolEndYear && { 'education.0.end_date': new Date(schoolEndYear, 0) }),
@@ -147,6 +139,37 @@ export class UserRepository {
       },
       { new: true, upsert: false }
     );
+  }
+
+  async createAdmin(userId: string, firstName: string, lastName: string, email: string, password: string) {
+    return User.create({
+      user_id: userId,
+      email: email,
+      password: password,
+      bio: {
+        first_name: firstName,
+        last_name: lastName,
+        location: {
+          country_region: "",
+          city: ""
+        },
+      },
+      is_verified: true,
+      is_admin: true,
+      privacy_settings: {
+        flag_account_status: accountStatusEnum.public,
+        flag_who_can_send_you_invitations: invitationsEnum.everyone,
+        flag_messaging_requests: true,
+        messaging_read_receipts: true
+      },
+      activity: {
+        posts: [],
+        reposted_posts: [],
+        reacted_posts: [],
+        comments: [],
+        media: []
+      },
+    });
   }
 
   async findByEmail(email: string) {
@@ -168,14 +191,6 @@ export class UserRepository {
           country_region: "",
           city: ""
         },
-        contact_info: {
-          phone_number: null,
-          country_code: null,
-          phone_type: null,
-          address: null,
-          birthday: null,
-          website: null
-        }
       },
       password: password,
       is_verified: true,
@@ -198,7 +213,7 @@ export class UserRepository {
   }
 
   async updateEmail(user_id: string, email: string) {
-    return User.updateOne({ user_id: user_id }, { $set: { email: email } });
+    return User.updateOne({ user_id: user_id }, { $set: { email: email.toLowerCase() } });
   }
 
   async deleteAccount(user_id: string) {
@@ -374,7 +389,7 @@ export const formatConnectionData = async (
               { "bio.first_name": 1, "bio.last_name": 1 }
             ).lean();
 
-            if (mutualConnectionUser) {
+            if (mutualConnectionUser && 'bio' in mutualConnectionUser) {
               nameOfOneMutualConnection = `${mutualConnectionUser.bio.first_name} ${mutualConnectionUser.bio.last_name}`;
             }
           }
@@ -399,6 +414,18 @@ export const formatConnectionData = async (
 };
 
 /**
+ * Interface for user connection documents
+ */
+interface UserConnectionsDocument {
+  _id: mongoose.Types.ObjectId;
+  connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  sent_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  received_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  followers?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+  following?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
+}
+
+/**
  * Fetches paginated connections using cursor-based pagination.
  * @param userId - The ID of the user whose connections are being fetched.
  * @param limit - The maximum number of connections to return.
@@ -414,7 +441,7 @@ export const getPaginatedConnectionsFollowers = async (
 ): Promise<{ connections: any[]; nextCursor: string | null }> => {
   try {
     // Find the user by ID and retrieve the specified connection type
-    const user = await Users.findById(userId, { [connectionType]: 1 }).lean();
+    const user = await Users.findById(userId, { [connectionType]: 1 }).lean() ;
     if (!user || !user[connectionType]) {
       return { connections: [], nextCursor: null };
     }
@@ -446,3 +473,103 @@ export const getPaginatedConnectionsFollowers = async (
     throw new Error("Error fetching paginated connections");
   }
 };
+
+
+export const convertUser_idInto_id = async (
+  userIds: string[] | undefined | null
+): Promise<mongoose.Types.ObjectId[] | undefined> => {
+  if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+    return undefined;
+  }
+  
+  try {
+    // Find all users with the given user_ids
+    const users = await Users.find({ user_id: { $in: userIds } }, { _id: 1, user_id: 1 }).lean();
+    
+    // Create a mapping of user_id to _id
+    const idMap = new Map<string, mongoose.Types.ObjectId>();
+    users.forEach(user => {
+      if (user && user.user_id && user._id) {
+        idMap.set(user.user_id, new mongoose.Types.ObjectId(user._id.toString()));
+      }
+    });
+    
+    // Convert each user_id to _id, filtering out any that weren't found
+    const mongoIds = userIds
+      .map(id => idMap.get(id))
+      .filter((id): id is mongoose.Types.ObjectId => id !== undefined);
+      
+    return mongoIds.length > 0 ? mongoIds : undefined;
+  } catch (error) {
+    console.error("Error converting user_ids to _ids:", error);
+    return undefined;
+  }
+};
+
+export const convert_idIntoUser_id = async (
+  mongoIds: mongoose.Types.ObjectId[] | string[] | undefined | null
+): Promise<string[] | undefined> => {
+  if (!mongoIds || !Array.isArray(mongoIds) || mongoIds.length === 0) {
+    return undefined;
+  }
+  
+  // Ensure all IDs are converted to strings
+  const stringIds = mongoIds.map(id => id.toString());
+  
+  try {
+    // Find all users with the given _ids
+    const users = await Users.find(
+      { _id: { $in: stringIds.map(id => new mongoose.Types.ObjectId(id)) } },
+      { _id: 1, user_id: 1 }
+    ).lean();
+    
+    // Create a mapping of _id to user_id
+    const idMap = new Map<string, string>();
+    users.forEach(user => {
+      if (user && user._id && user.user_id) {
+        idMap.set(user._id.toString(), user.user_id);
+      }
+    });
+    
+    // Convert each _id to user_id, filtering out any that weren't found
+    const userIds = stringIds
+      .map(id => idMap.get(id))
+      .filter((id): id is string => id !== undefined);
+      
+    return userIds.length > 0 ? userIds : undefined;
+  } catch (error) {
+    console.error("Error converting _ids to user_ids:", error);
+    return undefined;
+  }
+};
+
+
+export async function getFormattedAuthor(userId: string) {
+  try {
+    const userDoc = await Users.findOne(
+      { _id: userId },
+      {
+        user_id: 1,
+        "bio.first_name": 1,
+        "bio.last_name": 1,
+        "bio.headline": 1,
+        profile_photo: 1
+      }
+    ).lean();
+    
+    if (!userDoc) {
+      return null;
+    }
+    
+    return {
+      username: userDoc.user_id,
+      firstName: userDoc.bio?.first_name || "",
+      lastName: userDoc.bio?.last_name || "",
+      headline: userDoc.bio?.headline || "",
+      profilePicture: userDoc.profile_photo || ""
+    };
+  } catch (err) {
+    console.error("Error fetching author info:", err);
+    return null;
+  }
+}

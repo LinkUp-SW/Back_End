@@ -140,7 +140,8 @@ const googleCallback = asyncHandler(
           email: user.email.toLowerCase(),
           password: user.password,
           isVerified: user.is_verified,
-        }),
+          isAdmin: user.is_admin,
+      }),
         {
           httpOnly: false,
           maxAge: 3600000,

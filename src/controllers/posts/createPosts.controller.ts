@@ -4,6 +4,7 @@ import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { mediaTypeEnum } from '../../models/posts.model.ts';
+import { convertUser_idInto_id } from '../../repositories/user.repository.ts';
 
 
 /**
@@ -48,7 +49,10 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
                     processedMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
                 }
                 break;
-        }
+            }
+        let converted_id;
+        if (taggedUsers)
+            { converted_id = await convertUser_idInto_id(taggedUsers);}
         const postRepository = new PostRepository;
         const newPost = await postRepository.create(
             user._id!.toString(),

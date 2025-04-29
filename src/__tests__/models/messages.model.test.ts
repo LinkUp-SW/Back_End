@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import messages from "../../models_to_delete/messages.model.ts";
-import { reactsEnum } from "../../models_to_delete/reactions.model.ts";
+import { reactsEnum } from "../../models/reactions.model.ts";
 
 beforeAll(async () => {
     await mongoose.connect(process.env.MONGO_URI || "");
@@ -21,7 +21,7 @@ describe("Messages Model", () => {
             content: [{ message: "Hello World", media:new mongoose.Types.ObjectId() }],
             timestamp: new Date(),
             is_seen: true,
-            reactions: [reactsEnum.cry,reactsEnum.love]
+            reactions: [reactsEnum.celebrate,reactsEnum.love]
         });
 
         await expect(messageDoc.save()).resolves.toBeDefined();
