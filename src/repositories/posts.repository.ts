@@ -28,6 +28,7 @@ export class PostRepository {
       public_post: publicPost,
       tagged_users: taggedUsers
     });
+    
   }
 
   async update(postId: string,content: string,

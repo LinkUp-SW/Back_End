@@ -61,7 +61,7 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
             mediaType,
             commentsDisabled,
             publicPost,
-            converted_id
+            taggedUsers
         );
         await newPost.save();
         user.activity.posts.push(newPost);

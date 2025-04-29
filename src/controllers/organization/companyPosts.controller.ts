@@ -69,7 +69,6 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
             commentsDisabled,
             publicPost,
             taggedUsers,
-            organization
         );
         
         await newPost.save();
