@@ -3,6 +3,8 @@ import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import organizations from "../../models/organizations.model.ts";
 import users, { usersInterface } from "../../models/users.model.ts"; // Add this import
 import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
+import mongoose from "mongoose"; // Import mongoose
+import jobs from "../../models/jobs.model.ts"; // Import jobs model
 
 export const makeAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -223,10 +225,61 @@ export const blockFollower = async (req: Request, res: Response, next: NextFunct
         const follower = organizationWithFollowers.followers.splice(followerIndex, 1)[0] as any;
         organizationWithFollowers.blocked.push(follower._id);
         
+        // Get follower user data to update their saved jobs and applications
+        const followerUser = await users.findById(follower_id);
+        if (!followerUser) {
+            res.status(404).json({ message: "Follower user not found" });
+            return;
+        }
+        
+        // Find all jobs belonging to this organization
+        const organizationJobs = await jobs.find({ organization_id: organization_id });
+        const organizationJobIds = organizationJobs.map(job => job._id?.toString());
+        
+        let savedJobsRemoved = 0;
+        let applicationsRemoved = 0;
+        
+        // Remove any of these jobs from follower's saved_jobs
+        if (followerUser.saved_jobs && followerUser.saved_jobs.length > 0) {
+            const originalSavedJobsCount = followerUser.saved_jobs.length;
+            followerUser.saved_jobs = followerUser.saved_jobs.filter(
+                jobId => !organizationJobIds.includes(jobId.toString())
+            );
+            savedJobsRemoved = originalSavedJobsCount - followerUser.saved_jobs.length;
+        }
+        
+        // Import job applications model
+        const jobApplications = mongoose.model('jobApplications');
+        
+        // Find and remove all job applications by this follower to jobs from this organization
+        if (organizationJobIds.length > 0) {
+            const deletedApplications = await jobApplications.deleteMany({
+                user_id: follower_id,
+                job_id: { $in: organizationJobIds }
+            });
+            
+            applicationsRemoved = deletedApplications.deletedCount;
+            
+            // Also remove these jobs from the user's applied_jobs list if that field exists
+            if (followerUser.applied_jobs && followerUser.applied_jobs.length > 0) {
+                followerUser.applied_jobs = followerUser.applied_jobs.filter(
+                    jobId => !organizationJobIds.includes(jobId.toString())
+                );
+            }
+        }
+        
+        // Save updates to the follower user
+        await followerUser.save();
+        
+        // Save updates to the organization
         await organizationWithFollowers.save();
 
         res.status(200).json({ 
-            message: "Follower blocked successfully", 
+            message: "Follower blocked successfully",
+            details: {
+                savedJobsRemoved,
+                applicationsRemoved
+            }
         });
     } catch (error) {
         next(error);
@@ -317,14 +370,23 @@ export const followOrganization = async (req: Request, res: Response, next: Next
         const organization = await getCompanyProfileById(organization_id, res);
         if (!organization) return;
         
-        const userIdStr = user._id?.toString();
+        
         // Validate user is not already a follower
+        const userIdStr = user._id?.toString();
         const isAlreadyFollower = organization.followers.some(
             (followerId: any) => followerId.toString() === userIdStr
         );
-        
         if (isAlreadyFollower) {
             res.status(400).json({ message: "User is already a follower" });
+            return;
+        }
+
+        // Validate user is not in blocked followers
+        const isBlockedFollower = organization.blocked.some(
+            (blockedId: any) => blockedId.toString() === userIdStr
+        );
+        if (isBlockedFollower) {
+            res.status(400).json({ message: "User is blocked from following" });
             return;
         }
         
