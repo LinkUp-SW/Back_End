@@ -48,6 +48,7 @@ const MessageSchema = new Schema({
     timestamp: { type: Date, default: Date.now },
     reacted: { type: String, default: false },
     is_seen: { type: Boolean, default: false },
+    is_edited: { type: Boolean, default: false },
 });
 
 const conversationsSchema = new Schema<conversationsInterface>({
