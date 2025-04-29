@@ -10,9 +10,6 @@ const userRepository = new UserRepository();
 /**
  * Get all notifications for the logged-in user
  */
-/**
- * Get all notifications for the logged-in user
- */
 const getNotifications = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const userId = req.user;
   
@@ -54,11 +51,11 @@ const getNotifications = asyncHandler(async (req: Request, res: Response, next: 
           id: notification.sender_id,
           firstName: sender?.bio?.first_name || '',
           lastName: sender?.bio?.last_name || '',
-          profilePhoto: sender?.profile_photo || null
+          profilePhoto: sender?.profile_photo || ''
         },
         createdAt: notification.created_at,
         content: notification.content || '',
-        referenceId: notification.reference_id || null,
+        referenceId: notification.reference_id || '',
         type: notification.type,
         isRead: notification.is_read,
       };
@@ -80,7 +77,7 @@ const getNotifications = asyncHandler(async (req: Request, res: Response, next: 
       hasNextPage,
       hasPreviousPage
     },
-    unReadCount: unReadCount || 0
+    unReadCount: unReadCount
   });
 });
 

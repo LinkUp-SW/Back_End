@@ -8,6 +8,7 @@ import {uploadMedia} from "../utils/helper.ts";
 import { NotificationRepository } from '../repositories/notification.repository.ts';
 import { NotificationType } from '../models/notifications.model.ts';
 import mongoose from 'mongoose';
+import { conversationType } from "../models/conversations.model.ts";
 
 
 export class WebSocketService {
@@ -191,6 +192,18 @@ export class WebSocketService {
         mediaUrls,
         mediaTypes
       );
+
+      // Make conversation type as "unread" for reciever 
+      if (conversation.user1_id.toString() === receiverId && !conversation.user1_conversation_type.includes(conversationType.unRead)) {
+        conversation.user1_conversation_type.push("unRead");
+        conversation.unread_count_user1 += 1;
+        conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== conversationType.read);
+      } else if (conversation.user2_id.toString() === receiverId && !conversation.user2_conversation_type.includes(conversationType.unRead)) {
+        conversation.user2_conversation_type.push("unRead");
+        conversation.unread_count_user2 += 1;
+        conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== conversationType.read);
+      }
+      await conversation.save();
   
       // Prepare message object for real-time delivery
       const messageObj = {
