@@ -87,6 +87,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
   // Ensure conversations is an array
   const conversationsArray = Array.isArray(conversations) ? conversations : [conversations].filter(Boolean);
   
+  let totalConversationUnreadCount = 0;
   // Format the conversations to include only relevant information
   const formattedConversationsPromises = conversationsArray.map(async conversation => {
     // Determine if the user is user1 or user2
@@ -101,6 +102,31 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
       console.error(`User not found for user2 ID: ${user2}`);
       throw new CustomError('User not found', 404); 
     }
+
+    if (isUser1) {
+      // Check if the user is blocked by user2
+      if (conversation.is_blocked_by_user2) {
+        throw new CustomError('You cannot send messages to this user', 403);
+      }
+
+      if (conversation.user1_conversation_type.includes('unRead')) {
+        totalConversationUnreadCount += 1
+      }
+
+    } else {
+      // Check if the user is blocked by user1
+      if (conversation.is_blocked_by_user1) {
+        throw new CustomError('You cannot send messages to this user', 403);
+      }
+
+      if (conversation.user2_conversation_type.includes('unRead')) {
+        totalConversationUnreadCount += 1
+      }
+    }
+
+
+
+    
 
     // Get last message and unread count
     const sentMessages = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
@@ -142,8 +168,12 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
 
   const formattedConversations = await Promise.all(formattedConversationsPromises);
   
+  // Calculate total unread count by summing up unreadCount from all conversations
+  
+  
   return res.status(200).json({ 
-    conversations: formattedConversations 
+    conversations: formattedConversations,
+    unreadCount: totalConversationUnreadCount
   });
 });
 
@@ -200,7 +230,7 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       isSeen: msg.is_seen,
       isOwnMessage: isUser1,
       messageId: msg.messageId,
-      isEdited: msg.is_edited ,
+      isEdited: msg.is_edited , 
     });
   }
   
