@@ -2,6 +2,7 @@ import reactions from '../models/reactions.model.ts';
 import users from '../models/users.model.ts';
 import { targetTypeEnum } from '../models/reactions.model.ts';
 import mongoose from 'mongoose';
+import { getFormattedAuthor } from './user.repository.ts';
 
 export class ReactionRepository {
   async addReaction(userId: string, targetId: string, targetType: targetTypeEnum, reactionType: string) {
@@ -55,7 +56,7 @@ export class ReactionRepository {
  * @param targetType - The type of target (post, comment)
  * @returns Promise containing an array of the top 3 reactions and their counts
  */
-export const getTopReactions = async (targetId: string, targetType: targetTypeEnum): Promise<{topReacts: any[], totalCount: number}> => {
+export const getTopReactions = async (targetId: string, targetType: targetTypeEnum): Promise<{finalArray: any[], totalCount: number}> => {
     // Get top 3 reactions
     const topReacts = await reactions.aggregate([
         // Match documents for the specific target
@@ -75,9 +76,11 @@ export const getTopReactions = async (targetId: string, targetType: targetTypeEn
         target_id: targetId, 
         target_type: targetType 
     });
-
+    let finalArray = topReacts.map(function (obj) {
+      return obj.reaction;
+    });
     return {
-        topReacts,
+        finalArray,
         totalCount
     };
 }
@@ -160,21 +163,20 @@ export const getPaginatedReactions = async (
     
     // Get user details for each reaction
     const userIds = results.map((reaction: any) => reaction.user_id);
-    const userDetails = await users.find({ _id: { $in: userIds } }).lean().exec();
+    const authorMap = new Map();
+       for (const userId of userIds) {
+         const authorInfo = await getFormattedAuthor(userId);
+         if (authorInfo) {
+           authorMap.set(userId, authorInfo);
+         }
+       }
 
     // Map user details to reactions
     const reactionsWithUserDetails = results.map((reaction: any) => {
-      const user = userDetails.find((user: any) => user._id.toString() === reaction.user_id.toString());
+      const author = authorMap.get(reaction.user_id.toString());
       return {
         ...reaction,
-        author: user ? {
-          username: user.user_id,
-          firstName: user.bio?.first_name || '',
-          lastName: user.bio?.last_name || '',
-          headline: user.bio?.headline || '',
-          profilePicture: user.profile_photo || '',
-          connectionDegree: "3rd+"
-        } : null
+        author
       };
     });
 

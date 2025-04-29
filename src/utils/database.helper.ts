@@ -122,6 +122,11 @@ export const checkProfileAccess = async (
       return { accessGranted: true };
     }
 
+    const isConnectionsOnlyProfile = targetUser.privacy_settings?.flag_account_status === "Connections only"
+    if (isConnectionsOnlyProfile) {
+      return { accessGranted: true, reason: "Cnnections Only" };
+    };
+
     // Deny access if the profile is private
     return { accessGranted: false, reason: "private" };
   } catch (error) {
