@@ -4,6 +4,8 @@ import users from "../models/users.model.ts";
 import { getTopReactions, ReactionRepository } from "./reacts.repository.ts";
 import { targetTypeEnum } from "../models/reactions.model.ts";
 import { convert_idIntoUser_id } from "./user.repository.ts";
+import comments from "../models/comments.model.ts";
+import { CommentRepository } from "./comment.repository.ts";
 
 export class PostRepository {
   async create(
@@ -218,7 +220,7 @@ export const getPostsCursorBased = async (
           coll: 'comments',
           pipeline: [
             { $match: { user_id: { $in: userObjectIds }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
-            { $project: { _id: '$post_id', date: 1, type: { $literal: 'comment' }, actor: '$user_id' } }
+            { $project: { _id: '$post_id', date: 1, type: { $literal: 'comment' }, actor: '$user_id', commentId: '$_id'} }
           ]
         } },
   
@@ -236,7 +238,8 @@ export const getPostsCursorBased = async (
         _id: '$_id',                       // post id
         lastActivity: { $max: '$date' },
         kind: { $first: '$type' },         // Using 'kind' for activity type
-        actor: { $first: '$actor' }        // Using 'actor' for user ID
+        actor: { $first: '$actor' }  ,
+        commentId: { $first: '$commentId' }      // Using 'actor' for user ID
       } },
   
       { $sort : { lastActivity: -1 } },
@@ -355,6 +358,9 @@ export const getPostsCursorBased = async (
         // Add activity type to post
         post.activityType = activity.kind; // note: 'kind' from your aggregation, not 'type'
         post.actorId = activity.actor; // use 'actor' from your aggregation
+        if (activity.commentId){
+          post.commentId = activity.commentId; // add commentId to fetch it
+        }
         orderedPosts.push(post);
       }
     }
@@ -417,7 +423,7 @@ export const getPostsCursorBased = async (
               actorName: actorInfo.name,
               actorUsername: actorInfo.username, // Use the username from actorMap
               actorId: actorInfo.id,
-              actorPicture: actorInfo.profilePicture
+              actorPicture: actorInfo.profilePicture,
             };
 
             if (post.activityType === 'reaction') {
@@ -432,8 +438,22 @@ export const getPostsCursorBased = async (
                 activityContext.type = reaction.reaction;
               }
             }
+            if (post.activityType === 'comment' && post.commentId){
+              const commentRepository = new CommentRepository;
+              const comment = await commentRepository.findById(post.commentId);
+              if (comment && activityContext){
+                const plainComment = comment.toObject ? comment.toObject() : comment;
+                const topReactions = await getTopReactions(post.commentId,targetTypeEnum.comment);
+                activityContext = {
+                  ...activityContext,
+                  comment: {...plainComment, topReactions}
+                };
+
+              }
+            
           }
         }
+      }
         let author = post.author;
     // If author is empty but user_id exists, fetch author directly
     if ((!author || Object.keys(author).length === 0) && post.user_id) {
