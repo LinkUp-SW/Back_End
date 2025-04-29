@@ -636,11 +636,11 @@ const editMessage = asyncHandler(async (req: Request, res: Response, next: NextF
   }
   
   // Use repository method to edit message
-  let edittedConversation = await conversationRepo.editMessage(conversationId, messageId, userId as string, message);
+  await conversationRepo.editMessage(conversationId, messageId, userId as string, message);
   
 
 
-  return res.status(200).json({ message: 'Message edited successfully', conversation: edittedConversation });
+  return res.status(200).json({ message: 'Message edited successfully', is_edited: true });
 }
 );
 

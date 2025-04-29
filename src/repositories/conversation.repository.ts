@@ -121,15 +121,16 @@ export class conversationRepository {
     const isUser1 = conversation.user1_id.toString() === userId;
     
     // Change user conversation type to unread
-    if (isUser1) {
-      conversation.user1_conversation_type.push(conversationType.unRead);
+    if (isUser1 && !conversation.user1_conversation_type.includes(conversationType.unRead) ) {
+      conversation.user1_conversation_type.push(conversationType.unRead)
       conversation.user1_conversation_type.filter(type => type !== conversationType.read); // Remove unread type
-    } else {
+    } else if (!isUser1 && !conversation.user2_conversation_type.includes(conversationType.unRead)) {
       conversation.user2_conversation_type.push(conversationType.unRead);
       conversation.user2_conversation_type.filter(type => type !== conversationType.read); // Remove unread type
     }
 
     await conversation.save();
+    console.log('Conversation marked as read for user 1:', conversation.user1_conversation_type, 'user 2:', conversation.user2_conversation_type);
     return conversation;
   }
 
@@ -143,19 +144,20 @@ export class conversationRepository {
     const isUser1 = conversation.user1_id.toString() === userId;
     
     // Mark messages as read and reset unread count
-    if (isUser1) {
+    if (isUser1 && !conversation.user1_conversation_type.includes(conversationType.read)) {
       conversation.unread_count_user1 = 0;
       conversation.user2_sent_messages.forEach(msg => msg.is_seen = true);
       conversation.user1_conversation_type.push(conversationType.read);
       conversation.user1_conversation_type.filter(type => type !== conversationType.unRead); // Remove unread type
-    } else {
+    } else if( !isUser1 && !conversation.user2_conversation_type.includes(conversationType.read)) {
       conversation.unread_count_user2 = 0;
       conversation.user1_sent_messages.forEach(msg => msg.is_seen = true);
       conversation.user2_conversation_type.push(conversationType.read);
-      conversation.user2_conversation_type.filter(type => type !== conversationType.unRead);
+      conversation.user2_conversation_type.filter(type => type !== conversationType.unRead); 
     }
 
     await conversation.save();
+    console.log('Conversation marked as read for user 1:', conversation.user1_conversation_type, 'user 2:', conversation.user2_conversation_type);
     return conversation;
   }
 
