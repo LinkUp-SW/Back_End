@@ -1,0 +1,22 @@
+import express from 'express';
+import * as jobApplicationControllers from '../../controllers/jobs/jobApplications.controllor.ts';
+
+const router = express.Router();
+
+router.get('/apply-for-job', (req, res, next) => {
+    jobApplicationControllers.ApplyForJob(req, res, next);
+});
+
+router.post('/create-job-application/:job_id', (req, res, next) => {
+    jobApplicationControllers.CreateJobApplication(req, res, next);
+});
+
+router.get('/get-job-applications/:job_id', (req, res, next) => {
+    jobApplicationControllers.GetJobApplications(req, res, next);
+});
+
+router.get('/get-job-application-details/:application_id', (req, res, next) => {
+    jobApplicationControllers.GetJobApplicationDetails(req, res, next);
+});
+
+export default router;
