@@ -3,7 +3,7 @@ import posts from "../models/posts.model.ts";
 import users from "../models/users.model.ts";
 import { getTopReactions, ReactionRepository } from "./reacts.repository.ts";
 import { targetTypeEnum } from "../models/reactions.model.ts";
-import { convert_idIntoUser_id } from "./user.repository.ts";
+import { convert_idIntoUser_id, getFormattedAuthor } from "./user.repository.ts";
 import comments from "../models/comments.model.ts";
 import { CommentRepository } from "./comment.repository.ts";
 
@@ -72,6 +72,13 @@ export class PostRepository {
 
   
 }
+
+/**
+ * Gets formatted author information from a user document
+ * @param userId - The user ID to fetch author information for
+ * @returns A Promise containing the formatted author object
+ */
+
 /**
  * Fetches paginated posts for a user using cursor-based pagination
  * @param savedPosts - Array of post IDs to fetch
@@ -108,22 +115,13 @@ export const getSavedPostsCursorBased = async (
     const userIds = new Set<string>();
     postsData.forEach(post => userIds.add(post.user_id.toString()));
     
-    // Fetch all authors in a single query
-    const authors = await users.find({ 
-      _id: { $in: Array.from(userIds) } 
-    }).lean();
-    
     // Create author info map for quick lookups
     const authorMap = new Map();
-    for (const author of authors) {
-      authorMap.set(author._id.toString(), {
-        username: author.user_id,
-        firstName: author.bio.first_name,
-        lastName: author.bio.last_name,
-        headline: author.bio?.headline,
-        profilePicture: author.profile_photo,
-        connectionDegree: "3rd+" // Default connection degree
-      });
+    for (const userId of userIds) {
+      const authorInfo = await getFormattedAuthor(userId);
+      if (authorInfo) {
+        authorMap.set(userId, authorInfo);
+      }
     }
     
     // Enrich posts with author information
@@ -444,9 +442,10 @@ export const getPostsCursorBased = async (
               if (comment && activityContext){
                 const plainComment = comment.toObject ? comment.toObject() : comment;
                 const topReactions = await getTopReactions(post.commentId,targetTypeEnum.comment);
+                const author = await getFormattedAuthor(comment.user_id.toString());
                 activityContext = {
                   ...activityContext,
-                  comment: {...plainComment, topReactions}
+                  comment: {...plainComment, topReactions,author}
                 };
 
               }
@@ -457,28 +456,7 @@ export const getPostsCursorBased = async (
         let author = post.author;
     // If author is empty but user_id exists, fetch author directly
     if ((!author || Object.keys(author).length === 0) && post.user_id) {
-      const postAuthor = await users.findOne(
-        { _id: post.user_id },
-        {
-          _id: 1,
-          user_id: 1,
-          "bio.first_name": 1,
-          "bio.last_name": 1,
-          "bio.headline": 1,
-          profile_photo: 1
-        }
-      ).lean();
-      
-      if (postAuthor) {
-        author = {
-          _id: postAuthor._id,
-          username: postAuthor.user_id,
-          firstName: postAuthor.bio?.first_name || "",
-          lastName: postAuthor.bio?.last_name || "",
-          headline: postAuthor.bio?.headline || "",
-          profilePicture: postAuthor.profile_photo || ""
-        };
-      }
+      author = await getFormattedAuthor(post.user_id.toString());
     }
     // Remove temp fields
     const { activityType, activityUserId, ...cleanPost } = post;

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import comments from '../models/comments.model.ts';
 import users from '../models/users.model.ts';
-import { convert_idIntoUser_id } from './user.repository.ts';
+import { convert_idIntoUser_id, getFormattedAuthor } from './user.repository.ts';
 import { deleteCommentReactions, getTopReactions, ReactionRepository } from './reacts.repository.ts';
 import { targetTypeEnum } from '../models/reactions.model.ts';
 
@@ -182,21 +182,11 @@ export const getComments = async (
         userIdsToFetch.add(reply.user_id.toString());
       }
       
-      // Fetch all users in a single query
-      const userArray = Array.from(userIdsToFetch);
-      const allUsers = await users.find({ _id: { $in: userArray } }).lean();
       
       // Create user info map for quick lookups
       const userInfoMap = new Map();
-      for (const user of allUsers) {
-        userInfoMap.set(user._id.toString(), {
-          username: user.user_id,
-          firstName: user.bio.first_name,
-          lastName: user.bio.last_name,
-          headline: user.bio?.headline,
-          profilePicture: user.profile_photo,
-          connectionDegree: "3rd+"
-        });
+      for (const userId of userIdsToFetch) {
+        userInfoMap.set(userId,await getFormattedAuthor(userId));
       }
       
       // Organize replies by parent comment ID
@@ -387,23 +377,11 @@ export const getReplies = async (
       const userIdsToFetch = new Set<string>();
       for (const reply of replyResults) {
         userIdsToFetch.add(reply.user_id.toString());
-      }
-      
-      // Fetch all users in a single query
-      const userArray = Array.from(userIdsToFetch);
-      const allUsers = await users.find({ _id: { $in: userArray } }).lean();
-      
+      } 
       // Create user info map for quick lookups
       const userInfoMap = new Map();
-      for (const user of allUsers) {
-        userInfoMap.set(user._id.toString(), {
-          username: user.user_id,
-          firstName: user.bio.first_name,
-          lastName: user.bio.last_name,
-          headline: user.bio?.headline,
-          profilePicture: user.profile_photo,
-          connectionDegree: "3rd+"
-        });
+      for (const userId of userIdsToFetch) {
+        userInfoMap.set(userId,await getFormattedAuthor(userId));
       }
       
       // Build the result object

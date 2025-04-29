@@ -5,7 +5,7 @@ import { getTopReactions, ReactionRepository } from '../../repositories/reacts.r
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import users from '../../models/users.model.ts';
 import { getComments } from '../../repositories/comment.repository.ts';
-import { convert_idIntoUser_id } from '../../repositories/user.repository.ts';
+import { convert_idIntoUser_id,getFormattedAuthor } from '../../repositories/user.repository.ts';
 import { targetTypeEnum } from '../../models/reactions.model.ts';
 
 
@@ -27,18 +27,7 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
         if (!post){
             return res.status(404).json({message:'Post not found' });
         }
-        const postAuthor = await users.findById(post.user_id).lean();
-        if (!postAuthor) {
-            return res.status(404).json({message: 'Post author not found'});
-        }
-        const authorInfo = {
-            username: postAuthor.user_id,
-            firstName: postAuthor.bio.first_name,
-            lastName: postAuthor.bio.last_name,
-            headline:postAuthor.bio.headline,
-            profilePicture: postAuthor.profile_photo,
-            connectionDegree:"3rd+"
-        };
+        const authorInfo = await getFormattedAuthor(post.user_id);
         const result = await getComments(cursor, limit, postId,replyLimit,user._id as string);
         const plainPost = post.toObject ? post.toObject() : post;
         if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
