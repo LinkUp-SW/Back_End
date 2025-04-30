@@ -353,7 +353,7 @@ export const getPostsCursorBased = async (
           type: { $literal: 'post' }, 
           actor: '$user_id',
           postType: '$post_type',
-          originalPost: '$original_post_id' 
+          originalPost: { $arrayElemAt: ['$media.link', 0] } 
         } 
       },
   
