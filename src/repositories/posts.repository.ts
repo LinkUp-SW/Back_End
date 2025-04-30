@@ -150,7 +150,12 @@ export const enhancePost = async (
       const postsRepository = new PostRepository();
       const originalPostId = plainPost.media.link[0];
       originalPost = await postsRepository.findByPostId(originalPostId) as postsInterface;
-      
+      if (originalPost.tagged_users && originalPost.tagged_users.length > 0) {
+        const userIds = await convert_idIntoUser_id(originalPost.tagged_users);
+        if (userIds) {
+            originalPost.tagged_users = userIds;
+        }
+    }
       if (originalPost) {
           originalAuthorInfo = await getFormattedAuthor(originalPost.user_id);
           
@@ -470,10 +475,10 @@ export const getPostsCursorBased = async (
           author: {
             _id: "$authorData._id",
             username: "$authorData.user_id",
-            firstName: "$authorData.bio.first_name",
-            lastName: "$authorData.bio.last_name",
+            first_name: "$authorData.bio.first_name",
+            last_name: "$authorData.bio.last_name",
             headline: "$authorData.bio.headline",
-            profilePicture: "$authorData.profile_photo",
+            profile_picture: "$authorData.profile_photo",
             accountStatus: "$authorData.accountStatus"
           }
         }
@@ -542,10 +547,10 @@ export const getPostsCursorBased = async (
               (post as any).author = {
                 _id: author._id,
                 username: author.user_id,
-                firstName: author.bio?.first_name || "",
-                lastName: author.bio?.last_name || "",
+                first_name: author.bio?.first_name || "",
+                last_name: author.bio?.last_name || "",
                 headline: author.bio?.headline || "",
-                profilePicture: author.profile_photo || ""
+                profile_picture: author.profile_photo || ""
               };
             }
           });
@@ -669,10 +674,10 @@ export const getPostsCursorBased = async (
           if (actorInfo) {
             activityContext = {
               type: post.activityType,
-              actorName: actorInfo.name,
-              actorUsername: actorInfo.username,
-              actorId: actorInfo.id,
-              actorPicture: actorInfo.profilePicture,
+              actor_name: actorInfo.name,
+              actor_username: actorInfo.username,
+              actor_id: actorInfo.id,
+              actor_picture: actorInfo.profilePicture,
             };
 
             if (post.activityType === 'reaction') {
@@ -692,11 +697,11 @@ export const getPostsCursorBased = async (
               const comment = await commentRepository.findById(post.commentId);
               if (comment && activityContext) {
                 const plainComment = comment.toObject ? comment.toObject() : comment;
-                const topReactions = await getTopReactions(post.commentId, targetTypeEnum.comment);
+                const {finalArray,totalCount} = await getTopReactions(post.commentId, targetTypeEnum.comment);
                 const author = await getFormattedAuthor(comment.user_id.toString());
                 activityContext = {
                   ...activityContext,
-                  comment: {...plainComment, topReactions, author}
+                  comment: {...plainComment, top_reactions:finalArray,reactions_count:totalCount, author}
                 };
               }
             }
@@ -748,12 +753,12 @@ export const getPostsCursorBased = async (
         return {
           ...cleanPost,
           author,
-          topReactions: reactions?.finalArray || [],
-          reactionsCount: reactions?.totalCount || 0,
-          commentsCount,
-          userReaction: userReaction?.reaction ?? null,
-          activityContext,
-          isSaved
+          top_reactions: reactions?.finalArray || [],
+          reactions_count: reactions?.totalCount || 0,
+          comments_count:commentsCount,
+          user_reaction: userReaction?.reaction ?? null,
+          activity_context:activityContext,
+          is_saved:isSaved
         };
       })
     );
