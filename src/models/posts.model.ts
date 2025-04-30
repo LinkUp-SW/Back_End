@@ -38,7 +38,7 @@ export interface postsInterface extends mongoose.Document {
     reacts: reactsInterface[];
     tagged_users: string[];
     comments: commentsInterface[];
-    isEdited:boolean;
+    is_edited:boolean;
     
     // Fields to support reposts
     post_type: postTypeEnum;
@@ -61,7 +61,7 @@ const postsSchema = new Schema<postsInterface>({
     reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
     tagged_users: [{ type: String }],
     comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
-    isEdited: { type: Boolean, default: false },
+    is_edited: { type: Boolean, default: false },
     
     // New fields for combined schema
     post_type: { 
