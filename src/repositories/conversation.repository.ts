@@ -33,6 +33,31 @@ export class conversationRepository {
     if (!conversation) {
       throw new CustomError('Conversation not found', 404);
     }
+
+    // Check if the conversation is blocked by either user
+    const user1 = await userRepo.findByUserId(conversation.user1_id.toString());
+    const user2 = await userRepo.findByUserId(conversation.user2_id.toString());
+
+    if (!user1 || !user2) {
+      throw new CustomError('User not found', 404);
+    }
+
+    if (user1.blocked.includes(user2.id) || user2.blocked.includes(user1.id)) {
+      throw new CustomError('Conversation is blocked', 403);
+    }
+
+    if (user1 && !conversation.user1_conversation_type.includes(conversationType.read)) {
+      conversation.unread_count_user1 = 0;
+      conversation.user2_sent_messages.forEach(msg => msg.is_seen = true);
+      conversation.user1_conversation_type.push(conversationType.read);
+      conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== conversationType.unRead); // Remove unread type
+    } else if( user2 && !conversation.user2_conversation_type.includes(conversationType.read)) {
+      conversation.unread_count_user2 = 0;
+      conversation.user1_sent_messages.forEach(msg => msg.is_seen = true);
+      conversation.user2_conversation_type.push(conversationType.read);
+      conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== conversationType.unRead); 
+    }
+
     return conversation;
   }
 
