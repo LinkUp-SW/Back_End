@@ -4,7 +4,7 @@ import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import comments from '../../models/comments.model.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
-import posts, { commentsEnum } from '../../models/posts.model.ts';
+import posts, { commentsEnum, postTypeEnum } from '../../models/posts.model.ts';
 import mongoose from 'mongoose';
 import users from '../../models/users.model.ts';
 import { CommentRepository, getAllCommentChildrenIds, getComments, getReplies } from '../../repositories/comment.repository.ts';
@@ -35,9 +35,14 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
             return res.status(400).json({message:'Required fields missing' })
         }
         const postRepository = new PostRepository;
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: 'Post does not exist' });
+        }
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
         if (post.comments_disabled == commentsEnum.connections_only){
             if (!Array.isArray(user.connections) || 
@@ -125,9 +130,15 @@ const updateComments = async (req: Request, res: Response): Promise<Response | v
         }
 
         const postRepository = new PostRepository;
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: 'Post does not exist' });
+        }
+
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
 
         const existingComment = await comments.findById(comment_id);
@@ -190,9 +201,14 @@ const getCommentsController = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Required fields missing" });
         }
         const postRepository = new PostRepository();
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: "Post does not exist" });
+        }
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
         // Call the getComments function
         const result = await getComments(cursor, limit, post_id,replyLimit,user._id!.toString());
@@ -236,7 +252,7 @@ const getCommentsController = async (req: Request, res: Response) => {
     
 const deleteComment = async (req: Request, res: Response) => {
     try {
-        const post_id =req.params.postId;
+        let post_id =req.params.postId;
         const comment_id =req.params.commentId;
         
         let userId = await getUserIdFromToken(req, res);
@@ -248,10 +264,20 @@ const deleteComment = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Required parameters are missing" });
         }
         const postRepository = new PostRepository;
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: 'Post does not exist' });
         }
+
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost){
+                post=orignalPost;
+                post_id=orignalPost._id!.toString();
+            }
+            else return res.status(404).json({ message: 'Original post does not exist' });
+        }
+
         const comment = await comments.findById(comment_id);
         if (!comment) {
             return res.status(404).json({ error: "Comment does not exist" });
