@@ -19,4 +19,12 @@ router.get('/get-job-application-details/:application_id', (req, res, next) => {
     jobApplicationControllers.GetJobApplicationDetails(req, res, next);
 });
 
+router.get('/get-applied-jobs', (req, res, next) => {
+    jobApplicationControllers.getAppliedJobs(req, res, next);
+});
+
+router.put('/update-job-application-status/:application_id', (req, res, next) => {
+    jobApplicationControllers.changeJobApplicationStatus(req, res, next);
+});
+
 export default router;
