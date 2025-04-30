@@ -4127,6 +4127,260 @@ paths:
                     example: "Server error"
                   error:
                     type: object
+  
+  /api/v2/post/save-post:
+    post:
+      tags:
+        - Saved Posts
+      summary: Save a post
+      description: Saves a post to the user's saved posts list for later reference.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the post to save
+                  example: "6458abc123def456"
+              required:
+                - postId
+      responses:
+        '200':
+          description: Post successfully saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post successfully saved for user"
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+    
+    delete:
+      tags:
+        - Saved Posts
+      summary: Remove a saved post
+      description: Removes a post from the user's saved posts list.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the saved post to remove
+                  example: "6458abc123def456"
+              required:
+                - postId
+      responses:
+        '200':
+          description: Saved post removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deleted saved post successfully for user"
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
+    get:
+      tags:
+        - Saved Posts
+      summary: Get saved posts
+      description: >
+        Retrieves the posts saved by the authenticated user.
+        Results are paginated with cursor-based pagination.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination (position to start from)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of posts to return per page
+      responses:
+        '200':
+          description: Saved posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      # Same post structure as in feed endpoint
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    example: 10
+                    description: Cursor for the next page of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
   /api/v1/user/profile/licenses/{user_id}:
     get:
       tags:
