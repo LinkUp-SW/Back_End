@@ -64,7 +64,7 @@ const displaySavedPosts = async (req: Request, res: Response): Promise<Response 
         if (!user) return;
         const savedPosts = user.savedPosts.map((post: postsInterface) => post._id);
         const { posts: postsData, next_cursor } = await getSavedPostsCursorBased(savedPosts as string[], cursor, limit);
-        const enhancedPosts = await enhancePosts(postsData, userId.toString(), user.savedPosts);
+        const enhancedPosts = await enhancePosts(postsData, user._id!.toString(), user.savedPosts);
         return res.status(200).json({message:'Posts returned successfully',posts:enhancedPosts,next_cursor:next_cursor })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
