@@ -160,7 +160,7 @@ app.use('/api/v1/jobs',
   );
 
 
-app.use('/api/v1/post',
+app.use('/api/v2/post',
     postRoutes,
     savePostRoutes,
     comments,
