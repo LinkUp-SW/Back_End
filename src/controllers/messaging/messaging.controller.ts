@@ -215,7 +215,9 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
   if (!user1 || !user2) {
     throw new CustomError('User not found', 404);
   }
-  for (const msg of conversation.user1_sent_messages) {
+
+
+  for (const msg of conversation.user1_sent_messages) { //user1: Hamza / user2: Ali
     allMessages.push({
       senderId: user1.user_id,
       senderName: `${user1.bio?.first_name || ''} ${user1.bio?.last_name || ''}`,
@@ -223,7 +225,7 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       media: msg.media || [],
       timestamp: msg.timestamp,
       reacted: msg.reacted,
-      isSeen: msg.is_seen,
+      isSeen: isUser2 ? true : msg.is_seen, // user2 sees all messages of user1 when opening conversation
       isOwnMessage: isUser1,
       messageId: msg.messageId,
       isEdited: msg.is_edited , 
@@ -238,7 +240,7 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       media: msg.media || [],
       timestamp: msg.timestamp,
       reacted: msg.reacted,
-      isSeen: msg.is_seen,
+      isSeen: isUser1? true : msg.is_seen, // user1 sees all messages of user2 when opening conversation
       isOwnMessage: isUser2,
       messageId: msg.messageId,
       isEdited: msg.is_edited ,
