@@ -69,8 +69,8 @@ export const reactOnPost = async (req: Request, res: Response): Promise<Response
         return res.status(200).json({
         message: 'Reaction added successfully',
         reaction: react,
-        topReactions: finalArray,
-        totalCount: totalCount
+        top_reactions: finalArray,
+        total_count: totalCount
         });
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -150,8 +150,8 @@ export const removeReaction = async (req: Request, res: Response): Promise<Respo
     return res.status(200).json({
         message: 'Reaction removed successfully',
         reaction: removedReact,
-        topReactions: finalArray,
-        totalCount: totalCount
+        top_reactions: finalArray,
+        total_count: totalCount
         }); 
     }catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
