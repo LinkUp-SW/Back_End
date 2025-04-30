@@ -5,6 +5,7 @@ import { conversationRepository } from '../../repositories/conversation.reposito
 import { UserRepository } from '../../repositories/user.repository.ts';
 import mongoose from 'mongoose';
 import { MongoGridFSChunkError } from 'mongodb';
+import { conversationType } from '../../models/conversations.model.ts';
 
 const conversationRepo = new conversationRepository();
 const userRepo = new UserRepository();
@@ -255,6 +256,31 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
   if (!otherUser) {
     throw new CustomError('User not found', 404);
   }
+
+  // Check if the user is blocked by the other user
+  if (isUser1 && conversation.is_blocked_by_user2) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  } else if (isUser2 && conversation.is_blocked_by_user1) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  }
+
+  // Check if the other user is blocked by the current user
+  if (isUser1 && conversation.is_blocked_by_user1) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  } else if (isUser2 && conversation.is_blocked_by_user2) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  }
+
+  // Change conversation type to read
+  if (isUser1) {
+    conversation.user1_conversation_type.push(conversationType.read);
+    conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== 'Unread');
+  } else {
+    conversation.user2_conversation_type.push(conversationType.read);
+    conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== 'Unread');
+  }
+
+  await conversation.save();
 
   return res.status(200).json({
     conversationId: conversation._id,

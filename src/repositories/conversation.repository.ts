@@ -46,17 +46,6 @@ export class conversationRepository {
       throw new CustomError('Conversation is blocked', 403);
     }
 
-    if (user1 && !conversation.user1_conversation_type.includes(conversationType.read)) {
-      conversation.unread_count_user1 = 0;
-      conversation.user2_sent_messages.forEach(msg => msg.is_seen = true);
-      conversation.user1_conversation_type.push(conversationType.read);
-      conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== conversationType.unRead); // Remove unread type
-    } else if( user2 && !conversation.user2_conversation_type.includes(conversationType.read)) {
-      conversation.unread_count_user2 = 0;
-      conversation.user1_sent_messages.forEach(msg => msg.is_seen = true);
-      conversation.user2_conversation_type.push(conversationType.read);
-      conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== conversationType.unRead); 
-    }
 
     return conversation;
   }
