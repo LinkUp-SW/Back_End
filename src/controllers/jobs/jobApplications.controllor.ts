@@ -4,6 +4,7 @@ import jobApplications from '../../models/job_applications.model.ts';
 import jobs from '../../models/jobs.model.ts';
 import mongoose from 'mongoose';
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
+import { count } from "console";
 
 export const ApplyForJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -118,14 +119,13 @@ export const GetJobApplications = async (req: Request, res: Response, next: Next
             return;
         }
         
-
         const jobApplicationsList = await jobApplications.find({ job_id: job._id })
         .populate({
             path: "user_id",
             select: "_id bio.first_name bio.last_name bio.headline bio.contact_info.phone_number bio.contact_info.country_code profile_photo location resume",
         });
 
-        res.status(200).json({ data: jobApplicationsList });
+        res.status(200).json({ data: jobApplicationsList, count: jobApplicationsList.length, message: "Job applications retrieved successfully" });
     } catch (error) {
         next(error);
     }
