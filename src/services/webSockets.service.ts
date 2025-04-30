@@ -195,11 +195,11 @@ export class WebSocketService {
 
       // Make conversation type as "unread" for reciever 
       if (conversation.user1_id.toString() === receiverId && !conversation.user1_conversation_type.includes(conversationType.unRead)) {
-        conversation.user1_conversation_type.push("unRead");
+        conversation.user1_conversation_type.push(conversationType.unRead);
         conversation.unread_count_user1 += 1;
         conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== conversationType.read);
       } else if (conversation.user2_id.toString() === receiverId && !conversation.user2_conversation_type.includes(conversationType.unRead)) {
-        conversation.user2_conversation_type.push("unRead");
+        conversation.user2_conversation_type.push(conversationType.unRead);
         conversation.unread_count_user2 += 1;
         conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== conversationType.read);
       }
