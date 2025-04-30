@@ -6380,7 +6380,7 @@ paths:
                                 profile_picture:
                                   type: string
                                   example: "https://example.com/profile2.jpg"
-                      total_count:
+                      reactions_count:
                         type: integer
                         example: 42
                       reaction_counts:

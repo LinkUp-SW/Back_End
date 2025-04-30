@@ -102,7 +102,7 @@ export const getPaginatedReactions = async (
   specificReaction?: string
 ): Promise<{
   reactions: any[],
-  total_count: number,
+  reactions_count: number,
   reaction_counts: Record<string, number>,
   next_cursor: number | null
 }> => {
@@ -142,7 +142,7 @@ export const getPaginatedReactions = async (
     if (totalCount === 0) {
       return {
         reactions: [],
-        total_count: 0,
+        reactions_count: 0,
         reaction_counts: {},
         next_cursor: null
       };
@@ -185,7 +185,7 @@ export const getPaginatedReactions = async (
 
     return {
       reactions: reactionsWithUserDetails,
-      total_count:totalCount,
+      reactions_count:totalCount,
       reaction_counts:reactionCounts,
       next_cursor:nextCursor
     };
