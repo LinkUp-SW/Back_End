@@ -131,35 +131,6 @@ export const GetJobApplications = async (req: Request, res: Response, next: Next
     }
 }
 
-export const GetJobApplicationDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const user = await validateTokenAndGetUser(req, res) as { _id: string };
-        if (!user) return;
-
-        const { application_id } = req.params;
-
-        // Validate application_id
-        if (!application_id || !mongoose.Types.ObjectId.isValid(application_id)) {
-            res.status(400).json({ message: "Valid application ID is required" });
-            return;
-        }
-
-        // Check if job application exists
-        const jobApplication = await jobApplications.findById(application_id)
-            .populate("job_id")
-            .populate("user_id");
-
-        if (!jobApplication) {
-            res.status(404).json({ message: "Job application not found" });
-            return;
-        }
-
-        res.status(200).json({ data: jobApplication });
-    } catch (error) {
-        next(error);
-    }
-}
-
 export const getAppliedJobs = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const user = await validateTokenAndGetUser(req, res) as { _id: string };
