@@ -51,7 +51,7 @@ export class PostRepository {
     if (publicPost !== null) updateFields.public_post = publicPost;
     if (taggedUsers!== undefined) updateFields.tagged_users = taggedUsers;
     if ( content!== null|| mediaLink !== null || mediaType !== undefined || commentsDisabled !== null || publicPost !== null || taggedUsers!== undefined){
-      updateFields.isEdited=true;
+      updateFields.is_edited=true;
     }
     
     return posts.findOneAndUpdate(
@@ -462,7 +462,7 @@ export const getPostsCursorBased = async (
           comments_disabled: 1,
           public_post: 1,
           tagged_users: 1,
-          isEdited: 1,
+          is_edited: 1,
           user_id: 1,
           post_type: 1,
           original_post_id: 1,

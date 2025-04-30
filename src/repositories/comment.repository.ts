@@ -52,9 +52,9 @@ export class CommentRepository {
     if (content !== undefined) updateFields.content = content;
     if (media !== undefined) updateFields.media = media;
     if (taggedUsers !== null) updateFields.tagged_users = taggedUsers;
-    // Add isEdited flag when updating
+    // Add is_edited flag when updating
     if (Object.keys(updateFields).length > 0) {
-      updateFields.isEdited = true;
+      updateFields.is_edited = true;
     }
     
     return comments.findOneAndUpdate(
