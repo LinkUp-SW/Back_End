@@ -25,7 +25,7 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
 
       const manageUrl = platform === 'web' 
       ? `${process.env.FRONTEND_URL}/payment?status={cancel}`
-      : `${process.env.APP_URL}/subscription/manage`;
+      : `${process.env.APP_URL}/payment?status={cancel}`;
 
       const user = await validateTokenAndGetUser(req, res);
       if (!user) return;
@@ -134,8 +134,8 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
         successUrl = `${process.env.FRONTEND_URL}/payment?status=success`
         cancelUrl = `${process.env.FRONTEND_URL}/payment?status=cancel`;
       } else if (platform === 'ios' || platform === 'android') {
-        successUrl = `${process.env.APP_URL}/subscription/success`;
-        cancelUrl = `${process.env.APP_URL}/subscription/cancel`;
+        successUrl = `${process.env.APP_URL}/payment?status=success`;
+        cancelUrl = `${process.env.APP_URL}/payment?status=cancel`;
       }
   
       // Create checkout session
