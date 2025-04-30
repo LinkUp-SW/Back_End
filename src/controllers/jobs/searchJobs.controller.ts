@@ -9,8 +9,8 @@ import organizations from "../../models/organizations.model.ts";
  */
 export const searchJobs = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        // Get the authenticated user (optional)
         const user = await validateTokenAndGetUser(req, res);
+        if (!user) return
         
         // Get query parameters
         const query = req.query.query as string;
@@ -33,22 +33,6 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
                 { organization_industry: { $regex: query, $options: 'i' } }
             ]
         };
-        
-        // If user is authenticated, exclude jobs from organizations that blocked them
-        if (user) {
-            // Find organizations that have blocked this user
-            const organizationsBlockedBy = await organizations.find(
-                { blocked: user._id },
-                { _id: 1 }
-            );
-            
-            const blockedOrgIds = organizationsBlockedBy.map(org => org._id);
-            
-            if (blockedOrgIds.length > 0) {
-                // Add condition to exclude jobs from organizations that blocked the user
-                searchQuery.organization_id = { $nin: blockedOrgIds };
-            }
-        }
         
         // Use the helper function with enhanced projection for jobs
         const extraStages = [
