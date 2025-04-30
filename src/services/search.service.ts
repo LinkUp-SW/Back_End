@@ -3,6 +3,7 @@ import users from '../models/users.model.ts';
 import organizations from '../models/organizations.model.ts';
 import { Response } from 'express';
 import { profile } from 'console';
+import privacy_settings from '../models_to_delete/privacy_settings.model.ts';
 
 /**
  * User Search Service
@@ -354,7 +355,8 @@ if (connectionDegree !== 'all') {
           profile_photo: 1,
           connections: 1,
           currentWorkplace: { $arrayElemAt: ['$workOrganizations.name', 0] },
-          currentEducation: { $arrayElemAt: ['$educationOrganizations.name', 0] }
+          currentEducation: { $arrayElemAt: ['$educationOrganizations.name', 0] },
+          privacy_settings: 1
         }
       },
       // Sort by most relevant 
@@ -452,7 +454,8 @@ if (connectionDegree !== 'all') {
 
         },
         is_in_sent_connections: viewerSentConnections.includes(user._id.toString()),
-        is_in_received_connections: viewerReceivedConnections.includes(user._id.toString())
+        is_in_received_connections: viewerReceivedConnections.includes(user._id.toString()),
+        is_connect_by_email: user.privacy_settings?.flag_who_can_send_you_invitations === 'email' ? true : false,
       };
     });
     
