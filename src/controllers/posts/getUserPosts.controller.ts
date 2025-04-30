@@ -80,10 +80,9 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         // Enhance posts with reactions data before returning
         const enhancedPosts = await enhancePosts(
             finalPosts,
-            viewerId.toString(), 
+            viewerUser._id!.toString(), 
             viewerUser.savedPosts
         );
-
         return res.status(200).json({
             message: 'Posts returned successfully',
             is_me,

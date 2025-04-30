@@ -18,7 +18,6 @@ export class PostRepository {
     postType: postTypeEnum,
     taggedUsers?: mongoose.Types.ObjectId[] | undefined,
   ) {
-    console.log(postType)
     return posts.create({
       user_id:userId,
       content:content,
@@ -122,10 +121,10 @@ export const enhancePost = async (
   
   // Handle tagged users
   if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
-      const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
-      if (userIds) {
-          plainPost.tagged_users = userIds;
-      }
+    const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
+    if (userIds) {
+      plainPost.tagged_users = userIds;
+    }
   }
   
   // Get author information
@@ -146,7 +145,7 @@ export const enhancePost = async (
   const isRepost = plainPost.media?.media_type === mediaTypeEnum.post && 
                      plainPost.media?.link?.length > 0;
   // Handle reposts
-  if (isRepost) { {
+  if (isRepost) {
       const postsRepository = new PostRepository();
       const originalPostId = plainPost.media.link[0];
       originalPost = await postsRepository.findByPostId(originalPostId) as postsInterface;
@@ -191,14 +190,12 @@ export const enhancePost = async (
           };
       }
   }
-  
   // Standard post handling
   reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
   userReaction = await reactionRepository.getUserReaction(
       userId,
       post._id.toString()
   );
-  
   // Return enhanced standard post
   return {
       ...plainPost,
@@ -210,7 +207,7 @@ export const enhancePost = async (
       comments_count: plainPost.comments?.length || 0
   };
 };
-}
+
 /**
  * Enhances multiple posts with additional metadata in a batch
  * @param posts Array of posts to enhance
@@ -280,15 +277,8 @@ export const getSavedPostsCursorBased = async (
       const post = postsData.find(p => p._id.toString() === postId.toString());
       if (post) {
         const authorInfo = authorMap.get(post.user_id.toString());
-        const plainPost = post.toObject ? post.toObject() : post;
-        if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
-                    const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
-                    if (userIds) {
-                        plainPost.tagged_users = userIds;
-                    }
-                }
         enrichedPosts.push({
-          ...plainPost,
+          ...post,
           author: authorInfo || null
         });
       }
