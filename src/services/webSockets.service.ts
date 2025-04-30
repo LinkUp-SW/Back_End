@@ -192,6 +192,7 @@ export class WebSocketService {
         mediaUrls,
         mediaTypes
       );
+      
 
       // Make conversation type as "unread" for reciever 
       if (conversation.user1_id.toString() === receiverId && !conversation.user1_conversation_type.includes(conversationType.unRead)) {

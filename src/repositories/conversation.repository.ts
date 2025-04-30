@@ -109,7 +109,7 @@ export class conversationRepository {
     conversation.last_message_time = new Date();
     conversation.last_message_text = message;
 
-    await conversation.save();
+    // await conversation.save();
     return {conversation,messageId: newMessage.messageId};
   }
 
