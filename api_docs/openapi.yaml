@@ -6909,6 +6909,9 @@ paths:
                         is_in_received_connections:
                           type: boolean
                           example: false
+                        is_connect_by_email:
+                          type: boolean
+                          example: false
                   pagination:
                     type: object
                     properties:
