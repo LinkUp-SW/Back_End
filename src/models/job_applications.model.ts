@@ -2,6 +2,12 @@ import mongoose, { Schema } from "mongoose";
 import { jobsInterface } from "./jobs.model.ts";
 import { usersInterface } from "./users.model.ts";
 
+export enum applicationStatusEnum{
+    pending = "Pending",
+    viewed = "Viewed",
+    accepted = "Accepted",
+    rejected = "Rejected"
+}
 
 export interface jobApplicationsInterface extends mongoose.Document{
     job_id: jobsInterface;
@@ -12,7 +18,7 @@ export interface jobApplicationsInterface extends mongoose.Document{
     phone_number: number;
     country_code: string;
     resume: string;
-    application_status: string;
+    application_status: applicationStatusEnum;
 }
 
 const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
@@ -32,7 +38,7 @@ const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
     phone_number: { type: Number },
     country_code: { type: String },
     resume: { type: String },
-    application_status: { type: String }
+    application_status: { type: String, enum: Object.values(applicationStatusEnum), default: applicationStatusEnum.pending },
 });
 
 const jobApplications = mongoose.model<jobApplicationsInterface>('jobApplications', jobApplicationsSchema);
