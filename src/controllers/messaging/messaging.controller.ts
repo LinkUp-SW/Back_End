@@ -133,7 +133,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     
-    const lastMessage = allMessages.length > 0 ? allMessages[0] : null;
+    const lastMessage = allMessages.length > 0 ? allMessages[0] : '';
 
     console.log('Recieved:', receivedMessages);
     
@@ -154,7 +154,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
         timestamp: lastMessage.timestamp,
         isOwnMessage: (isUser1 && sentMessages.includes(lastMessage)) || 
                       (!isUser1 && receivedMessages.includes(lastMessage))
-      } : null,
+      } : '',
       
       unreadCount
     };
@@ -324,7 +324,7 @@ export  interface  UnseenCountByConversation {
     message: string;
     timestamp: Date | string;
     isOwnMessage: boolean;
-  } | null;
+  } | '';
   unreadCount: number;
 }
 
@@ -388,7 +388,7 @@ const getUnseenMessagesCountByConversation = asyncHandler(async (req: Request, r
         message: convo.last_message_text,
         timestamp: convo.last_message_time,
         isOwnMessage: isUser1
-      } : null,
+      } : '',
       unreadCount: sentMessages
     };
   });
