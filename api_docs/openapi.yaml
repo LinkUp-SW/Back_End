@@ -6909,6 +6909,9 @@ paths:
                         is_in_received_connections:
                           type: boolean
                           example: false
+                        is_connect_by_email:
+                          type: boolean
+                          example: false
                   pagination:
                     type: object
                     properties:
@@ -7990,6 +7993,317 @@ paths:
                     type: object
       security:
         - bearerAuth: []
+  
+  /api/v1/user/profile/about:
+    post:
+      tags:
+        - User Profile
+      summary: Add user about information
+      description: >
+        Creates a new about section for the authenticated user's profile.
+        This endpoint can only be used if no about section exists yet.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about:
+                  type: string
+                  description: Text describing the user
+                  example: "Experienced software developer with 5+ years in full-stack development."
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  description: List of skills related to the user
+                  example: ["JavaScript", "React", "Node.js", "MongoDB"]
+              required:
+                - about
+      responses:
+        '200':
+          description: About section added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section added successfully"
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                        example: "Experienced software developer with 5+ years in full-stack development."
+                      skills:
+                        type: array
+                        items:
+                          type: string
+                        example: ["JavaScript", "React", "Node.js", "MongoDB"]
+        '400':
+          description: About section already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section already exists. Use update instead."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+    put:
+      tags:
+        - User Profile
+      summary: Update user about information
+      description: >
+        Updates the existing about section for the authenticated user's profile.
+        This endpoint can only be used if an about section already exists.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about:
+                  type: string
+                  description: Updated text describing the user
+                  example: "Software architect with expertise in scalable systems and cloud infrastructure."
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated list of skills related to the user
+                  example: ["JavaScript", "React", "AWS", "System Design", "Microservices"]
+              required:
+                - about
+      responses:
+        '200':
+          description: About section updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section updated successfully"
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                      skills:
+                        type: array
+                        items:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '404':
+          description: About section not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found. Use add instead."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+    delete:
+      tags:
+        - User Profile
+      summary: Delete user about information
+      description: Removes the about section from the authenticated user's profile
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: About section deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '404':
+          description: About section not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/user/profile/about/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user about information
+      description: >
+        Retrieves the about section for a specific user. Access is limited based on
+        the target user's privacy settings and connection status with the requesting user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose about information is being requested
+          example: "john-doe123"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: About section retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the requested profile belongs to the authenticated user
+                    example: false
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                        example: "Experienced software developer with 5+ years in full-stack development."
+                      skills:
+                        type: array
+                        items:
+                          type: string
+                        example: ["JavaScript", "React", "Node.js", "MongoDB"]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Target profile is private and you are not connected."
+        '404':
+          description: About section or user not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
                     
 components:
   securitySchemes:

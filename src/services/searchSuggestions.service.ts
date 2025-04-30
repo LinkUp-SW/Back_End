@@ -197,27 +197,49 @@ const userSuggestions = await users.aggregate([
     };
   });
     
-    // 2. Get organization suggestions
-    const organizationSuggestions = await organizations.aggregate([
-      {
-        $match: {
-          $or: [
-            { name: { $regex: escapedQuery, $options: 'i' } },
-            { industry: { $regex: escapedQuery, $options: 'i' } }
-          ]
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          category_type: 1,
-          logo: 1,
-          industry: 1
-        }
-      },
-      { $limit: limit }
-    ]);
+  const organizationSuggestions = await organizations.aggregate([
+    {
+      $match: {
+        $and: [
+          // Alternative approach to exclude organizations that have blocked the viewer
+          {
+            $or: [
+              { blocked: { $exists: false } },   // No blocked array exists
+              { blocked: { $size: 0 } },         // Empty blocked array
+              // None of the blocked items match viewer's ID
+              { 
+                $nor: [
+                  { blocked: viewerObjectId },     // Direct ObjectId match
+                  { blocked: viewerUserId },       // Direct string match
+                  { "blocked._id": viewerObjectId }, // Match in embedded object
+                  { "blocked._id": viewerUserId }  // Match in embedded object
+                ]
+              }
+            ]
+          },
+          // Original search criteria remains the same
+          {
+            $or: [
+              { name: { $regex: escapedQuery, $options: 'i' } },
+              { industry: { $regex: escapedQuery, $options: 'i' } }
+            ]
+          }
+        ]
+      }
+    },
+    // Project statement remains the same
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        category_type: 1,
+        logo: 1,
+        industry: 1,
+        blocked: 1
+      }
+    },
+    { $limit: limit * 2 }
+  ]);
     
     const processedOrgSuggestions = organizationSuggestions.map(org => ({
       type: 'organization',
