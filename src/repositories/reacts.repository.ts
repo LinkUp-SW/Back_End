@@ -173,7 +173,7 @@ export const getPaginatedReactions = async (
 
     // Map user details to reactions
     const reactionsWithUserDetails = results.map((reaction: any) => {
-      const author = authorMap.get(reaction.user_id.toString());
+      const author = authorMap.get(reaction.user_id);
       return {
         ...reaction,
         author
