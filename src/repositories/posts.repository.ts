@@ -175,13 +175,17 @@ export const enhancePost = async (
                 );
               commentsCount=plainPost.comments?.length || 0;
           }
+          originalPost = originalPost.toObject ? originalPost.toObject() : originalPost;
+          originalPost={
+            ...originalPost,
+            author:originalAuthorInfo
+          }
           
           // Return enhanced repost
           return {
               ...plainPost,
               author: authorInfo,
               original_post:originalPost,
-              original_author: originalAuthorInfo,
               is_saved:isSaved,
               user_reaction: userReaction?.reaction ?? null,
               top_reactions: reactions?.finalArray || [],
