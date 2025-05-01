@@ -297,7 +297,9 @@ export class WebSocketService {
         await this.sendNotification(msgNotificationData);
         
         //Mark the conversation as unread for the recipient
-        this.io.to(receiverSocketId).emit("mark_as_unread", {conversationId: conversation._id.toString()});
+        this.markConversationOfNewMessageUnread(socket, {
+          conversationId: conversation._id.toString()
+        });
       }
   
       // Confirm to sender
