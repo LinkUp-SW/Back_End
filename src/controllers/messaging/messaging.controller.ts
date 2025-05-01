@@ -26,7 +26,7 @@ const userRepo = new UserRepository();
 const startConversation = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const user1Id  = req.user
   const { user2ID } = req.params;
-  const {firstMessage} = req.body;
+  const {firstMessage,media, mediaTypes} = req.body;
   console.log('user1Id:', user1Id, 'user2ID:', user2ID);
 
   if (!user1Id) {
@@ -64,7 +64,7 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
     }
     // Add the first message to the conversation
     if (firstMessage) {
-      await conversationRepo.addMessage(newConversation._id, user1Id as string, firstMessage);
+      await conversationRepo.addMessage(newConversation._id, user1Id as string, firstMessage, media, mediaTypes);
     }
     return res.status(201).json({ conversationId: newConversation._id });
   }
