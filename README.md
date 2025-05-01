@@ -93,10 +93,10 @@ src/                     # Main source code
 ```
 ## Installation and Setup
 1. Clone the repository
-   ```bash
+  ```bash
    git clone https://github.com/LinkUp-SW/Back_End.git
    cd Back_End
-   ```
+  ```
 2. Install dependencies
   ```bash
     npm install
