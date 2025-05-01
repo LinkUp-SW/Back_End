@@ -9,14 +9,62 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     const user = await validateTokenAndGetUser(req, res);
     if (!user) return;
 
-    return res.status(200).json({
-      subscription: user.subscription || { plan: 'free', status: 'active' }
-    });
+    // Create a default subscription object without period dates for free users
+    const defaultSubscription = {
+      status: 'active',
+      plan: 'free',
+      subscription_id: null,
+      customer_id: null,
+      cancel_at_period_end: false,
+      subscribed: false,
+      canceled_at: null,
+      subscription_started_at: null,
+      subscription_ends_at: null,
+      // Removed: current_period_start and current_period_end
+    };
+
+    // If user has a subscription, convert it to a plain object first
+    let subscription;
+    if (user.subscription) {
+      // Convert Mongoose document to plain object 
+      const subscriptionObj = typeof (user.subscription as any).toObject === 'function' 
+        ? (user.subscription as any).toObject() 
+        : user.subscription;
+      
+      // Create subscription object with only non-null period dates
+      subscription = { 
+        ...defaultSubscription,
+        ...subscriptionObj,
+      };
+
+      if (subscription.subscription_started_at) {
+        const startDate = new Date(subscription.subscription_started_at);
+        if (startDate instanceof Date && !isNaN(startDate.getTime())) {
+          const trialEndDate = new Date(startDate);
+          trialEndDate.setDate(startDate.getDate() + 30); 
+          subscription.subscription_ends_at = trialEndDate;
+        }
+      }
+      
+      // Remove null date fields completely rather than keeping them as null
+      if (subscription.current_period_start === null) {
+        delete subscription.current_period_start;
+      }
+      
+      if (subscription.current_period_end === null) {
+        delete subscription.current_period_end;
+      }
+    } else {
+      subscription = defaultSubscription;
+      // No need to delete fields as they're not included in defaultSubscription
+    }
+    
+    return res.status(200).json({ subscription });
   } catch (error) {
+    console.error('Error in getSubscriptionStatus:', error);
     next(error);
   }
 };
-
 // Create checkout session for premium subscription
 export const createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
