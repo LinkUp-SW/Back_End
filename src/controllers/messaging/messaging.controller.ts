@@ -4,8 +4,6 @@ import { CustomError } from '../../utils/customError.utils.ts';
 import { conversationRepository } from '../../repositories/conversation.repository.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import mongoose from 'mongoose';
-import { MongoGridFSChunkError } from 'mongodb';
-import { conversationType } from '../../models/conversations.model.ts';
 
 const conversationRepo = new conversationRepository();
 const userRepo = new UserRepository();
@@ -28,6 +26,7 @@ const userRepo = new UserRepository();
 const startConversation = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
   const user1Id  = req.user
   const { user2ID } = req.params;
+  const {firstMessage} = req.body;
   console.log('user1Id:', user1Id, 'user2ID:', user2ID);
 
   if (!user1Id) {
@@ -60,6 +59,13 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
     return res.status(200).json({ conversationId: conversation._id });
   } else {
     const newConversation = await conversationRepo.createConversation(user1Id as string , user2ID);
+    if (!newConversation) {
+      throw new CustomError('Failed to create conversation', 500);
+    }
+    // Add the first message to the conversation
+    if (firstMessage) {
+      await conversationRepo.addMessage(newConversation._id, user1Id as string, firstMessage);
+    }
     return res.status(201).json({ conversationId: newConversation._id });
   }
 });
