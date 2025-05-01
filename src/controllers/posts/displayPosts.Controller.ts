@@ -25,9 +25,9 @@ const displayPosts = async (req: Request, res: Response): Promise<Response | voi
         if (!user) return;
         const connections = user.connections.map((connection: ConnectionRequest) => connection._id.toString());
         const following = user.following.map(followId => followId.toString());
-        const { posts: postsData, nextCursor } = await getPostsCursorBased(user._id as string,connections,following, cursor, limit);
+        const { posts: postsData, next_cursor } = await getPostsCursorBased(user._id as string,connections,following, cursor, limit);
 
-        return res.status(200).json({message:'Posts returned successfully',posts:postsData,nextCursor:nextCursor })
+        return res.status(200).json({message:'Posts returned successfully',posts:postsData,next_cursor:next_cursor })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message,success:false });
