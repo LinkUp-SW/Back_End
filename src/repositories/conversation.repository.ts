@@ -143,7 +143,7 @@ export class conversationRepository {
       conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== conversationType.read); // Remove unread type
     }
 
-    // await conversation.save();
+    await conversation.save();
     console.log('Conversation marked as read for user 1:', conversation.user1_conversation_type, 'user 2:', conversation.user2_conversation_type);
     return conversation;
   }

@@ -211,7 +211,7 @@ export class WebSocketService {
         conversationId: conversation._id,
         senderId,
         message: {
-          message,
+          message,  
           media: mediaUrls,
           timestamp: new Date(),
           is_seen: false,
