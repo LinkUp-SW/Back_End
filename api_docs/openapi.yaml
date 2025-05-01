@@ -6374,6 +6374,12 @@ paths:
                         format: date-time
                         nullable: true
                         example: null
+                      subscription_ends_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: "2023-05-01T00:00:00Z"
+                        
         '401':
           description: Unauthorized - invalid or expired token
           content:
