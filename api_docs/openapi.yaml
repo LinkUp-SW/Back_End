@@ -8940,6 +8940,198 @@ paths:
                   success:
                     type: boolean
                     example: false                  
+  /api/v1/admin/report/content/{contentType}/{contentRef}:
+    get:
+      tags:
+        - Reports
+      summary: Get reports for specific content
+      description: >
+        Retrieves all reports for a specific content item (post, comment, or job).
+        This endpoint is restricted to administrators and provides detailed information
+        about the content being reported along with all individual reports.
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment, Job]
+          description: Type of content being reported
+          example: "Post"
+        - name: contentRef
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the content being reported
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Cursor for pagination (starting position)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Maximum number of reports to return per page
+      responses:
+        '200':
+          description: Content reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Content reports retrieved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: object
+                        description: Details about the reported content
+                        properties:
+                          type:
+                            type: string
+                            example: "post"
+                          content:
+                            type: string
+                            example: "This is the content of the reported post"
+                          author:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                example: "60d21b4667d0d8992e610c85"
+                              username:
+                                type: string
+                                example: "johndoe42"
+                              fullName:
+                                type: string
+                                example: "John Doe"
+                              profilePicture:
+                                type: string
+                                example: "https://example.com/photos/profile.jpg"
+                          media:
+                            type: array
+                            items:
+                              type: string
+                            description: Media URLs if the content has images/videos
+                      reports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            report_id:
+                              type: string
+                              example: "REP9f11"
+                            mongo_id:
+                              type: string
+                              example: "6458abc123def456"
+                            reason:
+                              type: string
+                              enum: [spam, harassment, hate_speech, misinformation, scam, inappropriate, other]
+                              example: "inappropriate"
+                            created_at:
+                              type: integer
+                              example: 1714545720
+                            status:
+                              type: string
+                              enum: [pending, resolved]
+                              example: "pending"
+                            admin_action:
+                              type: string
+                              enum: [none, content_removed, warning_issued, account_suspended, no_action]
+                              example: "none"
+                            reporter:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  example: "60d21b4667d0d8992e610c85"
+                                username:
+                                  type: string
+                                  example: "johndoe42"
+                                fullName:
+                                  type: string
+                                  example: "John Doe"
+                                profilePicture:
+                                  type: string
+                                  example: "https://example.com/photos/profile.jpg"
+                      total_count:
+                        type: integer
+                        example: 5
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        example: 10
+        '400':
+          description: Bad request (e.g., invalid content type or limit exceeds maximum)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid content type"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error fetching content reports"
+                  success:
+                    type: boolean
+                    example: false
 components:
   securitySchemes:
     bearerAuth:
