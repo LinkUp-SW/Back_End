@@ -12,8 +12,8 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     const defaultSubscription = {
       status: 'active',
       plan: 'free',
-      subscription_id: '',
-      customer_id: '',
+      subscription_id: null,
+      customer_id: null,
       current_period_start: null,
       current_period_end: null,
       cancel_at_period_end: false,
