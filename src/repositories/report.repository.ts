@@ -206,6 +206,102 @@ async findExistingReport(
         content_type:contentType
     });
 }
+/**
+ * Get paginated reports for a specific content item
+ * @param contentRef - ID of the content being reported
+ * @param contentType - Type of content (post, comment, etc.)
+ * @param cursor - The position to start fetching from
+ * @param limit - Maximum number of reports to fetch
+ * @returns Promise containing paginated reports for the content
+ */
+async getContentReports(
+    contentRef: string | Types.ObjectId,
+    contentType: contentTypeEnum,
+    cursor: number | null = 0,
+    limit: number = 10
+): Promise<{
+    reports: any[],
+    totalCount: number,
+    nextCursor: number | null
+}> {
+    try {
+        // Build match condition for the specific content
+        const matchCondition = {
+            content_ref: new Types.ObjectId(contentRef),
+            content_type: contentType
+        };
+        
+        // Count total reports for this content
+        const totalCount = await Report.countDocuments(matchCondition);
+        
+        // If no reports, return early
+        if (totalCount === 0) {
+            return {
+                reports: [],
+                totalCount: 0,
+                nextCursor: null
+            };
+        }
+
+        // Get paginated reports with reporter info
+        const paginatedReports = await Report.find(matchCondition)
+            .populate('reporter', 'user_id bio.first_name bio.last_name profile_photo')
+            .sort({ created_at: -1 })
+            .skip(cursor ?? 0)
+            .limit(limit + 1) // Get one extra to check if there are more
+            .lean()
+            .exec();
+
+        // Check if there are more results
+        const hasMore = paginatedReports.length > limit;
+        const results = hasMore ? paginatedReports.slice(0, limit) : paginatedReports;
+        
+        // Format the reports with simplified structure
+        const formattedResults = results.map((report) => {
+            // Format report ID
+            const reportIdStr = report._id.toString();
+            const shortId = reportIdStr.substring(reportIdStr.length - 4);
+            const formattedId = `REP${shortId}`;
+            
+            // Format reporter info
+            let formattedReporter = null;
+            if (report.reporter) {
+                formattedReporter = {
+                    id: report.reporter._id,
+                    username: report.reporter.user_id,
+                    fullName: `${report.reporter.bio?.first_name || ''} ${report.reporter.bio?.last_name || ''}`.trim(),
+                    profilePicture: report.reporter.profile_photo
+                };
+            }
+            
+            // Return formatted report
+            return {
+                report_id: formattedId,
+                mongo_id: report._id,
+                reason: report.reason,
+                created_at: report.created_at,
+                status: report.status,
+                admin_action: report.admin_action,
+                reporter: formattedReporter
+            };
+        });
+
+        // Calculate next cursor
+        const nextCursor = hasMore ? (cursor ?? 0) + limit : null;
+
+        return {
+            reports: formattedResults,
+            totalCount,
+            nextCursor
+        };
+    } catch (err) {
+        if (err instanceof Error) {
+            throw new Error(`Error fetching content reports: ${err.message}`);
+        } else {
+            throw new Error("Error fetching content reports: Unknown error");
+        }
+    }
+}
 }
 
 
