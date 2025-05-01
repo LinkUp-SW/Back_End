@@ -156,7 +156,7 @@ const updateComments = async (req: Request, res: Response): Promise<Response | v
             const mediaArray = await processPostMediaArray(preMediaArray);
             const filteredMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
             processedMedia = filteredMedia && filteredMedia.length > 0 ? filteredMedia[0] : null;
-        }
+        } else if (media !== undefined) processedMedia=media;
         let converted_id;
         if (tagged_users)
         { converted_id = await convertUser_idInto_id(tagged_users);}
