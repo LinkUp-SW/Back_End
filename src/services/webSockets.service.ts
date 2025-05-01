@@ -8,7 +8,6 @@ import {uploadMedia} from "../utils/helper.ts";
 import { NotificationRepository } from '../repositories/notification.repository.ts';
 import { NotificationType } from '../models/notifications.model.ts';
 import mongoose from 'mongoose';
-import { conversationType } from "../models/conversations.model.ts";
 
 
 export class WebSocketService {
@@ -183,6 +182,18 @@ export class WebSocketService {
             console.log(`Other user ${otherUserId} is not online, cannot send unread notification.`);
         }
 
+        // Get the specific unread count for *this* conversation for the requesting user
+        const conversationUnreadCount = conversation.user1_id.toString() === userId 
+            ? conversation.unread_count_user1 
+            : conversation.unread_count_user2;
+
+        // Emit the unread count specific to this conversation
+        console.log(`Updating conversation unread count for user ${userId} in conversation ${conversationId} to ${conversationUnreadCount}`);
+        socket.emit("conversation_unread_count", { 
+            conversationId: conversationId, 
+            count: conversationUnreadCount 
+        });
+
         // Update the total unread message count for the requesting user
         const totalUnreadCount = await this.getUnseenMessagesCount(userId);
         console.log(`Updating total unread count for user ${userId} to ${totalUnreadCount}`);
@@ -191,7 +202,7 @@ export class WebSocketService {
       } else {
         console.log(`Mark as unread for conversation ${conversationId} by user ${userId} resulted in no update.`);
         const totalUnreadCount = await this.getUnseenMessagesCount(userId);
-        socket.emit("unread_messages_count",
+        socket.emit("unread_conversation_count",
           { count: totalUnreadCount });
       }
     } catch (error) {
