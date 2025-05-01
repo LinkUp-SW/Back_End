@@ -247,6 +247,13 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
       isEdited: msg.is_edited ,
     });
   }
+
+  //Update conversation unread count
+  if (isUser1) {
+    conversation.unread_count_user2 = 0; // Reset unread count for user2
+  } else {
+    conversation.unread_count_user1 = 0; // Reset unread count for user1
+  }
   
   // Sort messages by timestamp (newest first)
   allMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -283,6 +290,8 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
     });
     conversation.unread_count_user1 = 0; // Reset unread count for user1
   }
+
+
 
 
   await conversation.save();
