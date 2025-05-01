@@ -186,7 +186,8 @@ export const enhancePost = async (
               user_reaction: userReaction?.reaction ?? null,
               top_reactions: reactions?.finalArray || [],
               reactions_count: reactions?.totalCount || 0,
-              comments_count: commentsCount
+              comments_count: commentsCount,
+              reposts_count: originalPost.reposts?.length || 0
           };
       }
   }
@@ -204,7 +205,8 @@ export const enhancePost = async (
       user_reaction: userReaction?.reaction ?? null,
       top_reactions: reactions?.finalArray || [],
       reactions_count: reactions?.totalCount || 0,
-      comments_count: plainPost.comments?.length || 0
+      comments_count: plainPost.comments?.length || 0,
+      reposts_count: plainPost.reposts?.length || 0
   };
 };
 
@@ -329,65 +331,76 @@ export const getPostsCursorBased = async (
 
     // Convert string IDs to ObjectIds
     const userObjectIds = userIdsToFetch.map(id => new mongoose.Types.ObjectId(id));
-    
-    // If cursor is provided, create a proper date filter using Unix timestamp directly
-    let dateFilter = {};
-    if (cursor) {
-      // Create filter for Unix timestamps (don't convert to Date object)
-      dateFilter = { date: { $lt: cursor } };
-    }
     const adjustedLimit = limit * 2; // Request double to account for filtering
-    //get all activity IDs (posts and interactions)
+    
+    // Get activity IDs (posts and interactions)
     const activityQuery: PipelineStage[] = [
-
       // start with direct posts
-      { $match: { user_id: { $in: userObjectIds }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
-      { $project: { 
+      { 
+        $match: { 
+          user_id: { $in: userObjectIds }, 
+          ...(cursor ? { date: { $lt: cursor } } : {}) 
+        } 
+      },
+      { 
+        $project: { 
           _id: 1, 
           date: 1, 
           type: { $literal: 'post' }, 
           actor: '$user_id',
           postType: '$post_type',
-          originalPost: { $arrayElemAt: ['$media.link', 0] } 
+          originalPost: { 
+            $cond: {
+              if: { $isArray: "$media.link" },
+              then: { $arrayElemAt: ['$media.link', 0] },
+              else: null
+            }
+          } 
         } 
       },
   
-      //  reactions on posts 
-      { $unionWith: {
+      // reactions on posts 
+      { 
+        $unionWith: {
           coll: 'reacts',
           pipeline: [
             { $match: { user_id: { $in: userObjectIds }, target_type: targetTypeEnum.post, ...(cursor ? { date: { $lt: cursor } } : {}) } },
             { $project: { _id: '$target_id', date: 1, type: { $literal: 'reaction' }, actor: '$user_id' } }
           ]
-        } },
+        } 
+      },
   
-      //  comments on posts
-      { $unionWith: {
+      // comments on posts
+      { 
+        $unionWith: {
           coll: 'comments',
           pipeline: [
             { $match: { user_id: { $in: userObjectIds }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
             { $project: { _id: '$post_id', date: 1, type: { $literal: 'comment' }, actor: '$user_id', commentId: '$_id'} }
           ]
-        } },
+        } 
+      },
   
-      //  dedupe (keep most-recent activity on the same post)
-      { $group: {
-        _id: '$_id',                       // post id
-        lastActivity: { $max: '$date' },
-        kind: { $first: '$type' },         // Using 'kind' for activity type
-        actor: { $first: '$actor' },       // Using 'actor' for user ID
-        commentId: { $first: '$commentId' },
-        postType: { $first: '$postType' },
-        originalPost: { $first: '$originalPost' }      
-      } },
+      // dedupe (keep most-recent activity on the same post)
+      { 
+        $group: {
+          _id: '$_id',                     // post id
+          lastActivity: { $max: '$date' },
+          kind: { $first: '$type' },       // activity type
+          actor: { $first: '$actor' },     // user ID
+          commentId: { $first: '$commentId' },
+          postType: { $first: '$postType' },
+          originalPost: { $first: '$originalPost' }      
+        } 
+      },
   
-      { $sort : { lastActivity: -1 } },
-      { $limit: adjustedLimit + 1 }                  // one extra to know if there's more
+      { $sort: { lastActivity: -1, _id: -1 } },
+      { $limit: adjustedLimit + 1 }        // one extra to know if there's more
     ];
     
     // Execute the first query to get activity IDs
     const activities = await posts.aggregate(activityQuery).exec();
-    
+    const hasMoreActivities = activities.length > adjustedLimit;
     // Extract post IDs from activities
     const postIds = activities.map(a => new mongoose.Types.ObjectId(a._id));
     
@@ -396,373 +409,145 @@ export const getPostsCursorBased = async (
       return { posts: [], next_cursor: null };
     }
     
-    // Second query: Get complete post data for the IDs we found
-    const postsQuery: PipelineStage[] = [
-      // 1. Match only the posts we need
-      { 
-        $match: { 
-          _id: { $in: postIds },
-          ...(userId ? { user_id: { $ne: userId.toString() } } : {}) // Exclude user's own posts
-        } 
-      },
-      
-      // 2. Lookup comments
-      {
-        $lookup: {
-          from: "comments",
-          localField: "_id",
-          foreignField: "post_id",
-          as: "comments"
-        }
-      },
-      
-      // 3. Lookup author details
-      {
-        $lookup: {
-          from: "users",
-          let: { userId: "$user_id" },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-            {
-              $project: {
-                _id: 1,
-                user_id: 1,
-                "bio.first_name": 1,
-                "bio.last_name": 1,
-                "bio.headline": 1,
-                profile_photo: 1,
-                accountStatus: 1
-              }
-            }
-          ],
-          as: "authorData"
-        }
-      },
-      
-      // 4. Unwind author data into object
-      {
-        $unwind: {
-          path: "$authorData",
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      
-      // 5. Project fields we need
-      {
-        $project: {
-          _id: 1,
-          content: 1,
-          date: 1,
-          media: 1,
-          comments_disabled: 1,
-          public_post: 1,
-          tagged_users: 1,
-          is_edited: 1,
-          user_id: 1,
-          post_type: 1,
-          original_post_id: 1,
-          commentsCount: { $size: "$comments" },
-          author: {
-            _id: "$authorData._id",
-            username: "$authorData.user_id",
-            first_name: "$authorData.bio.first_name",
-            last_name: "$authorData.bio.last_name",
-            headline: "$authorData.bio.headline",
-            profile_picture: "$authorData.profile_photo",
-            accountStatus: "$authorData.accountStatus"
-          }
-        }
-      }
-    ];
+    // Get full post data and exclude user's own posts
+    const postsData = await posts.find({ 
+      _id: { $in: postIds },
+      ...(userId ? { user_id: { $ne: userId } } : {})
+    }).lean();
     
-    // Execute the second query to get full post data
-    const completePostsData = await posts.aggregate(postsQuery).exec();
-    
-    // Create a map of posts by ID for easy access
+    // Map post data by ID for quick lookup
     const postsMap = new Map();
-    completePostsData.forEach(post => {
+    postsData.forEach(post => {
       postsMap.set(post._id.toString(), post);
     });
     
-    // Collect all original post IDs for reposts
-    const originalPostIds = new Set<string>();
-    completePostsData.forEach(post => {
-      if (post.post_type !== postTypeEnum.standard && 
-          post.media?.media_type === mediaTypeEnum.post && 
-          post.media?.link?.length > 0) {
-        originalPostIds.add(post.media.link[0]);
-      }
-    });
-    
-    // Fetch all original posts in one query if needed
-    const originalPostsMap = new Map();
-    if (originalPostIds.size > 0) {
-      const originalPosts = await posts.find({
-        _id: { $in: Array.from(originalPostIds).map(id => new mongoose.Types.ObjectId(id)) }
-      }).lean();
-      
-      // Create a map for quick lookup
-      originalPosts.forEach(post => {
-        if (post && post._id) {
-          originalPostsMap.set(post._id.toString(), post);
-        }
-      });
-      
-      // Get all original post author IDs
-      const originalAuthorIds = new Set<string>();
-      originalPosts.forEach(post => {
-        if (post && post.user_id) {
-          originalAuthorIds.add(post.user_id.toString());
-        }
-      });
-      
-      // Fetch author information for original posts
-      if (originalAuthorIds.size > 0) {
-        const originalAuthors = await users.find(
-          { _id: { $in: Array.from(originalAuthorIds).map(id => new mongoose.Types.ObjectId(id)) } },
-          { 
-            _id: 1, 
-            user_id: 1, 
-            'bio.first_name': 1, 
-            'bio.last_name': 1, 
-            'bio.headline': 1,
-            profile_photo: 1 
-          }
-        ).lean();
-        
-        // Add author information to original posts
-        originalAuthors.forEach(author => {
-          originalPosts.forEach(post => {
-            if (post.user_id && post.user_id.toString() === author._id.toString()) {
-              (post as any).author = {
-                _id: author._id,
-                username: author.user_id,
-                first_name: author.bio?.first_name || "",
-                last_name: author.bio?.last_name || "",
-                headline: author.bio?.headline || "",
-                profile_picture: author.profile_photo || ""
-              };
-            }
-          });
-        });
-      }
-    }
-    
-    // Arrange posts according to activity order
+    // Organize posts in activity order and add activity metadata
     const orderedPosts = [];
     for (const activity of activities) {
       const post = postsMap.get(activity._id.toString());
-      if (post && !(userId?.toString() && post.user_id === userId?.toString())) {
-        // Add activity type to post
+      if (post) {
+        // Add activity metadata
         post.activityType = activity.kind;
-        post.actorId = activity.actor;
-        
+        post.activityActor = activity.actor;
         if (activity.commentId) {
           post.commentId = activity.commentId;
         }
-        
-        // Handle reposts by attaching original post data
-        if ((post.post_type === postTypeEnum.repost_instant || 
-             post.post_type === postTypeEnum.repost_thought) && 
-            post.original_post_id) {
-          const originalPost = originalPostsMap.get(post.original_post_id.toString());
-          if (originalPost) {
-            post.originalPost = originalPost;
-          }
-        }
-        
         orderedPosts.push(post);
       }
     }
+
+    // Get user's saved posts for the enhancePosts function
+    let userSavedPosts;
+    if (userId) {
+      const userData = await users.findById(userId, { savedPosts: 1 });
+      userSavedPosts = userData?.savedPosts || [];
+    }
     
-    // Get all actor IDs for activities
+    // Use the enhancePosts function to add all necessary metadata
+    const enhancedPosts = await enhancePosts(
+      orderedPosts,
+      userId || '',
+      userSavedPosts
+    );
+    
+    // Add activity context to enhanced posts
     const actorIds = new Set<string>();
-    orderedPosts.forEach(post => {
-      if (post.activityType !== 'post' && post.actorId) {
-        actorIds.add(post.actorId.toString());
+    enhancedPosts.forEach(post => {
+      if (post.activityType !== 'post' && post.activityActor) {
+        actorIds.add(post.activityActor.toString());
       }
     });
     
-    // Fetch all actor information in one query
-    const actorData = await users.find(
-      { _id: { $in: Array.from(actorIds).map(id => new mongoose.Types.ObjectId(id)) } },
-      { _id: 1, user_id: 1, 'bio.first_name': 1, 'bio.last_name': 1, profile_photo: 1 }
-    ).lean();
-    
-    // Create actor info map
-    const actorMap = new Map();
-    actorData.forEach(actor => {
-      actorMap.set(actor._id.toString(), {
-        name: `${actor.bio?.first_name || ''} ${actor.bio?.last_name || ''}`.trim() || actor.user_id,
-        id: actor._id,
-        username: actor.user_id,
-        profilePicture: actor.profile_photo 
+    // If we have actors, fetch their data
+    if (actorIds.size > 0) {
+      const actorData = await users.find(
+        { _id: { $in: Array.from(actorIds).map(id => new mongoose.Types.ObjectId(id)) } },
+        { _id: 1, user_id: 1, 'bio.first_name': 1, 'bio.last_name': 1, profile_photo: 1 }
+      ).lean();
+      
+      // Create actor info map
+      const actorMap = new Map();
+      actorData.forEach(actor => {
+        actorMap.set(actor._id.toString(), {
+          name: `${actor.bio?.first_name || ''} ${actor.bio?.last_name || ''}`.trim() || actor.user_id,
+          id: actor._id,
+          username: actor.user_id,
+          profilePicture: actor.profile_photo 
+        });
       });
-    });
-
-    // Enhance posts with reactions data and repost data
-    const enhancedPosts = await Promise.all(
-      orderedPosts.map(async (post) => {
-        const isPublicPost = post.public_post === true;
-        const isFromConnection = connectionIds.includes(post.user_id.toString());
-        
-        // Skip this post if it's private and not from a connection
-        if (!isPublicPost && !isFromConnection || 
-            (post.author?.accountStatus === accountStatusEnum.private && !isFromConnection)) {
-          return null; // This post will be filtered out
-        }
-        
-        // Handle tagged users
-        if (post.tagged_users && post.tagged_users.length > 0) {
-          const userIds = await convert_idIntoUser_id(post.tagged_users);
-          if (userIds) {
-            post.tagged_users = userIds;
-          }
-        }
-        
-        // Initialize reaction variables
-        let reactions;
-        let userReaction = null;
-        let commentsCount = post.commentsCount;
-        
-        // Handle reactions based on post type
-        if (post.post_type === postTypeEnum.repost_instant && post.originalPost) {
-          // For instant reposts, get reactions from the original post
-          reactions = await getTopReactions(
-            post.originalPost._id.toString(),
-            targetTypeEnum.post
-          );
-          
-          if (userId) {
-            userReaction = await new ReactionRepository().getUserReaction(
-              userId,
-              post.originalPost._id.toString()
-            );
-          }
-          
-          // Use comments count from original post for instant reposts
-          commentsCount = post.originalPost.comments?.length || 0;
-        } else {
-          // For standard posts and thought reposts, get reactions from the post itself
-          reactions = await getTopReactions(
-            post._id.toString(),
-            targetTypeEnum.post
-          );
-          
-          if (userId) {
-            userReaction = await new ReactionRepository().getUserReaction(
-              userId,
-              post._id.toString()
-            );
-          }
-        }
-        
-        // Add activity context based on type
-        let activityContext = null;
-        if (post.activityType !== 'post' && post.actorId) {
-          const actorInfo = actorMap.get(post.actorId.toString());
+      
+      // Add activity context to each post
+      for (const post of enhancedPosts) {
+        if (post.activityType !== 'post' && post.activityActor) {
+          const actorInfo = actorMap.get(post.activityActor.toString());
           if (actorInfo) {
-            activityContext = {
+            post.activity_context = {
               type: post.activityType,
               actor_name: actorInfo.name,
               actor_username: actorInfo.username,
               actor_id: actorInfo.id,
-              actor_picture: actorInfo.profilePicture,
+              actor_picture: actorInfo.profilePicture
             };
-
+            
+            // Add specific context for reactions
             if (post.activityType === 'reaction') {
-              // Fetch the actual reaction data
-              const reaction = await new ReactionRepository().getUserReaction(
-                post.actorId.toString(),
+              const reactionRepository = new ReactionRepository();
+              const reaction = await reactionRepository.getUserReaction(
+                post.activityActor.toString(),
                 post._id.toString()
               );
               
               if (reaction) {
-                activityContext.type = reaction.reaction;
+                post.activity_context.type = reaction.reaction;
               }
             }
             
+            // Add comment data for comment activities
             if (post.activityType === 'comment' && post.commentId) {
               const commentRepository = new CommentRepository();
               const comment = await commentRepository.findById(post.commentId);
-              if (comment && activityContext) {
+              if (comment) {
                 const plainComment = comment.toObject ? comment.toObject() : comment;
-                const {finalArray,totalCount} = await getTopReactions(post.commentId, targetTypeEnum.comment);
+                const {finalArray, totalCount} = await getTopReactions(post.commentId, targetTypeEnum.comment);
                 const author = await getFormattedAuthor(comment.user_id.toString());
-                activityContext = {
-                  ...activityContext,
-                  comment: {...plainComment, top_reactions:finalArray,reactions_count:totalCount, author}
+                post.activity_context.comment = {
+                  ...plainComment, 
+                  top_reactions: finalArray,
+                  reactions_count: totalCount, 
+                  author
                 };
               }
             }
           }
         }
         
-        // Make sure we have author info
-        let author = post.author;
-        if ((!author || Object.keys(author).length === 0) && post.user_id) {
-          author = await getFormattedAuthor(post.user_id.toString());
-        }
-        
-        // Check if post is saved by user
-        let isSaved = false;
-        if (userId) {
-          const userData = await users.findById(userId, { savedPosts: 1 });
-          if (userData && userData.savedPosts) {
-            isSaved = userData.savedPosts.some((savedId: any) => 
-              savedId.toString() === post._id.toString()
-            );
-          }
-        }
-        
-        // Remove temp fields
-        const { activityType, actorId, commentId, ...cleanPost } = post;
-        
-        // For reposts, enhance the original post data too
-        if ((post.post_type === postTypeEnum.repost_instant || 
-             post.post_type === postTypeEnum.repost_thought) && 
-            post.originalPost) {
-          
-          // Make sure we have original author info
-          let originalAuthor = post.originalPost.author;
-          if ((!originalAuthor || Object.keys(originalAuthor).length === 0) && post.originalPost.user_id) {
-            originalAuthor = await getFormattedAuthor(post.originalPost.user_id.toString());
-          }
-          
-          post.originalAuthor = originalAuthor;
-          
-          // Handle tagged users in original post
-          if (post.originalPost.tagged_users && post.originalPost.tagged_users.length > 0) {
-            const userIds = await convert_idIntoUser_id(post.originalPost.tagged_users);
-            if (userIds) {
-              post.originalPost.tagged_users = userIds;
-            }
-          }
-        }
-        
-        return {
-          ...cleanPost,
-          author,
-          top_reactions: reactions?.finalArray || [],
-          reactions_count: reactions?.totalCount || 0,
-          comments_count:commentsCount,
-          user_reaction: userReaction?.reaction ?? null,
-          activity_context:activityContext,
-          is_saved:isSaved
-        };
-      })
-    );
-
-    const filteredPosts = enhancedPosts.filter(post => post !== null);
+        // Remove temporary fields
+        delete post.activityType;
+        delete post.activityActor;
+        delete post.commentId;
+      }
+    }
+    
+    // Filter posts based on privacy settings
+    const filteredPosts = enhancedPosts.filter(post => {
+      const isPublicPost = post.public_post === true;
+      const isFromConnection = connectionIds.includes(post.user_id.toString());
+      
+      return (isPublicPost || isFromConnection) && 
+             !(post.author?.accountStatus === accountStatusEnum.private && !isFromConnection);
+    });
+    
+    // Handle pagination
     const hasMorePosts = filteredPosts.length > limit;
     const finalPosts = hasMorePosts ? filteredPosts.slice(0, limit) : filteredPosts;
-    
-    // Calculate next cursor from the last post's date
-    const nextCursor = hasMorePosts && finalPosts.length > 0
-      ? finalPosts[finalPosts.length - 1].date
-      : null;
+    // Calculate next cursor
+    let nextCursor = null;
+    if ((hasMorePosts||hasMoreActivities) && finalPosts.length > 0)  nextCursor = finalPosts[finalPosts.length - 1].date
+    // const nextCursor = hasMorePosts && finalPosts.length > 0
+    //   ? finalPosts[finalPosts.length - 1].date
+    //   : null;
       
-    return { posts: finalPosts, next_cursor:nextCursor };
+    return { posts: finalPosts, next_cursor: nextCursor };
   } catch (err) {
     if (err instanceof Error) {
       throw new Error(`Error fetching posts feed: ${err.message}`);
@@ -771,3 +556,5 @@ export const getPostsCursorBased = async (
     }
   }
 };
+
+
