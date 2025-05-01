@@ -9,15 +9,17 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     const user = await validateTokenAndGetUser(req, res);
     if (!user) return;
 
+    // Create a default subscription object without period dates for free users
     const defaultSubscription = {
       status: 'active',
       plan: 'free',
       subscription_id: null,
       customer_id: null,
-      current_period_start: null,
-      current_period_end: null,
       cancel_at_period_end: false,
-      subscribed: false
+      subscribed: false,
+      canceled_at: null,
+      subscription_started_at: null,
+      // Removed: current_period_start and current_period_end
     };
 
     // If user has a subscription, convert it to a plain object first
@@ -28,13 +30,23 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
         ? (user.subscription as any).toObject() 
         : user.subscription;
       
-      // Ensure all properties from defaultSubscription exist in the final object
+      // Create subscription object with only non-null period dates
       subscription = { 
-        ...defaultSubscription, 
-        ...subscriptionObj 
+        ...defaultSubscription,
+        ...subscriptionObj,
       };
+      
+      // Remove null date fields completely rather than keeping them as null
+      if (subscription.current_period_start === null) {
+        delete subscription.current_period_start;
+      }
+      
+      if (subscription.current_period_end === null) {
+        delete subscription.current_period_end;
+      }
     } else {
       subscription = defaultSubscription;
+      // No need to delete fields as they're not included in defaultSubscription
     }
     
     return res.status(200).json({ subscription });
@@ -43,7 +55,6 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     next(error);
   }
 };
-
 // Create checkout session for premium subscription
 export const createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
