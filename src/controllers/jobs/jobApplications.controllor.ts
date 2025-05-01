@@ -36,7 +36,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
         if (!user) return;
 
         const { job_id } = req.params;
-        const { first_name, last_name, email_address, phone_number, country_code, resume } = req.body;
+        const { first_name, last_name, email, phone_number, country_code, resume } = req.body;
 
         // Validate job_id
         if (!job_id || !mongoose.Types.ObjectId.isValid(job_id)) {
@@ -68,7 +68,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
             user_id: user._id,
             first_name,
             last_name,
-            email_address,
+            email,
             phone_number,
             country_code,
             resume,

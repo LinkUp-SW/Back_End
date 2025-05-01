@@ -14,7 +14,7 @@ export interface jobApplicationsInterface extends mongoose.Document{
     user_id: usersInterface;
     first_name: string;
     last_name: string;
-    email_address: string;
+    email: string;
     phone_number: number;
     country_code: string;
     resume: string;
@@ -26,7 +26,7 @@ const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
     user_id: { type: Schema.Types.ObjectId, ref: "users" },
     first_name: { type: String },
     last_name: { type: String },
-    email_address: { 
+    email: { 
         type: String, 
         validate: {
             validator: function(v: string) {
