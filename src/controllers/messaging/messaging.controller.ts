@@ -271,14 +271,19 @@ const getConversation = asyncHandler(async (req: Request, res: Response, next: N
     throw new CustomError('You cannot send messages to this user', 403);
   }
 
-  // Change conversation type to read
+  // Mark messages as seen for the other user
   if (isUser1) {
-    conversation.user1_conversation_type.push(conversationType.read);
-    conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== 'Unread');
+    conversation.user2_sent_messages.forEach((msg) => {
+      msg.is_seen = true;
+    });
+    conversation.unread_count_user2 = 0; // Reset unread count for user2
   } else {
-    conversation.user2_conversation_type.push(conversationType.read);
-    conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== 'Unread');
+    conversation.user1_sent_messages.forEach((msg) => {
+      msg.is_seen = true;
+    });
+    conversation.unread_count_user1 = 0; // Reset unread count for user1
   }
+
 
   await conversation.save();
 

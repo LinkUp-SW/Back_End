@@ -371,34 +371,69 @@ export class WebSocketService {
   private async markConversationAsRead(socket: Socket, data: { conversationId: string }) {
     try {
       const userId = await this.getUserIdFromSocket(socket.id);
-      if (!userId) throw new CustomError("Unauthorized", 401);
+      if (!userId) {
+        console.error("Mark as read error: User not found for socket", socket.id);
+        throw new CustomError("Unauthorized", 401);
+      }
 
       const { conversationId } = data;
+      if (!conversationId) {
+        throw new CustomError("Conversation ID is required", 400);
+      }
+
+      // Attempt to mark the conversation as read in the repository
       const updated = await this.conversationRepo.markConversationAsRead(conversationId, userId);
       
+      // Proceed only if the repository indicated an update occurred
       if (updated) {
+        console.log(`Conversation ${conversationId} marked as read for user ${userId}`);
+        
+        // Fetch the conversation details to find the other participant
+        // This is necessary to notify the other user
         const conversation = await this.conversationRepo.getConversation(conversationId);
+        if (!conversation) {
+            console.error(`Mark as read error: Conversation ${conversationId} not found after update.`);
+            // Don't throw, as the primary action (marking read) might have succeeded
+            // but we can't notify the other user.
+            return; 
+        }
+
         const otherUserId = conversation.user1_id.toString() === userId 
           ? conversation.user2_id.toString() 
           : conversation.user1_id.toString();
 
-        // Notify other user
+        // Notify the other user if they are online
         const otherUserSocketId = this.userSockets.get(otherUserId);
         if (otherUserSocketId) {
+          console.log(`Notifying user ${otherUserId} (socket ${otherUserSocketId}) that messages in ${conversationId} were read by ${userId}`);
           this.io.to(otherUserSocketId).emit("messages_read", {
             conversationId,
-            readBy: userId
+            readBy: userId // ID of the user who read the messages
           });
+        } else {
+            console.log(`Other user ${otherUserId} is not online, cannot send read notification.`);
         }
 
-        // Update unread count for current user
-        const unreadCount = await this.getUnseenMessagesCount(userId);
-        socket.emit("unread_messages_count", { count: unreadCount });
+        // Update the total unread message count for the requesting user
+        const totalUnreadCount = await this.getUnseenMessagesCount(userId);
+        console.log(`Updating total unread count for user ${userId} to ${totalUnreadCount}`);
+        // Emit the updated *total* unread count back to the user who marked the conversation as read
+        socket.emit("unread_messages_count", { count: totalUnreadCount }); 
+
+      } else {
+        // This might happen if the conversation was already marked as read, 
+        // or if the user wasn't part of the conversation.
+        console.log(`Mark as read for conversation ${conversationId} by user ${userId} resulted in no update.`);
+        // Optionally, still emit the current unread count if needed
+        const totalUnreadCount = await this.getUnseenMessagesCount(userId);
+        socket.emit("unread_messages_count", { count: totalUnreadCount });
       }
     } catch (error) {
       console.error("Mark as read error:", error);
+      // Send a specific error event back to the client
       socket.emit("read_error", {
-        message: error instanceof CustomError ? error.message : "Failed to mark as read"
+        conversationId: data?.conversationId, // Include conversationId if available
+        message: error instanceof CustomError ? error.message : "Failed to mark conversation as read"
       });
     }
   }
