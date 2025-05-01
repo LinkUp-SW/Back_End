@@ -50,6 +50,9 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
                 if (!originalPost) {
                 return res.status(404).json({ message: 'Original post not found' });
                 }
+                if(originalPost.media.media_type=== mediaTypeEnum.post){
+                    return res.status(400).json({ message: 'Cannot repost a repost, on degree of repost to the original post.' });  
+                }
                 processedMedia=media;
                 if (!postType) return res.status(400).json({ message: 'postType is required' });
                 if (
