@@ -50,7 +50,7 @@ export class CommentRepository {
   ) {
     const updateFields: Record<string, any> = {};
     if (content !== undefined) updateFields.content = content;
-    if (media !== undefined) updateFields.media = media;
+    if (media !== null) updateFields.media = media;
     if (taggedUsers !== null) updateFields.tagged_users = taggedUsers;
     // Add is_edited flag when updating
     if (Object.keys(updateFields).length > 0) {
