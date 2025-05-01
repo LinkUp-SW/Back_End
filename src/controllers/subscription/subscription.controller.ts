@@ -9,10 +9,37 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     const user = await validateTokenAndGetUser(req, res);
     if (!user) return;
 
-    return res.status(200).json({
-      subscription: user.subscription || { plan: 'free', status: 'active' }
-    });
+    const defaultSubscription = {
+      status: 'active',
+      plan: 'free',
+      subscription_id: '',
+      customer_id: '',
+      current_period_start: null,
+      current_period_end: null,
+      cancel_at_period_end: false,
+      subscribed: false
+    };
+
+    // If user has a subscription, convert it to a plain object first
+    let subscription;
+    if (user.subscription) {
+      // Convert Mongoose document to plain object 
+      const subscriptionObj = typeof (user.subscription as any).toObject === 'function' 
+        ? (user.subscription as any).toObject() 
+        : user.subscription;
+      
+      // Ensure all properties from defaultSubscription exist in the final object
+      subscription = { 
+        ...defaultSubscription, 
+        ...subscriptionObj 
+      };
+    } else {
+      subscription = defaultSubscription;
+    }
+    
+    return res.status(200).json({ subscription });
   } catch (error) {
+    console.error('Error in getSubscriptionStatus:', error);
     next(error);
   }
 };
