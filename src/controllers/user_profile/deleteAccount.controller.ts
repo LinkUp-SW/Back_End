@@ -2,24 +2,18 @@ import { Request, Response } from 'express';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import { CustomError } from '../../utils/customError.utils.ts';
 import asyncHandler from '../../middleware/asyncHandler.ts';
-import tokenUtils from '../../utils/token.utils.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 
 const userRepository = new UserRepository();
 
 export const deleteAccount = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
-
-    if (!decodedToken || !decodedToken.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
+    let userId = await getUserIdFromToken(req, res);
+    if (!userId) return;
 
     // Delete the user account from the database.
     // This method should delete the user by their ID and return the deleted user data or a confirmation.
-    const deletedUser = await userRepository.deleteAccount(decodedToken.userId);
+    const deletedUser = await userRepository.deleteAccount(userId);
     
     res.status(200).json({
       message: 'Account deleted successfully',

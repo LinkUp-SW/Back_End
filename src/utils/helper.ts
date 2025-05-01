@@ -7,31 +7,23 @@ import cloudinary from "../../config/cloudinary.ts";
 import { extractPublicId } from "../services/cloudinary.service.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
+  let userId = await getUserIdFromToken(req, res);
+  if (!userId) return;
 
-    if (!decodedToken || !decodedToken.userId) {
+    if (userId) {
         res.status(401).json({ message: "Unauthorized" });
         return null;
     }
 
-    const user = await findUserByUserId(decodedToken.userId, res);
+    const user = await findUserByUserId(userId, res);
     return user;
 };
+
 export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string,  targetUser: any } | null> => {
   try{
   // Validate token and extract user ID from the token
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-  const decodedToken = tokenUtils.validateToken(token) as { userId: string };
-
-  if (!decodedToken || !decodedToken.userId) {
-    res.status(401).json({ message: "Unauthorized" });
-    return null;
-  }
-
-  const viewerId = decodedToken.userId;
+  let viewerId = await getUserIdFromToken(req, res);
+  if (!viewerId) return null;
 
   // Validate the user_id parameter from the request
   const userId = await validateUserIdFromRequest(req, res);
