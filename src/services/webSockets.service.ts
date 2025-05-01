@@ -85,6 +85,7 @@ export class WebSocketService {
       
       // Read receipts
       socket.on("mark_as_read", this.markConversationAsRead.bind(this, socket));
+      socket.on("mark_as_unread", this.markConversationOfNewMessageUnread.bind(this, socket)); // Reusing the same function for marking as unread
       
       // Presence
       socket.on("disconnect", () => this.handleDisconnect(socket));
@@ -141,6 +142,68 @@ export class WebSocketService {
     }
   }
 
+  private async markConversationOfNewMessageUnread(socket: Socket, data: { conversationId: string }) {
+    try {
+      const userId = await this.getUserIdFromSocket(socket.id);
+      if (!userId) throw new CustomError("Unauthorized", 401);
+
+      const { conversationId } = data;
+      if (!conversationId) {
+        throw new CustomError("Conversation ID is required", 400);
+      }
+
+      // Attempt to mark the conversation as unread in the repository
+      const updated = await this.conversationRepo.markConversationAsUnread(conversationId, userId);
+      
+      // Proceed only if the repository indicated an update occurred
+      if (updated) {
+        console.log(`Conversation ${conversationId} marked as unread for user ${userId}`);
+        
+        // Fetch the conversation details to find the other participant
+        // This is necessary to notify the other user
+        const conversation = await this.conversationRepo.getConversation(conversationId);
+        if (!conversation) {
+            console.error(`Mark as unread error: Conversation ${conversationId} not found after update.`);
+            return; 
+        }
+
+        const otherUserId = conversation.user1_id.toString() === userId 
+          ? conversation.user2_id.toString() 
+          : conversation.user1_id.toString();
+
+        // Notify the other user if they are online
+        const otherUserSocketId = this.userSockets.get(otherUserId);
+        if (otherUserSocketId) {
+          console.log(`Notifying user ${otherUserId} (socket ${otherUserSocketId}) that messages in ${conversationId} were marked unread by ${userId}`);
+          this.io.to(otherUserSocketId).emit("messages_unread", {
+            conversationId,
+            readBy: userId // ID of the user who marked the messages as unread
+          });
+        } else {
+            console.log(`Other user ${otherUserId} is not online, cannot send unread notification.`);
+        }
+
+        // Update the total unread message count for the requesting user
+        const totalUnreadCount = await this.getUnseenMessagesCount(userId);
+        console.log(`Updating total unread count for user ${userId} to ${totalUnreadCount}`);
+        socket.emit("unread_messages_count", { count: totalUnreadCount }); 
+
+      } else {
+        console.log(`Mark as unread for conversation ${conversationId} by user ${userId} resulted in no update.`);
+        const totalUnreadCount = await this.getUnseenMessagesCount(userId);
+        socket.emit("unread_messages_count",
+          { count: totalUnreadCount });
+      }
+    } catch (error) {
+      console.error("Mark as unread error:", error);
+      socket.emit("unread_error", {
+        conversationId: data?.conversationId, // Include conversationId if available
+        message: error instanceof CustomError ? error.message : "Failed to mark conversation as unread"
+      });
+    }
+  }
+
+
 
   private async handlePrivateMessage(socket: Socket, data: { to: string; message: string; media?: string[] }) {
     try {
@@ -192,19 +255,6 @@ export class WebSocketService {
         mediaUrls,
         mediaTypes
       );
-      
-
-      // Make conversation type as "unread" for reciever 
-      if (conversation.user1_id.toString() === receiverId && !conversation.user1_conversation_type.includes(conversationType.unRead)) {
-        conversation.user1_conversation_type.push(conversationType.unRead);
-        conversation.unread_count_user1 += 1;
-        conversation.user1_conversation_type = conversation.user1_conversation_type.filter(type => type !== conversationType.read);
-      } else if (conversation.user2_id.toString() === receiverId && !conversation.user2_conversation_type.includes(conversationType.unRead)) {
-        conversation.user2_conversation_type.push(conversationType.unRead);
-        conversation.unread_count_user2 += 1;
-        conversation.user2_conversation_type = conversation.user2_conversation_type.filter(type => type !== conversationType.read);
-      }
-      await conversation.save();
   
       // Prepare message object for real-time delivery
       const messageObj = {
@@ -235,9 +285,8 @@ export class WebSocketService {
         // Send message notification if user is online but in different conversation
         await this.sendNotification(msgNotificationData);
         
-        // Update unread count
-        const unreadCount = await this.getUnseenMessagesCount(receiverId);
-        this.io.to(receiverSocketId).emit("unread_messages_count", { count: unreadCount });
+        //Mark the conversation as unread for the recipient
+        this.io.to(receiverSocketId).emit("mark_as_unread", {conversationId: conversation._id.toString()});
       }
   
       // Confirm to sender
