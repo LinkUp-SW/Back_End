@@ -3,7 +3,7 @@ import asyncHandler from '../../middleware/asyncHandler.ts';
 import {getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { findUserByUserId } from '../../utils/database.helper.ts';
 import { reportRepo, ReportRepository } from '../../repositories/report.repository.ts';
-import { contentTypeEnum, reportStatusEnum } from '../../models/reports.model.ts';
+import { adminActionEnum, contentTypeEnum, reportStatusEnum } from '../../models/reports.model.ts';
 import { enhancePost, PostRepository } from '../../repositories/posts.repository.ts';
 import { CommentRepository } from '../../repositories/comment.repository.ts';
 import jobs from '../../models/jobs.model.ts';
@@ -289,12 +289,8 @@ export const resolveReport = asyncHandler(async (req: Request, res: Response, ne
 
 
         const { contentRef, contentType } = req.params;
-        const{
-            adminAction,
-            notes
-        }=req.body;
-    
-        if(!contentRef ||!contentType ||!adminAction ){
+        
+        if(!contentRef ||!contentType){
             return res.status(400).json({ message: 'Required fields missing' });
         }
         if (!Object.values(contentTypeEnum).includes(contentType as contentTypeEnum)) {
@@ -302,6 +298,12 @@ export const resolveReport = asyncHandler(async (req: Request, res: Response, ne
                 message: 'Invalid content type',
                 success: false
             });
+        }
+        let adminAction = adminActionEnum.dismissed;;
+        
+        // Method 1: Check the request method
+        if (req.method === 'DELETE') {
+            adminAction = adminActionEnum.content_removed;
         }
         const reports = await reportRepository.findReportsForContent(contentRef,contentType)
         if (reports.length === 0) {
@@ -318,7 +320,7 @@ export const resolveReport = asyncHandler(async (req: Request, res: Response, ne
                 success: false
             });
         }
-        const result = await reportRepository.resolveContentReports(contentRef,contentType,user._id as string,adminAction,notes)     
+        const result = await reportRepository.resolveContentReports(contentRef,contentType,user._id as string,adminAction)     
         return res.status(200).json({ 
             message: 'Reports resolved successfully',
             success: true,
