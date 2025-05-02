@@ -13,7 +13,7 @@ import { ConnectionRequest } from '../../models/users.model.ts';
  * Searches for posts containing specific text content with cursor-based pagination.
  * 
  * @route GET /api/v1/posts/search
- * @param {string} q - Search query text
+ * @param {string} query - Search query text
  * @param {number} cursor - Timestamp cursor for pagination (Unix timestamp)
  * @param {number} limit - Number of posts to return per page
  * 
@@ -25,7 +25,7 @@ import { ConnectionRequest } from '../../models/users.model.ts';
 export const searchPosts = async (req: Request, res: Response) => {
   try {
     // Get query parameters
-    const query = req.query.q as string;
+    const query = req.query.query as string;
     const cursor = req.query.cursor ? parseInt(req.query.cursor as string) : null;
     const limit = parseInt(req.query.limit as string) || 10;
     
