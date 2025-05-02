@@ -141,7 +141,7 @@ export class WebSocketService {
     }
   }
 
-  private async markConversationOfNewMessageUnread(socket: Socket, data: { conversationId: string }) {
+    private async markConversationOfNewMessageUnread(socket: Socket, data: { conversationId: string }) {
     try {
       const userId = await this.getUserIdFromSocket(socket.id);
       if (!userId) throw new CustomError("Unauthorized", 401);
@@ -151,69 +151,95 @@ export class WebSocketService {
         throw new CustomError("Conversation ID is required", 400);
       }
 
-      //get other userId from the conversation
-      const conversation = await this.conversationRepo.getConversation(conversationId);
-      if (!conversation) {
-        throw new CustomError("Conversation not found", 404);
-      }
-      const otherUserId = conversation.user1_id.toString() === userId
-        ? conversation.user2_id.toString() 
-        : conversation.user1_id.toString();
-
-      // Attempt to mark the conversation as unread in the repository
-      const updated = await this.conversationRepo.markConversationAsUnread(conversationId, otherUserId);
-      
-      // Proceed only if the repository indicated an update occurred
-      if (updated) {
-        console.log(`Conversation ${conversationId} marked as unread for user ${otherUserId}`);
-        
-        // Fetch the conversation details to find the other participant
-        // This is necessary to notify the other user
+      try {
+        //get other userId from the conversation
         const conversation = await this.conversationRepo.getConversation(conversationId);
         if (!conversation) {
-            console.error(`Mark as unread error: Conversation ${conversationId} not found after update.`);
-            return; 
+          throw new CustomError("Conversation not found", 404);
         }
+        const otherUserId = conversation.user1_id.toString() === userId
+          ? conversation.user2_id.toString() 
+          : conversation.user1_id.toString();
 
-        // Notify the other user if they are online
-        const otherUserSocketId = this.userSockets.get(otherUserId);
-        if (otherUserSocketId) {
-          console.log(`Notifying user ${otherUserId} (socket ${otherUserSocketId}) that messages in ${conversationId} were marked unread by ${userId}`);
-          this.io.to(otherUserSocketId).emit("messages_unread", {
-            conversationId,
-            readBy: userId // ID of the user who marked the messages as unread
+        // Attempt to mark the conversation as unread in the repository
+        const updated = await this.conversationRepo.markConversationAsUnread(conversationId, otherUserId);
+        
+        // Proceed only if the repository indicated an update occurred
+        if (updated) {
+          console.log(`Conversation ${conversationId} marked as unread for user ${otherUserId}`);
+          
+          try {
+            // Fetch the conversation details to find the other participant
+            const conversation = await this.conversationRepo.getConversation(conversationId);
+            if (!conversation) {
+                console.error(`Mark as unread error: Conversation ${conversationId} not found after update.`);
+                return; 
+            }
+
+            // Notify the other user if they are online
+            const otherUserSocketId = this.userSockets.get(otherUserId);
+            if (otherUserSocketId) {
+              console.log(`Notifying user ${otherUserId} (socket ${otherUserSocketId}) that messages in ${conversationId} were marked unread by ${userId}`);
+              this.io.to(otherUserSocketId).emit("messages_unread", {
+                conversationId,
+                readBy: userId // ID of the user who marked the messages as unread
+              });
+              
+              // Get the specific unread count for *this* conversation for the requesting user
+              const conversationUnreadCount = conversation.user1_id.toString() === userId 
+                  ? conversation.unread_count_user2 
+                  : conversation.unread_count_user1;
+
+              // Emit the unread count specific to this conversation
+              console.log(`Updating conversation unread count for user ${otherUserId} in conversation ${conversationId} to ${conversationUnreadCount}`);
+              socket.to(otherUserSocketId).emit("conversation_unread_count", { 
+                  conversationId: conversationId, 
+                  count: conversationUnreadCount 
+              });
+            } else {
+                console.log(`Other user ${otherUserId} is not online, cannot send unread notification.`);
+            }
+          } catch (innerError) {
+            console.error("Error notifying user about unread messages:", innerError);
+            // Continue execution - the marking as unread was successful even if notification failed
+          }
+
+          try {
+            // Update the total unread message count for the user
+            const totalUnreadCount = await this.getUnseenMessagesCount(otherUserId);
+            console.log(`Updating total unread count for user ${otherUserId} to ${totalUnreadCount}`);
+            socket.emit("unread_messages_count", { count: totalUnreadCount }); 
+          } catch (countError) {
+            console.error("Error updating unread count:", countError);
+          }
+        } else {
+          console.log(`Mark as unread for conversation ${conversationId} by user ${userId} resulted in no update.`);
+          try {
+            const totalUnreadCount = await this.getUnseenMessagesCount(userId);
+            socket.emit("unread_conversation_count", { count: totalUnreadCount });
+          } catch (countError) {
+            console.error("Error getting unread conversation count:", countError);
+          }
+        }
+      } catch (error) {
+        // Handle database connection errors specifically
+        const dbError = error as { name?: string; code?: string };
+        if (dbError.name === 'MongoNetworkError' || 
+            (dbError.code && (dbError.code === 'ETIMEDOUT' || dbError.code === 'ECONNREFUSED'))) {
+          console.error("MongoDB connection error:", dbError);
+          socket.emit("unread_error", {
+            conversationId: data?.conversationId,
+            message: "Database connection error. Please try again later."
           });
         } else {
-            console.log(`Other user ${otherUserId} is not online, cannot send unread notification.`);
+          // Re-throw other database errors
+          throw error;
         }
-
-        // Get the specific unread count for *this* conversation for the requesting user
-        const conversationUnreadCount = conversation.user1_id.toString() === userId 
-            ? conversation.unread_count_user2 
-            : conversation.unread_count_user1;
-
-        // Emit the unread count specific to this conversation
-        console.log(`Updating conversation unread count for user ${otherUserId} in conversation ${conversationId} to ${conversationUnreadCount}`);
-        socket.to(otherUserSocketId!).emit("conversation_unread_count", { 
-            conversationId: conversationId, 
-            count: conversationUnreadCount 
-        });
-
-        // Update the total unread message count for the requesting user
-        const totalUnreadCount = await this.getUnseenMessagesCount(otherUserId);
-        console.log(`Updating total unread count for user ${otherUserId} to ${totalUnreadCount}`);
-        socket.emit("unread_messages_count", { count: totalUnreadCount }); 
-
-      } else {
-        console.log(`Mark as unread for conversation ${conversationId} by user ${userId} resulted in no update.`);
-        const totalUnreadCount = await this.getUnseenMessagesCount(userId);
-        socket.emit("unread_conversation_count",
-          { count: totalUnreadCount });
       }
     } catch (error) {
       console.error("Mark as unread error:", error);
       socket.emit("unread_error", {
-        conversationId: data?.conversationId, // Include conversationId if available
+        conversationId: data?.conversationId,
         message: error instanceof CustomError ? error.message : "Failed to mark conversation as unread"
       });
     }
