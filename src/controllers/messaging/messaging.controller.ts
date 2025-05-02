@@ -4,6 +4,7 @@ import { CustomError } from '../../utils/customError.utils.ts';
 import { conversationRepository } from '../../repositories/conversation.repository.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import mongoose from 'mongoose';
+import { exists } from 'fs';
 
 const conversationRepo = new conversationRepository();
 const userRepo = new UserRepository();
@@ -56,7 +57,11 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
 
   const conversation = await conversationRepo.findConversationByUsers(user1Id as string, user2ID);
   if (conversation) {
-    return res.status(200).json({ conversationId: conversation._id });
+    // Conversation already exists --> add the message to it
+    if (firstMessage) {
+      await conversationRepo.addMessage(conversation._id, user1Id as string, firstMessage, media, mediaTypes);
+    }
+    return res.status(200).json({ conversationId: conversation._id, conversationExists: true});
   } else {
     const newConversation = await conversationRepo.createConversation(user1Id as string , user2ID);
     if (!newConversation) {
