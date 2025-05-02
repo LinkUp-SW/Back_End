@@ -38,22 +38,21 @@ import postRoutes from './src/routes/posts/posts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
 import createAdminRoutes from './src/routes/admin/createAdmin.routes.ts';
 import comments from './src/routes/posts/comments.routes.ts';
+import reactionRoutes from './src/routes/posts/reactions.routes.ts';
 
 import filterJobsRoutes from './src/routes/jobs/filterJobs.routes.ts';
 import saveJobsRoutes from './src/routes/jobs/saveJobs.routes.ts';
 import getJobsRoutes from './src/routes/jobs/getJobs.routes.ts';
 import searchJobsRoutes from './src/routes/jobs/searchJobs.routes.ts';
-import searchRoutes from './src/routes/organization/search.routes.ts';
+import searchRoutes from './src/routes/organization/utilities.routes.ts';
 import companyProfileRoutes from "./src/routes/organization/companyProfile.routes.ts"
 import companySettingsRoutes from "./src/routes/organization/companySettings.routes.ts"
 import companyJobsRoutes from "./src/routes/organization/companyJobs.routes.ts"
 import companyPostsRoutes from "./src/routes/organization/companyPosts.routes.ts"
+import jobApplicationsRoutes from './src/routes/jobs/jobApplications.routes.ts';
 import aboutUserRoutes from './src/routes/user_profile/about.routes.ts';
-
 import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
 import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts';
-
-
 import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 dotenv.config();
@@ -156,13 +155,17 @@ app.use('/api/v1/jobs',
     saveJobsRoutes,
     getJobsRoutes,
     searchJobsRoutes
-  );
+);
 
+app.use('/api/v1/job-application', 
+    jobApplicationsRoutes
+);
 
-app.use('/api/v1/post',
+app.use('/api/v2/post',
     postRoutes,
     savePostRoutes,
-    comments
+    comments,
+    reactionRoutes
 );
 
 app.use('/api/v1/company',

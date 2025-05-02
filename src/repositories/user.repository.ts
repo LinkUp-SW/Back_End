@@ -525,3 +525,110 @@ export const getPaginatedConnectionsFollowers = async (
     throw new Error("Error fetching paginated connections");
   }
 };
+
+
+export const convertUser_idInto_id = async (
+  userIds: string[] | undefined | null
+): Promise<mongoose.Types.ObjectId[] | undefined> => {
+  if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+    return undefined;
+  }
+  
+  try {
+    // Find all users with the given user_ids
+    const users = await Users.find({ user_id: { $in: userIds } }, { _id: 1, user_id: 1 }).lean();
+    
+    // Create a mapping of user_id to _id
+    const idMap = new Map<string, mongoose.Types.ObjectId>();
+    users.forEach(user => {
+      if (user && user.user_id && user._id) {
+        idMap.set(user.user_id, new mongoose.Types.ObjectId(user._id.toString()));
+      }
+    });
+    
+    // Convert each user_id to _id, filtering out any that weren't found
+    const mongoIds = userIds
+      .map(id => idMap.get(id))
+      .filter((id): id is mongoose.Types.ObjectId => id !== undefined);
+      
+    return mongoIds.length > 0 ? mongoIds : undefined;
+  } catch (error) {
+    console.error("Error converting user_ids to _ids:", error);
+    return undefined;
+  }
+};
+
+export const convert_idIntoUser_id = async (
+  mongoIds: mongoose.Types.ObjectId[] | string[] | undefined | null
+): Promise<string[] | undefined> => {
+  if (!mongoIds || !Array.isArray(mongoIds) || mongoIds.length === 0) {
+    return undefined;
+  }
+  
+  // Ensure all IDs are converted to strings
+  const stringIds = mongoIds.map(id => id.toString());
+  
+  try {
+    // Find all users with the given _ids
+    const users = await Users.find(
+      { _id: { $in: stringIds.map(id => new mongoose.Types.ObjectId(id)) } },
+      { _id: 1, user_id: 1 }
+    ).lean();
+    
+    // Create a mapping of _id to user_id
+    const idMap = new Map<string, string>();
+    users.forEach(user => {
+      if (user && user._id && user.user_id) {
+        idMap.set(user._id.toString(), user.user_id);
+      }
+    });
+    
+    // Convert each _id to user_id, filtering out any that weren't found
+    const userIds = stringIds
+      .map(id => idMap.get(id))
+      .filter((id): id is string => id !== undefined);
+      
+    return userIds.length > 0 ? userIds : undefined;
+  } catch (error) {
+    console.error("Error converting _ids to user_ids:", error);
+    return undefined;
+  }
+};
+
+
+/**
+ * Gets formatted author information from a user document
+ * @param userId - The user ID to fetch author information for
+ * @returns A Promise containing the formatted author object
+ */
+
+
+export async function getFormattedAuthor(userId: string) {
+  try {
+    const userDoc = await Users.findOne(
+      { _id: userId },
+      {
+        user_id: 1,
+        "bio.first_name": 1,
+        "bio.last_name": 1,
+        "bio.headline": 1,
+        profile_photo: 1
+      }
+    ).lean();
+    
+    if (!userDoc) {
+      return null;
+    }
+    
+    return {
+      username: userDoc.user_id,
+      first_name: userDoc.bio?.first_name || "",
+      last_name: userDoc.bio?.last_name || "",
+      headline: userDoc.bio?.headline || "",
+      profile_picture: userDoc.profile_photo || ""
+    };
+  } catch (err) {
+    console.error("Error fetching author info:", err);
+    return null;
+  }
+}

@@ -1,28 +1,34 @@
-import posts from "../models/posts.model.ts";
-import comments from "../models/comments.model.ts";
-import users from "../models/users.model.ts";
+import mongoose, { PipelineStage } from "mongoose";
+import posts, { postsInterface, postTypeEnum } from "../models/posts.model.ts";
+import users, { accountStatusEnum } from "../models/users.model.ts";
+import { getTopReactions, ReactionRepository } from "./reacts.repository.ts";
+import { targetTypeEnum } from "../models/reactions.model.ts";
+import { convert_idIntoUser_id, getFormattedAuthor } from "./user.repository.ts";
+import { CommentRepository, deleteAllComments } from "./comment.repository.ts";
+import { mediaTypeEnum } from "../models/posts.model.ts";
 
 export class PostRepository {
   async create(
-    userId: string,
+    userId: string | null,
     content: string,
     mediaLink: string[] | null,
     mediaType: string | null,
     commentsDisabled: string | null,
     publicPost: boolean | null,
-    taggedUsers: string | null
+    postType: postTypeEnum,
+    taggedUsers?: mongoose.Types.ObjectId[] | undefined,
   ) {
     return posts.create({
-      user_id:userId,
-      content:content,
+      user_id: userId,
+      content: content,
       media: {
               link:mediaLink,
               media_type:mediaType
           },
       comments_disabled:commentsDisabled,
       public_post:publicPost,
-      tagged_users:taggedUsers
-     
+      tagged_users:taggedUsers,
+      post_type:postType,     
     });
   }
 
@@ -31,7 +37,7 @@ export class PostRepository {
     mediaType: string | undefined,
     commentsDisabled: string | null,
     publicPost: boolean| null,
-    taggedUsers: string | null,
+    taggedUsers: mongoose.Types.ObjectId[] | undefined,
   ) {
     const updateFields: any = {};
     if (content!== null) updateFields.content = content;
@@ -42,9 +48,9 @@ export class PostRepository {
     }
     if (commentsDisabled !== null) updateFields.comments_disabled = commentsDisabled;
     if (publicPost !== null) updateFields.public_post = publicPost;
-    if (taggedUsers!== null) updateFields.tagged_users = taggedUsers;
-    if ( content!== null|| mediaLink !== null || mediaType !== undefined || commentsDisabled !== null || publicPost !== null || taggedUsers!== null){
-      updateFields.isEdited=true;
+    if (taggedUsers!== undefined) updateFields.tagged_users = taggedUsers;
+    if ( content!== null|| mediaLink !== null || mediaType !== undefined || commentsDisabled !== null || publicPost !== null || taggedUsers!== undefined){
+      updateFields.is_edited=true;
     }
     
     return posts.findOneAndUpdate(
@@ -54,7 +60,7 @@ export class PostRepository {
     );
   }
 
-  async findByPostId(id: string) {
+  async findByPostId(id: string): Promise<postsInterface | null> {
     return posts.findOne({ _id: id });
   }
 
@@ -65,210 +71,494 @@ export class PostRepository {
     return posts.deleteOne({ _id: id });
   }
 
+
+  async deleteAllRepostsOfPost(repostsIds: string[]) {
+    const repostObjectIds = repostsIds.map(id => new mongoose.Types.ObjectId(id));
+    // Find all reposts for this post first
+    const repostsToDelete = await posts.find({ id: { $in: repostObjectIds }}) as postsInterface[];
+    
+    // For each repost, we need to clean up references from users
+    for (const repost of repostsToDelete) {
+      // Delete reactions and comments for thought-type reposts
+      if (repost.post_type ===  postTypeEnum.repost_thought) {
+        // Use your existing utility functions
+        const repostId = repost._id
+        await mongoose.model('reacts').deleteMany({ target_id: repostId });
+        await deleteAllComments(repostId as string);
+      }
+      
+      // Remove repost references from user activity
+      await users.updateMany(
+        { 'activity.reposted_posts': repost._id },
+        { $pull: { 'activity.reposted_posts': repost._id } }
+      );
+    }
+    
+    // Delete all reposts for this post
+    return posts.deleteMany({ post_id: repostsIds });
+  }
   
 }
+
+
+
+
+/**
+ * Enhances a post with additional metadata like reactions, author info, etc.
+ * Handles both standard posts and reposts (instant or thought)
+ * @param post The post object to enhance
+ * @param userId The ID of the current viewing user
+ * @param userSavedPosts Array of post IDs saved by the user (optional)
+ * @returns Enhanced post with additional metadata
+ */
+export const enhancePost = async (
+  post: any, 
+  userId: string,
+  userSavedPosts?: postsInterface[]
+) => {
+  // Convert to plain object if needed
+  const plainPost = post.toObject ? post.toObject() : post;
+  
+  // Handle tagged users
+  if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
+    const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
+    if (userIds) {
+      plainPost.tagged_users = userIds;
+    }
+  }
+  
+  // Get author information
+  const authorInfo = await getFormattedAuthor(post.user_id);
+  
+  // Check if post is saved by user
+  const isSaved = userSavedPosts ? 
+      userSavedPosts.some(savedPostId => savedPostId.toString() === post._id.toString()) 
+      : false;
+
+  // Initialize reaction variables
+  const reactionRepository = new ReactionRepository();
+  let reactions;
+  let userReaction;
+  let originalPost;
+  let originalAuthorInfo;
+  let commentsCount;
+  const isRepost = plainPost.media?.media_type === mediaTypeEnum.post && 
+                     plainPost.media?.link?.length > 0;
+  // Handle reposts
+  if (isRepost) {
+      const postsRepository = new PostRepository();
+      const originalPostId = plainPost.media.link[0];
+      originalPost = await postsRepository.findByPostId(originalPostId) as postsInterface;
+      if (originalPost.tagged_users && originalPost.tagged_users.length > 0) {
+        const userIds = await convert_idIntoUser_id(originalPost.tagged_users);
+        if (userIds) {
+            originalPost.tagged_users = userIds;
+        }
+    }
+      if (originalPost) {
+          originalAuthorInfo = await getFormattedAuthor(originalPost.user_id);
+          
+          // For instant reposts, get reactions and user reaction from the original post
+          if (post.post_type === postTypeEnum.repost_instant) {
+              reactions = await getTopReactions(originalPostId, targetTypeEnum.post);
+              userReaction = await reactionRepository.getUserReaction(
+                  userId,
+                  originalPostId.toString()
+                );
+              commentsCount=originalPost.comments?.length || 0;
+          } else {
+              // For thought reposts, get reactions from the repost itself
+              reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
+              userReaction = await reactionRepository.getUserReaction(
+                  userId,
+                  post._id.toString()
+                );
+              commentsCount=plainPost.comments?.length || 0;
+          }
+          originalPost = originalPost.toObject ? originalPost.toObject() : originalPost;
+          originalPost={
+            ...originalPost,
+            author:originalAuthorInfo
+          }
+          
+          // Return enhanced repost
+          return {
+              ...plainPost,
+              author: authorInfo,
+              original_post:originalPost,
+              is_saved:isSaved,
+              user_reaction: userReaction?.reaction ?? null,
+              top_reactions: reactions?.finalArray || [],
+              reactions_count: reactions?.totalCount || 0,
+              comments_count: commentsCount,
+              reposts_count: originalPost.reposts?.length || 0
+          };
+      }
+  }
+  // Standard post handling
+  reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
+  userReaction = await reactionRepository.getUserReaction(
+      userId,
+      post._id.toString()
+  );
+  // Return enhanced standard post
+  return {
+      ...plainPost,
+      author: authorInfo,
+      is_saved:isSaved,
+      user_reaction: userReaction?.reaction ?? null,
+      top_reactions: reactions?.finalArray || [],
+      reactions_count: reactions?.totalCount || 0,
+      comments_count: plainPost.comments?.length || 0,
+      reposts_count: plainPost.reposts?.length || 0
+  };
+};
+
+/**
+ * Enhances multiple posts with additional metadata in a batch
+ * @param posts Array of posts to enhance
+ * @param userId The ID of the current viewing user
+ * @param userSavedPosts Array of post IDs saved by the user (optional)
+ * @returns Array of enhanced posts
+ */
+export const enhancePosts = async (
+  posts: any[],
+  userId: string,
+  userSavedPosts?: postsInterface[]
+) => {
+  return Promise.all(posts.map(post => 
+      enhancePost(post, userId, userSavedPosts)
+  ));
+};
+
+
 /**
  * Fetches paginated posts for a user using cursor-based pagination
  * @param savedPosts - Array of post IDs to fetch
  * @param cursor - The position to start fetching from (null for beginning)
  * @param limit - Maximum number of posts to fetch
- * @returns Promise containing the posts and the next cursor position
+ * @returns Promise containing the posts, count, and pagination info
  */
 export const getSavedPostsCursorBased = async (
   savedPosts: string[],
-  cursor: number | null, // Cursor to track the current position
+  cursor: number | null, 
   limit: number
-): Promise<{ posts: any[]; nextCursor: number | null }> => {
-  if (!savedPosts || savedPosts.length === 0) {
-    return { posts: [], nextCursor: null }; // Return an empty result if no saved jobs exist
-  }
-  const postsData: any[] = []; // Array to store fetched posts
-  if (cursor == null) cursor = 0
-  const end = Math.min(cursor + limit, savedPosts.length); // Calculate the end index based on the limit
-
-  for (let i = cursor; i < end; i++) {
-    if (i >= savedPosts.length) {
-      break; // Exit the loop if the array finishes mid-processing
-    }
-    const postId = savedPosts[i];
-    const post = await posts.findOne({ _id: postId }); // Fetch the post by ID
-    if (post) {
-      postsData.push(post); // Add the post to the postsData array
-    }
-  }
-
-  // Determine the next cursor
-  const hasNextPage = end < savedPosts.length; // Check if there are more posts to fetch
-  const nextCursor = hasNextPage ? end : null; // Set the next cursor or null if no more posts
-
-  return { posts: postsData, nextCursor }
-};
-
-/**
- * Fetches paginated comments for a post with their direct replies
- * @param cursor - The position to start fetching root comments from
- * @param limit - Maximum number of root comments to fetch
- * @param postId - The ID of the post to fetch comments for
- * @returns Promise containing the comments, count, and pagination info
- */
-export const getComments = async (
-  cursor: number = 0,
-  limit: number = 10,
-  postId: string,
-): Promise<{ count: number; comments: Record<string, any>; nextCursor: number | null }> => {
+): Promise<{ posts: any[]; next_cursor: number | null }> => {
   try {
-    // Fetch root comments and count in a single aggregation
-    const [rootCommentResults, countResults] = await Promise.all([
-      comments
-        .find({ post_id: postId, parentId: null })
-        .sort({ date: 1 })
-        .skip(cursor)
-        .limit(limit)
-        .lean()
-        .exec(),
-      
-      comments.countDocuments({
-        post_id: postId,
-        parentId: { $exists: false }
-      })
-    ]);
-    const rootComments = rootCommentResults;
-    const totalRootComments = countResults;
-    
-    if (rootComments.length === 0) {
-      return { count: 0, comments: {}, nextCursor: null };
+    if (!savedPosts || savedPosts.length === 0) {
+      return { posts: [], next_cursor: null };
     }
     
-    // Get all root comment IDs for reply fetching
-    const rootCommentIds = rootComments.map(c => c._id.toString());
+    // Convert cursor to number with default value of 0
+    const startIndex = cursor === null ? 0 : cursor;
     
-    // Fetch all replies in one query
-    const allReplies = await comments
-      .find({ parentId: { $in: rootCommentIds } })
-      .sort({ date: 1 })
-      .lean()
-      .exec();
+    // Get total count of saved posts
+    const totalCount = savedPosts.length;
     
-    // Collect all unique user IDs
-    const userIdsToFetch = new Set<string>();
-    for (const comment of rootComments) {
-      userIdsToFetch.add(comment.user_id.toString());
-    }
+    // Calculate the range of posts to fetch
+    const endIndex = Math.min(startIndex + limit, totalCount);
+    const postsToFetch = savedPosts.slice(startIndex, endIndex);
     
-    for (const reply of allReplies) {
-      userIdsToFetch.add(reply.user_id.toString());
-    }
+    // Fetch all the posts in a single query
+    const postsData = await posts.find({ 
+      _id: { $in: postsToFetch } 
+    }).lean();
     
-    // Fetch all users in a single query
-    const userArray = Array.from(userIdsToFetch);
-    const allUsers = await users.find({ _id: { $in: userArray } }).lean();
+    // Extract all unique user IDs
+    const userIds = new Set<string>();
+    postsData.forEach(post => userIds.add(post.user_id.toString()));
     
-    // Create user info map for quick lookups
-    const userInfoMap = new Map();
-    for (const user of allUsers) {
-      userInfoMap.set(user._id.toString(), {
-        username: user.user_id,
-        firstName: user.bio.first_name,
-        lastName: user.bio.last_name,
-        headline: user.bio?.headline,
-        profilePicture: user.profile_photo,
-        connectionDegree: "3rd+"
-      });
-    }
-    
-    // Organize replies by parent comment ID
-    const repliesByParentId = new Map();
-    for (const reply of allReplies) {
-      const parentId = reply.parentId.toString();
-      if (!repliesByParentId.has(parentId)) {
-        repliesByParentId.set(parentId, []);
+    // Create author info map for quick lookups
+    const authorMap = new Map();
+    for (const userId of userIds) {
+      const authorInfo = await getFormattedAuthor(userId);
+      if (authorInfo) {
+        authorMap.set(userId, authorInfo);
       }
-      repliesByParentId.get(parentId).push(reply);
     }
     
-    // Build the result object
-    const result: Record<string, any> = {};
-    
-    for (const rootComment of rootComments) {
-      const rootId = rootComment._id.toString();
-      const rootAuthorInfo = userInfoMap.get(rootComment.user_id.toString());
-      
-      const transformedRootComment = {
-        ...rootComment,
-        media: rootComment.media ? {
-          link: rootComment.media,
-          mediaType: rootComment.media ? 'image' : 'none'
-        } : {
-          link: '',
-          mediaType: 'none'
-        }
-      };
-
-      // Process replies for this root comment
-      const repliesWithAuthors: Record<string, any> = {};
-      const replies = repliesByParentId.get(rootId) || [];
-      
-      for (const reply of replies) {
-        const replyId = reply._id.toString();
-        const replyAuthorInfo = userInfoMap.get(reply.user_id.toString());
-        
-        repliesWithAuthors[replyId] = {
-          ...reply,
-          media: reply.media ? {
-            link: reply.media,
-            mediaType: reply.media ? 'image' : 'none'
-          } : {
-            link: '',
-            mediaType: 'none'
-          },
-          author: replyAuthorInfo
-        };
+    // Enrich posts with author information
+    const enrichedPosts = [];
+    for (const postId of postsToFetch) {
+      const post = postsData.find(p => p._id.toString() === postId.toString());
+      if (post) {
+        const authorInfo = authorMap.get(post.user_id.toString());
+        enrichedPosts.push({
+          ...post,
+          author: authorInfo || null
+        });
       }
-      
-      // Add the root comment with its author and replies
-      result[rootId] = {
-        ...transformedRootComment,
-        author: rootAuthorInfo,
-        children: repliesWithAuthors
-      };
     }
     
-    // Pagination calculation
-    const hasNextPage = cursor + rootComments.length < totalRootComments;
-    const nextCursor = hasNextPage ? cursor + limit : null;
+    // Determine pagination info
+    const hasNextPage = endIndex < totalCount;
+    const nextCursor = hasNextPage ? endIndex : null;
     
-    return {
-      count: rootComments.length,
-      comments: result,
-      nextCursor
+    return { 
+      posts: enrichedPosts, 
+      next_cursor:nextCursor 
     };
   } catch (err) {
     if (err instanceof Error) {
-      throw new Error(`Error fetching comments: ${err.message}`);
+      throw new Error(`Error fetching saved posts: ${err.message}`);
     } else {
-      throw new Error("Error fetching comments: Unknown error");
+      throw new Error("Error fetching saved posts: Unknown error");
     }
   }
 };
+
+
 /**
- * Gets all children comment IDs for a specific comment
- * @param commentId - The ID of the parent comment
- * @returns Promise containing an array of all child comment IDs
+ * Fetches feed showing posts and interactions from connections and following users.
+ * @param userId - The ID of the user viewing the feed
+ * @param connectionIds - The user IDs of direct connections
+ * @param followingIds - The user IDs of people the user follows
+ * @param cursor - The cursor timestamp (Unix timestamp)
+ * @param limit - The number of posts per page
+ * @returns An object containing the posts and the next cursor, if available
  */
-export const getAllCommentChildrenIds = async (commentId: string): Promise<string[]> => {
+export const getPostsCursorBased = async (
+  userId: string | null,
+  connectionIds: string[],
+  followingIds: string[] = [],
+  cursor: number | null, // Unix timestamp 
+  limit: number
+): Promise<{ posts: any[]; next_cursor: number | null }> => {
   try {
-    // Since we only allow one level of replies, we just need to find direct children
-    const directChildren = await comments.find({ parentId: commentId }).lean().exec();
+    // Combine connections and followers, removing duplicates
+    const userIdsToFetch = [...new Set([...connectionIds, ...followingIds])];
     
-    // Map the children to their ID strings
-    const childrenIds = directChildren.map(child => child._id.toString());
+    // Handle empty connections/followers case
+    if (!userIdsToFetch || userIdsToFetch.length === 0) {
+      return { posts: [], next_cursor: null };
+    }
+
+    // Convert string IDs to ObjectIds
+    const userObjectIds = userIdsToFetch.map(id => new mongoose.Types.ObjectId(id));
+    const adjustedLimit = limit * 2; // Request double to account for filtering
     
-    return childrenIds;
+    // Get activity IDs (posts and interactions)
+    const activityQuery: PipelineStage[] = [
+      // start with direct posts
+      { 
+        $match: { 
+          user_id: { $in: userObjectIds }, 
+          ...(cursor ? { date: { $lt: cursor } } : {}) 
+        } 
+      },
+      { 
+        $project: { 
+          _id: 1, 
+          date: 1, 
+          type: { $literal: 'post' }, 
+          actor: '$user_id',
+          postType: '$post_type',
+          originalPost: { 
+            $cond: {
+              if: { $isArray: "$media.link" },
+              then: { $arrayElemAt: ['$media.link', 0] },
+              else: null
+            }
+          } 
+        } 
+      },
+  
+      // reactions on posts 
+      { 
+        $unionWith: {
+          coll: 'reacts',
+          pipeline: [
+            { $match: { user_id: { $in: userObjectIds }, target_type: targetTypeEnum.post, ...(cursor ? { date: { $lt: cursor } } : {}) } },
+            { $project: { _id: '$target_id', date: 1, type: { $literal: 'reaction' }, actor: '$user_id' } }
+          ]
+        } 
+      },
+  
+      // comments on posts
+      { 
+        $unionWith: {
+          coll: 'comments',
+          pipeline: [
+            { $match: { user_id: { $in: userObjectIds }, ...(cursor ? { date: { $lt: cursor } } : {}) } },
+            { $project: { _id: '$post_id', date: 1, type: { $literal: 'comment' }, actor: '$user_id', commentId: '$_id'} }
+          ]
+        } 
+      },
+  
+      // dedupe (keep most-recent activity on the same post)
+      { 
+        $group: {
+          _id: '$_id',                     // post id
+          lastActivity: { $max: '$date' },
+          kind: { $first: '$type' },       // activity type
+          actor: { $first: '$actor' },     // user ID
+          commentId: { $first: '$commentId' },
+          postType: { $first: '$postType' },
+          originalPost: { $first: '$originalPost' }      
+        } 
+      },
+  
+      { $sort: { lastActivity: -1, _id: -1 } },
+      { $limit: adjustedLimit + 1 }        // one extra to know if there's more
+    ];
+    
+    // Execute the first query to get activity IDs
+    const activities = await posts.aggregate(activityQuery).exec();
+    const hasMoreActivities = activities.length > adjustedLimit;
+    // Extract post IDs from activities
+    const postIds = activities.map(a => new mongoose.Types.ObjectId(a._id));
+    
+    // If no posts found, return early
+    if (postIds.length === 0) {
+      return { posts: [], next_cursor: null };
+    }
+    
+    // Get full post data and exclude user's own posts
+    const postsData = await posts.find({ 
+      _id: { $in: postIds },
+      ...(userId ? { user_id: { $ne: userId } } : {})
+    }).lean();
+    
+    // Map post data by ID for quick lookup
+    const postsMap = new Map();
+    postsData.forEach(post => {
+      postsMap.set(post._id.toString(), post);
+    });
+    
+    // Organize posts in activity order and add activity metadata
+    const orderedPosts = [];
+    for (const activity of activities) {
+      const post = postsMap.get(activity._id.toString());
+      if (post) {
+        // Add activity metadata
+        post.activityType = activity.kind;
+        post.activityActor = activity.actor;
+        if (activity.commentId) {
+          post.commentId = activity.commentId;
+        }
+        orderedPosts.push(post);
+      }
+    }
+
+    // Get user's saved posts for the enhancePosts function
+    let userSavedPosts;
+    if (userId) {
+      const userData = await users.findById(userId, { savedPosts: 1 });
+      userSavedPosts = userData?.savedPosts || [];
+    }
+    
+    // Use the enhancePosts function to add all necessary metadata
+    const enhancedPosts = await enhancePosts(
+      orderedPosts,
+      userId || '',
+      userSavedPosts
+    );
+    
+    // Add activity context to enhanced posts
+    const actorIds = new Set<string>();
+    enhancedPosts.forEach(post => {
+      if (post.activityType !== 'post' && post.activityActor) {
+        actorIds.add(post.activityActor.toString());
+      }
+    });
+    
+    // If we have actors, fetch their data
+    if (actorIds.size > 0) {
+      const actorData = await users.find(
+        { _id: { $in: Array.from(actorIds).map(id => new mongoose.Types.ObjectId(id)) } },
+        { _id: 1, user_id: 1, 'bio.first_name': 1, 'bio.last_name': 1, profile_photo: 1 }
+      ).lean();
+      
+      // Create actor info map
+      const actorMap = new Map();
+      actorData.forEach(actor => {
+        actorMap.set(actor._id.toString(), {
+          name: `${actor.bio?.first_name || ''} ${actor.bio?.last_name || ''}`.trim() || actor.user_id,
+          id: actor._id,
+          username: actor.user_id,
+          profilePicture: actor.profile_photo 
+        });
+      });
+      
+      // Add activity context to each post
+      for (const post of enhancedPosts) {
+        if (post.activityType !== 'post' && post.activityActor) {
+          const actorInfo = actorMap.get(post.activityActor.toString());
+          if (actorInfo) {
+            post.activity_context = {
+              type: post.activityType,
+              actor_name: actorInfo.name,
+              actor_username: actorInfo.username,
+              actor_id: actorInfo.id,
+              actor_picture: actorInfo.profilePicture
+            };
+            
+            // Add specific context for reactions
+            if (post.activityType === 'reaction') {
+              const reactionRepository = new ReactionRepository();
+              const reaction = await reactionRepository.getUserReaction(
+                post.activityActor.toString(),
+                post._id.toString()
+              );
+              
+              if (reaction) {
+                post.activity_context.type = reaction.reaction;
+              }
+            }
+            
+            // Add comment data for comment activities
+            if (post.activityType === 'comment' && post.commentId) {
+              const commentRepository = new CommentRepository();
+              const comment = await commentRepository.findById(post.commentId);
+              if (comment) {
+                const plainComment = comment.toObject ? comment.toObject() : comment;
+                const {finalArray, totalCount} = await getTopReactions(post.commentId, targetTypeEnum.comment);
+                const author = await getFormattedAuthor(comment.user_id.toString());
+                post.activity_context.comment = {
+                  ...plainComment, 
+                  top_reactions: finalArray,
+                  reactions_count: totalCount, 
+                  author
+                };
+              }
+            }
+          }
+        }
+        
+        // Remove temporary fields
+        delete post.activityType;
+        delete post.activityActor;
+        delete post.commentId;
+      }
+    }
+    
+    // Filter posts based on privacy settings
+    const filteredPosts = enhancedPosts.filter(post => {
+      const isPublicPost = post.public_post === true;
+      const isFromConnection = connectionIds.includes(post.user_id.toString());
+      
+      return (isPublicPost || isFromConnection) && 
+             !(post.author?.accountStatus === accountStatusEnum.private && !isFromConnection);
+    });
+    
+    // Handle pagination
+    const hasMorePosts = filteredPosts.length > limit;
+    const finalPosts = hasMorePosts ? filteredPosts.slice(0, limit) : filteredPosts;
+    // Calculate next cursor
+    let nextCursor = null;
+    if ((hasMorePosts||hasMoreActivities) && finalPosts.length > 0)  nextCursor = finalPosts[finalPosts.length - 1].date
+    // const nextCursor = hasMorePosts && finalPosts.length > 0
+    //   ? finalPosts[finalPosts.length - 1].date
+    //   : null;
+      
+    return { posts: finalPosts, next_cursor: nextCursor };
   } catch (err) {
     if (err instanceof Error) {
-      throw new Error(`Error fetching comment children: ${err.message}`);
+      throw new Error(`Error fetching posts feed: ${err.message}`);
     } else {
-      throw new Error("Error fetching comment children: Unknown error");
+      throw new Error("Error fetching posts feed: Unknown error");
     }
   }
 };
+
+

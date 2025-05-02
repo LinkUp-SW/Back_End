@@ -21,4 +21,7 @@ router.put('/privacy-settings/messaging-requests', privacySettings.updateMessagi
 
 router.get('/privacy-settings/read-receipts', privacySettings.getReadReceiptsSetting);
 router.put('/privacy-settings/read-receipts', privacySettings.updateReadReceiptsSetting);
+
+// // Route to get all privacy settings
+router.get('/privacy-settings', privacySettings.getAllPrivacySettings);
 export default router;

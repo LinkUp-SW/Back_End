@@ -3,6 +3,7 @@ import users from '../models/users.model.ts';
 import organizations from '../models/organizations.model.ts';
 import { Response } from 'express';
 import { profile } from 'console';
+import privacy_settings from '../models_to_delete/privacy_settings.model.ts';
 
 /**
  * User Search Service
@@ -252,35 +253,85 @@ if (connectionDegree !== 'all') {
       connectionCondition = {
         _id: { $in: Array.from(secondDegreeConnections).map(id => new mongoose.Types.ObjectId(id)) }
       };
-    } else if (connectionDegree === '3rd+') {
-      // Third degree+: Include users who are neither 1st nor 2nd degree connections
-      // Create combined array of IDs to exclude
-      const allNetworkConnectionIds = [
-        ...viewerConnections,
-        ...Array.from(secondDegreeConnections)
-      ];
-      
-      // Ensure we have valid MongoDB ObjectIds for the exclusion
-      const exclusionIds = allNetworkConnectionIds
-        .filter(id => id) // Remove any null/undefined values
-        .map(id => {
-          try {
-            return new mongoose.Types.ObjectId(id);
-          } catch (e) {
-            console.warn(`Invalid ID format for exclusion: ${id}`);
-            return null;
-          }
-        })
-        .filter(id => id); // Remove any failed conversions
-      
-      // Apply the exclusion filter
-      connectionCondition = {
-        _id: { $nin: exclusionIds }
-      };
-      
-      // Debug logging to verify what we're excluding
-      console.log(`Excluding ${exclusionIds.length} connections from 3rd+ results`);
+    } // Update this section in your connection filtering logic:
+
+   // Replace your existing 3rd+ filtering logic with this improved version
+else if (connectionDegree === '3rd+') {
+  console.log("Applying 3rd+ degree filter");
+
+  const refreshedFirstDegreeUsers = await users.find(
+    { _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) } },
+    { connections: 1 }
+  ).lean();
+  
+  secondDegreeConnections = new Set();
+  
+  // Rebuild the complete set of second-degree connections
+  refreshedFirstDegreeUsers.forEach(connUser => {
+    if (Array.isArray(connUser.connections)) {
+      connUser.connections.forEach(secondConn => {
+        const secondConnId = typeof secondConn === 'object' && secondConn._id 
+          ? secondConn._id.toString() 
+          : typeof secondConn === 'string' ? secondConn : String(secondConn);
+        
+        // Only add if not already a 1st degree connection and not the viewer
+        if (!viewerConnections.includes(secondConnId) && secondConnId !== viewerUserId) {
+          secondDegreeConnections.add(secondConnId);
+        }
+      });
     }
+  });
+  
+  console.log(`Identified ${secondDegreeConnections.size} 2nd-degree connections`);
+  
+  const usersWithMutuals = await users.aggregate([
+    { $match: { _id: { $ne: viewerObjectId } } },
+    { $unwind: "$connections" },
+    {
+      $addFields: {
+        connectionId: {
+          $toString: {
+            $cond: {
+              if: { $eq: [{ $type: "$connections" }, "object"] },
+              then: "$connections._id",
+              else: "$connections"
+            }
+          }
+        }
+      }
+    },
+    { $match: { connectionId: { $in: viewerConnections } } },
+    { $group: { _id: "$_id" } }
+  ]);
+
+  const mutualUsersIds = usersWithMutuals.map(u => u._id.toString());
+  console.log(`Found ${mutualUsersIds.length} users with mutual connections`);
+  
+  const allExclusionIds = [
+    ...viewerConnections, 
+    ...Array.from(secondDegreeConnections),
+    ...mutualUsersIds
+  ];
+  
+  // Remove duplicates
+  const uniqueExclusionIds = [...new Set(allExclusionIds)]
+    .filter(Boolean)
+    .map(id => {
+      try {
+        return new mongoose.Types.ObjectId(id);
+      } catch (e) {
+        console.warn(`Invalid ID format: ${id}`);
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  connectionCondition = {
+    _id: { $nin: uniqueExclusionIds }
+  };
+  
+  console.log(`Excluding ${uniqueExclusionIds.length} users from 3rd+ results`);
+}
   }
     
     // Search conditions based on filter
@@ -354,7 +405,8 @@ if (connectionDegree !== 'all') {
           profile_photo: 1,
           connections: 1,
           currentWorkplace: { $arrayElemAt: ['$workOrganizations.name', 0] },
-          currentEducation: { $arrayElemAt: ['$educationOrganizations.name', 0] }
+          currentEducation: { $arrayElemAt: ['$educationOrganizations.name', 0] },
+          privacy_settings: 1
         }
       },
       // Sort by most relevant 
@@ -383,16 +435,7 @@ if (connectionDegree !== 'all') {
     // Process each result with mutual connections info
     const formattedResultsWithPromises = results.map(async user => {
       // Calculate connection degree for this user
-      let connectionDegreeLabel = '';
-      
-      if (viewerConnections.includes(user._id.toString())) {
-        connectionDegreeLabel = '1st';
-      } else if (secondDegreeConnections.has(user._id.toString())) {
-        connectionDegreeLabel = '2nd';
-      }
-      else {
-        connectionDegreeLabel = '3rd+';
-      }
+      // Connection degree will be determined later based on mutual connections
       
       // Extract user's connection IDs for mutual calculations
       interface ConnectionObject {
@@ -402,20 +445,36 @@ if (connectionDegree !== 'all') {
       
       type Connection = ConnectionObject | string | unknown;
       
-      const userConnections: string[] = Array.isArray(user.connections) 
-        ? user.connections.map((conn: Connection) => 
-          typeof conn === 'object' && conn !== null && '_id' in conn 
-            ? ((conn as ConnectionObject)._id).toString() 
-            : typeof conn === 'string' ? conn : String(conn)
-          ) 
-        : [];
-        
-      // Find mutual connections (intersection of sets)
-      const mutualConnectionIds = viewerConnections.filter(id => 
-        userConnections.includes(id)
-      );
-      
-      const mutualCount = mutualConnectionIds.length;
+     // Replace the connection degree calculation with this more accurate version
+
+// First determine mutual connections
+const userConnections: string[] = Array.isArray(user.connections) 
+? user.connections.map((conn: Connection) => 
+    typeof conn === 'object' && conn !== null && '_id' in conn 
+      ? ((conn as ConnectionObject)._id).toString() 
+      : typeof conn === 'string' ? conn : String(conn)
+  ) 
+: [];
+  
+// Find mutual connections (intersection of sets)
+const mutualConnectionIds = viewerConnections.filter(id => 
+userConnections.includes(id)
+);
+
+const mutualCount = mutualConnectionIds.length;
+
+// Then determine connection degree based partly on mutual connections
+let connectionDegreeLabel = '';
+
+if (viewerConnections.includes(user._id.toString())) {
+connectionDegreeLabel = '1st';
+} else if (mutualCount > 0 || secondDegreeConnections.has(user._id.toString())) {
+// Either they're in the calculated 2nd degree set
+// OR they have mutual connections with viewer (which makes them 2nd degree by definition)
+connectionDegreeLabel = '2nd';
+} else {
+connectionDegreeLabel = '3rd+';
+}
       
       // Get name of one mutual connection if any exist
       let mutualConnectionName = '';
@@ -452,12 +511,19 @@ if (connectionDegree !== 'all') {
 
         },
         is_in_sent_connections: viewerSentConnections.includes(user._id.toString()),
-        is_in_received_connections: viewerReceivedConnections.includes(user._id.toString())
+        is_in_received_connections: viewerReceivedConnections.includes(user._id.toString()),
+        is_connect_by_email: user.privacy_settings?.flag_who_can_send_you_invitations === 'email' ? true : false,
       };
     });
     
     // Resolve all promises
     const formattedResults = await Promise.all(formattedResultsWithPromises);
+
+    let nextPage = null;
+    if (total > skip + formattedResults.length) {
+      // There are more results available, set nextPage to the next page number
+      nextPage = safePage + 1;
+    }
     
     return {
       people: formattedResults,
@@ -465,7 +531,8 @@ if (connectionDegree !== 'all') {
         total,
         page: safePage,
         limit: safeLimit,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit),
+        nextCursor: nextPage
       }
     };
   } catch (error) {

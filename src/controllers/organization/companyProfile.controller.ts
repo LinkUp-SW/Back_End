@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import organizations from "../../models/organizations.model.ts";
 import users from "../../models/users.model.ts";
+import jobs from "../../models/jobs.model.ts"; 
 import { validateTokenAndGetUser } from "../../utils/helperFunctions.utils.ts";
-import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
+import { getCompanyProfileById, validateUserIsCompanyAdmin, handleLogoUpload } from "../../utils/helper.ts";
 
 export const createCompanyProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -10,12 +11,22 @@ export const createCompanyProfile = async (req: Request, res: Response, next: Ne
         if (!user) return;
 
         const { name, category_type, website, logo, description, industry, location, size, type } = req.body;
+        
+        // Handle logo upload
+        let logoUrl;
+        try {
+            logoUrl = await handleLogoUpload(logo);
+        } catch (uploadError) {
+            console.error("Error uploading logo:", uploadError);
+            res.status(500).json({ message: "Error uploading company logo" });
+            return;
+        }
 
         const newCompanyProfile = new organizations({
             name,
             category_type,
             website,
-            logo,
+            logo: logoUrl,
             description,
             industry,
             location,
@@ -25,6 +36,8 @@ export const createCompanyProfile = async (req: Request, res: Response, next: Ne
         });
 
         await newCompanyProfile.save();
+
+        user.organizations.push(newCompanyProfile);
 
         res.status(201).json({ message: "Company profile created successfully", companyProfile: newCompanyProfile });
     } catch (error) {
@@ -49,13 +62,23 @@ export const updateCompanyProfile = async (req: Request, res: Response, next: Ne
 
         const { name, category_type, website, logo, description, industry, location, tagline, size, type, phone } = req.body;
 
+        // Handle logo upload with existing logo for replacement
+        let logoUrl;
+        try {
+            logoUrl = await handleLogoUpload(logo, companyProfile.logo);
+        } catch (uploadError) {
+            console.error("Error uploading logo:", uploadError);
+            res.status(500).json({ message: "Error uploading company logo" });
+            return;
+        }
+
         const updatedCompanyProfile = await organizations.findByIdAndUpdate(
             companyId,
             {
                 name,
                 category_type,
                 website,
-                logo,
+                logo: logoUrl,
                 description,
                 industry,
                 location,
@@ -95,9 +118,16 @@ export const deleteCompanyProfile = async (req: Request, res: Response, next: Ne
             { $pull: { organizations: companyId } }
         );
 
+        // Delete all jobs associated with this organization
+        const deletedJobs = await jobs.deleteMany({ organization_id: companyId });
+        
+        // Delete the organization
         await organizations.findByIdAndDelete(companyId);
 
-        res.status(200).json({ message: "Company profile deleted successfully" });
+        res.status(200).json({ 
+            message: "Company profile deleted successfully", 
+            deletedJobsCount: deletedJobs.deletedCount 
+        });
     } catch (error) {
         next(error);
     }

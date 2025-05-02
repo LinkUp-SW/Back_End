@@ -137,9 +137,12 @@ export const getSavedJobs = async (req: Request, res: Response, next: NextFuncti
         const cursor = req.query.cursor as string || null;
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
         
-        // Query jobs using IDs from saved_jobs
+        // Query jobs using IDs from saved_jobs and filter to only open jobs
         const result = await paginatedJobQuery(
-            { _id: { $in: savedJobIds } },
+            { 
+                _id: { $in: savedJobIds },
+                job_status: "Open"
+            },
             cursor,
             limit,
             { _id: -1 },

@@ -3,10 +3,13 @@ import { findUserByUserId } from '../../utils/database.helper.ts';
 import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import comments from '../../models/comments.model.ts';
-import { getAllCommentChildrenIds, getComments, PostRepository } from '../../repositories/posts.repository.ts';
-import posts, { commentsEnum } from '../../models/posts.model.ts';
+import { PostRepository } from '../../repositories/posts.repository.ts';
+import posts, { commentsEnum, postTypeEnum } from '../../models/posts.model.ts';
 import mongoose from 'mongoose';
 import users from '../../models/users.model.ts';
+import { CommentRepository, getAllCommentChildrenIds, getComments, getReplies } from '../../repositories/comment.repository.ts';
+import { convert_idIntoUser_id, convertUser_idInto_id } from '../../repositories/user.repository.ts';
+import { deleteCommentReactions } from '../../repositories/reacts.repository.ts';
 
 /**
  * Create new comment under a post
@@ -17,10 +20,9 @@ import users from '../../models/users.model.ts';
 
 const createComment = async (req: Request, res: Response): Promise<Response | void> =>{
     try {
-
+        const post_id =req.params.postId;
         const {
-            post_id,
-            comment_id,
+            parent_id,
             content,
             media,
             tagged_users
@@ -33,9 +35,14 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
             return res.status(400).json({message:'Required fields missing' })
         }
         const postRepository = new PostRepository;
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: 'Post does not exist' });
+        }
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
         if (post.comments_disabled == commentsEnum.connections_only){
             if (!Array.isArray(user.connections) || 
@@ -52,12 +59,12 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
             processedMedia = await processPostMediaArray(media);
         }
         const firstMedia = processedMedia && processedMedia.length > 0 ? processedMedia[0] : null;
-        if (comment_id !== null) {
-            const parentComment = await comments.findById(comment_id);
+        if (parent_id !== null) {
+            const parentComment = await comments.findById(parent_id);
             if (!parentComment) {
                 return res.status(404).json({ message: 'Parent comment not found' });
             }
-            if (!post.comments || !post.comments.some(comment => (comment._id as mongoose.Types.ObjectId).toString() === comment_id)) {
+            if (!post.comments || !post.comments.some(comment => (comment._id as mongoose.Types.ObjectId).toString() === parent_id)) {
                 return res.status(404).json({ message: 'Comment not found' });
             }
             if (parentComment.parentId) {
@@ -66,21 +73,32 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
                 });
             }
         }
-    
-        const comment = await comments.create({
-            post_id:post_id,
-            parentId:comment_id,
-            user_id:user._id!.toString(),
-            content:content,
-            media:firstMedia,
-            tagged_users:tagged_users
-        })
-        await comment.save();
-        user.activity.comments.push(comment);
+        let converted_id;
+        if (tagged_users)
+        { converted_id = await convertUser_idInto_id(tagged_users);}
+        const commentRepository= new CommentRepository;
+        const result = await commentRepository.create(
+            user,
+            post_id,
+            content,
+            parent_id,
+            firstMedia,
+            converted_id
+        )
+        const commentDoc = await result.comment;
+        await commentDoc.save();
+        user.activity.comments.push(commentDoc);
         await user.save();
-        post.comments.push(comment);
+        post.comments.push(commentDoc);
         await post.save();
-        return res.status(200).json({message:'comment successfully created', commentId:comment._id });
+        const plainComment = commentDoc.toObject ? commentDoc.toObject() : commentDoc;
+        if (plainComment.tagged_users && plainComment.tagged_users.length > 0) {
+            const userIds = await convert_idIntoUser_id(plainComment.tagged_users);
+            if (userIds) {
+                plainComment.tagged_users = userIds;
+            }
+        }
+        return res.status(200).json({message:'comment successfully created', comment:{...plainComment,author:result.author}});
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message,success:false });
@@ -94,9 +112,9 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
 
 const updateComments = async (req: Request, res: Response): Promise<Response | void> => {
     try {
+        const post_id =req.params.postId;
+        const comment_id =req.params.commentId;
         const {
-            post_id,
-            comment_id,
             content,
             media,
             tagged_users
@@ -112,9 +130,15 @@ const updateComments = async (req: Request, res: Response): Promise<Response | v
         }
 
         const postRepository = new PostRepository;
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: 'Post does not exist' });
+        }
+
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
 
         const existingComment = await comments.findById(comment_id);
@@ -132,22 +156,21 @@ const updateComments = async (req: Request, res: Response): Promise<Response | v
             const mediaArray = await processPostMediaArray(preMediaArray);
             const filteredMedia = mediaArray ? mediaArray.filter((item): item is string => item !== undefined) : null;
             processedMedia = filteredMedia && filteredMedia.length > 0 ? filteredMedia[0] : null;
-        }
-
-        const updateFields: any = {};
-        if (content !== null) updateFields.content = content;
-        if (processedMedia !== null) updateFields.media = processedMedia;
-        if (tagged_users !== null) updateFields.tagged_users = tagged_users;
-        updateFields.is_edited = true;
-        
-        const updatedComment = await comments.findOneAndUpdate(
-            { _id: comment_id },
-            { $set: updateFields },
-            { new: true, upsert: false }
-        );
+        } else if (media !== undefined) processedMedia=media;
+        let converted_id;
+        if (tagged_users)
+        { converted_id = await convertUser_idInto_id(tagged_users);}
+       const commentRepository=new CommentRepository;
+       const updatedComment = await commentRepository.update(comment_id,content,processedMedia,converted_id);
         
         if (!updatedComment) {
             return res.status(404).json({ message: 'Failed to update comment' });
+        }
+        if (updatedComment.tagged_users && updatedComment.tagged_users.length > 0) {
+            const userIds = await convert_idIntoUser_id(updatedComment.tagged_users);
+            if (userIds) {
+                updatedComment.tagged_users = userIds;
+            }
         }
 
         return res.status(200).json({ 
@@ -168,22 +191,27 @@ const getCommentsController = async (req: Request, res: Response) => {
         const post_id =req.params.postId;
         const cursor = parseInt(req.query.cursor as string) || 0;
         const limit = parseInt(req.query.limit as string) || 10;
-        
+        const replyLimit = req.query.replyLimit !== undefined ? 
+            parseInt(req.query.replyLimit as string) : 2;
         let userId = await getUserIdFromToken(req,res);
         if (!userId) return;
         const user = await findUserByUserId(userId,res);
         if (!user) return;
-        if (!post_id || !limit) {
+        if (!post_id || limit === undefined || replyLimit === undefined) {
             return res.status(400).json({ error: "Required fields missing" });
         }
         const postRepository = new PostRepository();
-        const post = await postRepository.findByPostId(post_id);
+        let post = await postRepository.findByPostId(post_id);
         if (!post) {
             return res.status(404).json({ message: "Post does not exist" });
         }
-        console.log(post_id);
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
+        }
         // Call the getComments function
-        const result = await getComments(cursor, limit, post_id);
+        const result = await getComments(cursor, limit, post_id,replyLimit,user._id!.toString());
     
         // Return the result as a JSON response
         res.status(200).json(result);
@@ -192,83 +220,126 @@ const getCommentsController = async (req: Request, res: Response) => {
         res.status(500).json({ error: "An error occurred while fetching comments" });
         }
     };
-
-    const deleteComment = async (req: Request, res: Response) => {
+    const getRepliesController = async (req: Request, res: Response) => {
         try {
-            const { comment_id } = req.body;
-            
-            let userId = await getUserIdFromToken(req, res);
+            const post_id =req.params.postId;
+            const comment_id =req.params.commentId;
+            const cursor = parseInt(req.query.cursor as string) || 0;
+            const replyLimit = req.query.replyLimit !== undefined ? 
+                parseInt(req.query.replyLimit as string) : 2;
+            let userId = await getUserIdFromToken(req,res);
             if (!userId) return;
-            const user = await findUserByUserId(userId, res);
+            const user = await findUserByUserId(userId,res);
             if (!user) return;
-            
-            if (!comment_id) {
-                return res.status(400).json({ error: "Comment ID is required" });
+            if (!post_id || !comment_id || replyLimit === undefined) {
+                return res.status(400).json({ error: "Required fields missing" });
             }
-            
-            const comment = await comments.findById(comment_id);
-            if (!comment) {
-                return res.status(404).json({ error: "Comment does not exist" });
+            const postRepository = new PostRepository();
+            const post = await postRepository.findByPostId(post_id);
+            if (!post) {
+                return res.status(404).json({ message: "Post does not exist" });
             }
-            
-            if (String(user._id) !== String(comment.user_id)) {
-                return res.status(401).json({ error: "Not authorized to delete this comment" });
+            // Call the getComments function
+            const result = await getReplies(comment_id, cursor, replyLimit);
+        
+            // Return the result as a JSON response
+            res.status(200).json(result);
+            } catch (error) {
+            console.error("Error in getCommentsController:", error);
+            res.status(500).json({ error: "An error occurred while fetching comments" });
             }
-            
-            // Get all direct reply IDs (only one level)
-            const replyIds = await getAllCommentChildrenIds(comment_id);
-            
-            const postId = comment.post_id;            
+        };
+    
+const deleteComment = async (req: Request, res: Response) => {
+    try {
+        let post_id =req.params.postId;
+        const comment_id =req.params.commentId;
+        
+        let userId = await getUserIdFromToken(req, res);
+        if (!userId) return;
+        const user = await findUserByUserId(userId, res);
+        if (!user) return;
+        
+        if (!comment_id || !post_id) {
+            return res.status(400).json({ error: "Required parameters are missing" });
+        }
+        const postRepository = new PostRepository;
+        let post = await postRepository.findByPostId(post_id);
+        if (!post) {
+            return res.status(404).json({ message: 'Post does not exist' });
+        }
+
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost){
+                post=orignalPost;
+                post_id=orignalPost._id!.toString();
+            }
+            else return res.status(404).json({ message: 'Original post does not exist' });
+        }
+
+        const comment = await comments.findById(comment_id);
+        if (!comment) {
+            return res.status(404).json({ error: "Comment does not exist" });
+        }
+        
+        if (String(user._id) !== String(comment.user_id)) {
+            return res.status(401).json({ error: "Not authorized to delete this comment" });
+        }
+        
+        // Get all direct reply IDs (only one level)
+        const replyIds = await getAllCommentChildrenIds(comment_id);
+        await deleteCommentReactions(comment_id);
+        await posts.updateOne(
+            { _id: post_id },
+            { $pull: { comments: comment_id } }
+        );
+        if (replyIds.length > 0) {
             await posts.updateOne(
-                { _id: postId },
-                { $pull: { comments: comment_id } }
+                { _id: post_id },
+                { $pull: { comments:  { $in: replyIds }  } }
             );
-            if (replyIds.length > 0) {
-                await posts.updateOne(
-                    { _id: postId },
-                    { $pull: { comments:  { $in: replyIds }  } }
+        }
+        await user.updateOne({ $pull: { 'activity.comments': comment_id } });
+        if (replyIds.length > 0) {
+            const childComments = await comments.find({ _id: { $in: replyIds } });
+            
+            // Collect unique user IDs who created the replies
+            const replyUserIds = [...new Set(childComments.map(c => c.user_id.toString()))];
+            
+            // For each user, remove their comments from activity
+            for (const replyUserId of replyUserIds) {
+                // Get comments by this user that are being deleted
+                const userReplyIds = childComments
+                    .filter(c => c.user_id.toString() === replyUserId)
+                    .map(c => c._id);
+                
+                // Remove these comments from user's activity
+                await users.updateOne(
+                    { _id: replyUserId },
+                    { $pull: { 'activity.comments': { $in: userReplyIds }  } }
                 );
             }
-            await user.updateOne({ $pull: { 'activity.comments': comment_id } });
-            if (replyIds.length > 0) {
-                const childComments = await comments.find({ _id: { $in: replyIds } });
-                
-                // Collect unique user IDs who created the replies
-                const replyUserIds = [...new Set(childComments.map(c => c.user_id.toString()))];
-                
-                // For each user, remove their comments from activity
-                for (const replyUserId of replyUserIds) {
-                    // Get comments by this user that are being deleted
-                    const userReplyIds = childComments
-                        .filter(c => c.user_id.toString() === replyUserId)
-                        .map(c => c._id);
-                    
-                    // Remove these comments from user's activity
-                    await users.updateOne(
-                        { _id: replyUserId },
-                        { $pull: { 'activity.comments': { $in: userReplyIds }  } }
-                    );
-                }
-            }
-
-            await comments.deleteOne({ _id: comment_id });
-            
-            // Delete all replies if any exist
-            if (replyIds.length > 0) {
-                await comments.deleteMany({ _id: { $in: replyIds } });
-            }
-            
-            // Update user activity
-           
-            return res.status(200).json({
-                message: "Comment deleted successfully", 
-                deletedReplies: replyIds.length
-            });
-        } catch (error) {
-            console.error("Error in deleteComment:", error);
-            res.status(500).json({ 
-                error: "An error occurred while deleting the comment" 
-            });
         }
-    };
-export {createComment,updateComments,getCommentsController,deleteComment};
+
+        await comments.deleteOne({ _id: comment_id });
+        
+        // Delete all replies if any exist
+        if (replyIds.length > 0) {
+            await comments.deleteMany({ _id: { $in: replyIds } });
+        }
+        
+        // Update user activity
+        
+        return res.status(200).json({
+            message: "Comment deleted successfully", 
+            deletedReplies: replyIds.length
+        });
+    } catch (error) {
+        console.error("Error in deleteComment:", error);
+        res.status(500).json({ 
+            error: "An error occurred while deleting the comment" 
+        });
+    }
+};
+export {createComment,updateComments,getCommentsController,deleteComment,getRepliesController};

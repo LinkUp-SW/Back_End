@@ -1,8 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
 import organizations from "../../models/organizations.model.ts";
-import users from "../../models/users.model.ts"; // Add this import
+import users, { usersInterface } from "../../models/users.model.ts"; // Add this import
 import { getCompanyProfileById, validateUserIsCompanyAdmin } from "../../utils/helper.ts";
+import mongoose from "mongoose"; // Import mongoose
+import jobs from "../../models/jobs.model.ts"; // Import jobs model
 
 export const makeAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -200,6 +202,15 @@ export const blockFollower = async (req: Request, res: Response, next: NextFunct
         const organizationWithFollowers = await organizations.findById(organization_id).populate("followers");
         if (!organizationWithFollowers) return;
             
+        // Check if follower is also an admin
+        const isFollowerAnAdmin = organizationWithFollowers.admins.some(
+            (adminId: any) => adminId.toString() === follower_id
+        );
+        
+        if (isFollowerAnAdmin) {
+            res.status(400).json({ message: "Cannot block an admin user" });
+            return;
+        }
 
         const followerIndex = organizationWithFollowers.followers.findIndex(
             (follower: any) => follower._id.toString() === follower_id
@@ -214,11 +225,61 @@ export const blockFollower = async (req: Request, res: Response, next: NextFunct
         const follower = organizationWithFollowers.followers.splice(followerIndex, 1)[0] as any;
         organizationWithFollowers.blocked.push(follower._id);
         
+        // Get follower user data to update their saved jobs and applications
+        const followerUser = await users.findById(follower_id);
+        if (!followerUser) {
+            res.status(404).json({ message: "Follower user not found" });
+            return;
+        }
+        
+        // Find all jobs belonging to this organization
+        const organizationJobs = await jobs.find({ organization_id: organization_id });
+        const organizationJobIds = organizationJobs.map(job => job._id?.toString());
+        
+        let savedJobsRemoved = 0;
+        let applicationsRemoved = 0;
+        
+        // Remove any of these jobs from follower's saved_jobs
+        if (followerUser.saved_jobs && followerUser.saved_jobs.length > 0) {
+            const originalSavedJobsCount = followerUser.saved_jobs.length;
+            followerUser.saved_jobs = followerUser.saved_jobs.filter(
+                jobId => !organizationJobIds.includes(jobId.toString())
+            );
+            savedJobsRemoved = originalSavedJobsCount - followerUser.saved_jobs.length;
+        }
+        
+        // Import job applications model
+        const jobApplications = mongoose.model('jobApplications');
+        
+        // Find and remove all job applications by this follower to jobs from this organization
+        if (organizationJobIds.length > 0) {
+            const deletedApplications = await jobApplications.deleteMany({
+                user_id: follower_id,
+                job_id: { $in: organizationJobIds }
+            });
+            
+            applicationsRemoved = deletedApplications.deletedCount;
+            
+            // Also remove these jobs from the user's applied_jobs list if that field exists
+            if (followerUser.applied_jobs && followerUser.applied_jobs.length > 0) {
+                followerUser.applied_jobs = followerUser.applied_jobs.filter(
+                    jobId => !organizationJobIds.includes(jobId.toString())
+                );
+            }
+        }
+        
+        // Save updates to the follower user
+        await followerUser.save();
+        
+        // Save updates to the organization
         await organizationWithFollowers.save();
 
         res.status(200).json({ 
-            message: "Follower blocked successfully", 
-            followers: organizationWithFollowers.followers 
+            message: "Follower blocked successfully",
+            details: {
+                savedJobsRemoved,
+                applicationsRemoved
+            }
         });
     } catch (error) {
         next(error);
@@ -285,10 +346,127 @@ export const getBlockedFollowers = async (req: Request, res: Response, next: Nex
         if (!isAdmin) return;
 
         // Get the organization with populated blocked users
-        const organizationWithBlocked = await organizations.findById(organization_id).populate("blocked");
+        const organizationWithBlocked = await organizations.findById(organization_id)
+        .populate({
+            path: "blocked",
+            select: "user_id bio.first_name bio.last_name bio.headline profile_photo"
+        });
         if (!organizationWithBlocked) return;
     
         res.status(200).json({ blocked_followers: organizationWithBlocked.blocked });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const followOrganization = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        
+        // Validate user is not already a follower
+        const userIdStr = user._id?.toString();
+        const isAlreadyFollower = organization.followers.some(
+            (followerId: any) => followerId.toString() === userIdStr
+        );
+        if (isAlreadyFollower) {
+            res.status(400).json({ message: "User is already a follower" });
+            return;
+        }
+
+        // Validate user is not in blocked followers
+        const isBlockedFollower = organization.blocked.some(
+            (blockedId: any) => blockedId.toString() === userIdStr
+        );
+        if (isBlockedFollower) {
+            res.status(400).json({ message: "User is blocked from following" });
+            return;
+        }
+        
+        // Add user ID to followers list
+        organization.followers.push(user);
+        
+        await organization.save();
+
+        res.status(200).json({ 
+            message: "User followed successfully", 
+            followers: organization.followers 
+        });
+    } catch (error) {
+        next(error);
+    }
+    
+}
+
+export const unfollowOrganization = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        const userIdStr = user._id?.toString();
+        // Validate user is a follower
+        const isFollower = organization.followers.some(
+            (followerId: any) => followerId.toString() === userIdStr
+        );
+        
+        if (!isFollower) {
+            res.status(400).json({ message: "User is not a follower" });
+            return;
+        }
+        
+        // Remove user ID from followers list
+        organization.followers = organization.followers.filter(
+            (followerId: any) => followerId.toString() !== userIdStr
+        );
+        
+        await organization.save();
+
+        res.status(200).json({ 
+            message: "User unfollowed successfully", 
+            followers: organization.followers 
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const getFollowers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
+        if (!isAdmin) return;
+
+        // Get the organization with populated followers
+        const organizationWithFollowers = await organizations.findById(organization_id)
+        .populate({
+            path: "followers",
+            select: "user_id bio.first_name bio.last_name bio.headline profile_photo"
+        });
+        if (!organizationWithFollowers) return;
+    
+        res.status(200).json({ followers: organizationWithFollowers.followers });
     } catch (error) {
         next(error);
     }

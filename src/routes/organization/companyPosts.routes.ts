@@ -9,12 +9,12 @@ router.post('/create-post-from-company/:organization_id', (req, res, next) => {
 });
 
 // Update Post from company
-router.put('/update-post-from-company/:organization_id/:job_id', (req, res, next) => {
+router.put('/update-post-from-company/:organization_id/:post_id', (req, res, next) => {
     companyPostsControllers.editPostFromCompany(req, res, next);
 });
 
 // Delete Post from company
-router.delete('/delete-post-from-company/:organization_id/:job_id', (req, res, next) => {
+router.delete('/delete-post-from-company/:organization_id/:post_id', (req, res, next) => {
     companyPostsControllers.deletePostFromCompany(req, res, next);
 });
 

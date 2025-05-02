@@ -7,6 +7,7 @@ import { commentsInterface } from "./comments.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
+import { reactsInterface } from "./reactions.model.ts";
 
 export enum sexEnum{
     male="Male",
@@ -174,8 +175,8 @@ export interface usersInterface extends mongoose.Document{
     };
     activity: {
         posts: postsInterface[];
-        reposted_posts: repostsInterface[];
-        reacted_posts:postsInterface[];
+        reposted_posts: postsInterface[];
+        reacts:reactsInterface[];
         comments: commentsInterface[];
         media: {
             media: string,
@@ -205,11 +206,12 @@ export interface usersInterface extends mongoose.Document{
         plan: string;    // 'free', 'premium'
         subscription_id: string;  // Stripe subscription ID
         customer_id: string;      // Stripe customer ID
-        current_period_start: Date;
-        current_period_end: Date;
+        current_period_start: Date | null;
+        current_period_end: Date | null;
         canceled_at?: Date;
         cancel_at_period_end: boolean;
-        subscription_started_at?: Date;
+        subscription_started_at?: Date | null; // Date when the subscription started
+        subscription_ends_at?: Date | null;
         subscribed: boolean;
     };
     is_student: boolean;
@@ -387,8 +389,8 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           date: { type: Date },
         },
       ],
-      followers: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
-      following: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
+      followers: [{ type: Schema.Types.ObjectId, ref: "users", unique: true }], // Reference to the user's ObjectId
+      following: [{ type: Schema.Types.ObjectId, ref: "users", unique: true }], // Reference to the user's ObjectId
       privacy_settings: {
         flag_account_status: { 
             type: String, 
@@ -420,8 +422,8 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
-        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "reposts" }],
-        reacted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
+        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
+        reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
         comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
         media: [{
             media: { type: String },

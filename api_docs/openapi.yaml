@@ -1622,51 +1622,6 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-  /api/v1/privacy/profile-visibility/{user_id}:
-    get:
-      tags:
-        - Privacy Settings
-      summary: Get profile visibility
-      description: Retrieves the profile visibility setting for the specified user.
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The ID of the user whose profile visibility is being retrieved.
-      responses:
-        '200':
-          description: Profile visibility retrieved successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  profileVisibility:
-                    type: string
-                    example: "Public"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Unauthorized"
-        '403':
-          description: User is not authorized to access this profile visibility.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "https://cloudinary.com/user/resume.pdf"
-  
   # Add validate-token endpoint
   /api/v1/user/validate-token:
     get:
@@ -1845,8 +1800,16 @@ paths:
               properties:
                 profileVisibility:
                   type: string
-                  enum: [public, connections, private]
+                  enum: [Public, Connections only]
+                  example: "Connections only"
                   description: Profile visibility level
+            examples:
+              Public:
+                value:
+                  profileVisibility: "Public"
+              Connections:
+                value:
+                  profileVisibility: "Connections only"
       responses:
         '200':
           description: Privacy settings updated successfully
@@ -3252,6 +3215,23 @@ paths:
                   isConnectByEmail:
                     type: boolean
                     example: true
+                  allow_messaging:
+                    type: boolean
+                    example: true
+                  viewer_user_is_subscribed:
+                    type: boolean
+                    example: false
+                  resume:
+                    type: string
+                    example: "https://example.com/resume.pdf"
+                  number_of_saved_jobs:
+                    type: integer
+                    example: 3
+                  number_of_saved_posts:
+                    type: integer
+                    example: 5
+                  
+
         '401':
           description: Unauthorized
           content:
@@ -3273,12 +3253,14 @@ paths:
                     type: string
                     example: "An error occurred while retrieving the user bio."
 
-  /api/v1/post/posts:
+  /api/v2/post/posts:
     post:
       tags:
         - Posts
       summary: Create a new post
-      description: Creates a new post associated with the authenticated user's activity
+      description: >
+        Creates a new post associated with the authenticated user's activity.
+        Supports standard posts, reposts with thoughts, and instant reposts.
       parameters:
         - in: header
           name: Authorization
@@ -3286,6 +3268,7 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
       requestBody:
         required: true
         content:
@@ -3299,36 +3282,162 @@ paths:
                   example: "Excited to share my latest project!"
                 mediaType:
                   type: string
-                  description: Type of media (none, image, video, document, link, post)
                   enum: [none, image, video, document, link, post]
+                  description: Type of media attached to the post
                   example: "image"
                 media:
                   type: array
                   items:
                     type: string
-                  description: Array of media URLs or base64 encoded strings
+                  description: >
+                    Array of media URLs, base64 encoded strings, or post ID (when reposting).
+                    For image/video/document, use base64. For link, use URL string. For repost, use post ID.
                   example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
-                commentsDisabled:
+                comments_disabled:
                   type: string
+                  enum: [none, connections_only, noone]
                   description: Who can comment on the post
-                  enum: [none, connections, all]
-                  example: "all"
-                publicPost:
+                  example: "none"
+                public_post:
                   type: boolean
-                  description: Whether the post is visible to all users or just connections
+                  description: Whether the post is public or private
                   example: true
-                taggedUsers:
+                tagged_users:
                   type: array
                   items:
                     type: string
                   description: Array of user IDs tagged in the post
-                  example: ["6457abc123def456", "6457abc123def457"]
-              required:
-                - commentsDisabled
-                - publicPost
+                  example: ["Amr-Doma81", "Darwin-Núñez32"]
+                postType:
+                  type: string
+                  enum: [standard, repost_instant, repost_thought]
+                  description: Type of post (standard post, instant repost, or thought repost)
+                  example: "standard"
+            examples:
+              standardPost:
+                summary: Example of a standard post with image
+                value:
+                  content: "Excited to share my latest project!"
+                  mediaType: "image"
+                  media: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                  comments_disabled: "none"
+                  public_post: true
+                  tagged_users: ["Amr-Doma81", "Darwin-Núñez32"]
+                  postType: "standard"
+              instantRepost:
+                summary: Example of an instant repost
+                value:
+                  mediaType: "post"
+                  media: ["6458abc123def456"]
+                  postType: "repost_instant"
+              thoughtRepost:
+                summary: Example of a repost with thoughts
+                value:
+                  content: "Great insights in this post!"
+                  mediaType: "post"
+                  media: ["6458abc123def456"]
+                  comments_disabled: "none"
+                  public_post: true
+                  postType: "repost_thought"
+        responses:
+          '200':
+            description: Post created successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Post successfully created"
+                    postId:
+                      type: string
+                      example: "6458abc123def456"
+                    postType:
+                      type: string
+                      enum: [standard, repost_instant, repost_thought]
+                      example: "standard"
+          '400':
+            description: Required fields missing
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Required fields missing"
+          '401':
+            description: Invalid or expired token
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Invalid or expired token"
+                    success:
+                      type: boolean
+                      example: false
+          '404':
+            description: Original post not found (for reposts)
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Original post not found"
+          '500':
+            description: Server error
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Server error"
+                    error:
+                      type: object
+
+  /api/v2/post/posts/feed:
+    get:
+      tags:
+        - Posts
+      summary: Get posts feed
+      description: >
+        Retrieves a feed of posts from user's connections and followed users.
+        The feed includes posts created by connections/followed users as well as their interactions
+        (comments, reactions, reposts) with other posts. Results are paginated with cursor-based
+        pagination and sorted by most recent activity.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Timestamp-based cursor for pagination (Unix timestamp of oldest post in previous batch)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of posts to return per page
       responses:
         '200':
-          description: Post created successfully
+          description: Posts feed retrieved successfully
           content:
             application/json:
               schema:
@@ -3336,10 +3445,136 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Post successfully created"
-                  postId:
-                    type: string
-                    example: "6458abc123def456"
+                    example: "Posts returned successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "6458abc123def456"
+                        user_id:
+                          type: string
+                          example: "6806a1938db9403282340f11"
+                        content:
+                          type: string
+                          example: "Excited to share my latest project!"
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: array
+                              items:
+                                type: string
+                              example: ["https://example.com/image1.jpg"]
+                            media_type:
+                              type: string
+                              example: "image"
+                        comments_disabled:
+                          type: string
+                          example: "all"
+                        public_post:
+                          type: boolean
+                          example: true
+                        tagged_users:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Amr-Doma81","Darwin-Núñez32"]
+                        is_edited:
+                          type: boolean
+                          example: false
+                        date:
+                          type: number
+                          example: 1745266574
+                        comments_count:
+                          type: number
+                          example: 5
+                        reactions_count:
+                          type: number
+                          example: 15
+                        is_saved:
+                          type: boolean
+                          example: false
+                        post_type:
+                          type: string
+                          enum: [standard, repost_instant, repost_thought]
+                          example: "standard"
+                        author:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "6457abc123def456"
+                            username:
+                              type: string
+                              example: "johndoe"
+                            firstName:
+                              type: string
+                              example: "John"
+                            lastName:
+                              type: string
+                              example: "Doe"
+                            headline:
+                              type: string
+                              example: "Software Engineer"
+                            profilePicture:
+                              type: string
+                              example: "https://example.com/profile.jpg"
+                        top_reactions:
+                          type: array
+                          items:
+                            type: string
+                          example: ["like", "celebrate", "love"]
+                        user_reaction:
+                          type: string
+                          example: "like"
+                          nullable: true
+                        activity_context:
+                          type: object
+                          nullable: true
+                          properties:
+                            type:
+                              type: string
+                              example: "comment"
+                              enum: ["comment", "like", "love", "celebrate", "support", "insightful", "funny"]
+                            actor_name:
+                              type: string
+                              example: "Jane Smith"
+                            actor_username:
+                              type: string
+                              example: "jane-smith23"
+                            actor_id:
+                              type: string
+                              example: "6459def789ghi012"
+                            actor_picture:
+                              type: string
+                              example: "https://example.com/profile2.jpg"
+                            comment:
+                              type: object
+                              description: Included when activity type is comment
+                        original_author:
+                          type: object
+                          description: Included for reposts
+                          properties:
+                            _id:
+                              type: string
+                            username:
+                              type: string
+                            first_name:
+                              type: string
+                            last_name:
+                              type: string
+                            headline:
+                              type: string
+                            profile_picture:
+                              type: string
+                  next_cursor:
+                    type: integer
+                    example: 1745190000
+                    nullable: true
+                    description: Timestamp to use as cursor for the next page of results, null if no more results
         '400':
           description: Required fields missing
           content:
@@ -3376,117 +3611,17 @@ paths:
                   error:
                     type: object
 
-  /api/v1/post/posts/{postId}:
+  /api/v2/post/posts/{postId}:
     patch:
-          tags:
-            - Posts
-          summary: Update an existing post
-          description: Modifies an existing post's content, media, or settings
-          parameters:
-            - in: header
-              name: Authorization
-              required: true
-              schema:
-                type: string
-                example: "Bearer jwt_token"
-            - in: path
-              name: postId
-              required: true
-              schema:
-                type: string
-                description: ID of the post to delete
-                example: "6458abc123def456"
-          requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    content:
-                      type: string
-                      description: Updated text content of the post
-                      example: "Updated: Excited to share my latest project with new details!"
-                    mediaType:
-                      type: string
-                      description: Type of media (none, image, video, document, link, post)
-                      enum: [none, image, video, document, link, post]
-                      example: "image"
-                    media:
-                      type: array
-                      items:
-                        type: string
-                      description: Updated array of media URLs or base64 encoded strings
-                      example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg...", "https://example.com/image.jpg"]
-                    commentsDisabled:
-                      type: string
-                      description: Updated comment permission setting
-                      enum: [none, connections, all]
-                      example: "connections"
-                    publicPost:
-                      type: boolean
-                      description: Updated visibility setting
-                      example: false
-                    taggedUsers:
-                      type: array
-                      items:
-                        type: string
-                      description: Updated array of user IDs tagged in the post
-                      example: ["6457abc123def456"]
-                  required:
-                    - postId
-          responses:
-            '200':
-              description: Post updated successfully
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Post successfully updated"
-            '400':
-              description: Post ID is required or post does not exist
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "postId is required"
-            '401':
-              description: Invalid or expired token
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Invalid or expired token"
-                      success:
-                        type: boolean
-                        example: false
-            '500':
-              description: Server error
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Server error"
-                      error:
-                        type: object
-
-    delete:
       tags:
         - Posts
-      summary: Delete a post
-      description: Deletes a post and removes it from the user's activity
+      summary: Update an existing post
+      description: >
+        Modifies an existing post's content, media, or settings.
+        Different post types have different editing restrictions:
+        - Standard posts: can edit all fields
+        - Thought reposts: can edit content and visibility settings, but not media
+        - Instant reposts: can only edit visibility settings
       parameters:
         - in: header
           name: Authorization
@@ -3494,6 +3629,158 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to update
+          example: "6458abc123def456"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Updated text content of the post
+                  example: "Updated content for my project announcement!"
+                mediaType:
+                  type: string
+                  enum: [none, image, video, document, link]
+                  description: Type of media to attach to the post
+                  example: "image"
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: >
+                    Updated media URLs or base64 encoded strings.
+                    For image/video/document, use base64. For link, use URL string.
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                comments_disabled:
+                  type: string
+                  enum: [none, connections_only, noone]
+                  description: Who can comment on the post
+                  example: "connections_only"
+                public_post:
+                  type: boolean
+                  description: Whether the post is public or private
+                  example: false
+                tagged_users:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of user IDs tagged in the post
+                  example: ["Jane_Smith92", "Amr-Doma81"]
+            examples:
+              standardPost:
+                summary: Update a standard post
+                value:
+                  content: "Updated content for my project announcement!"
+                  mediaType: "image"
+                  media: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                  comments_disabled: "connections_only"
+                  public_post: false
+                  tagged_users: ["Jane_Smith92", "Amr-Doma81"]
+              repostThought:
+                summary: Update a thought repost (restricted)
+                value:
+                  content: "Updated thoughts on this insightful post!"
+                  comments_disabled: "connections_only"
+                  public_post: false
+              repostInstant:
+                summary: Update an instant repost (very restricted)
+                value:
+                  comments_disabled: "connections_only"
+                  public_post: false
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post successfully updated"
+        '400':
+          description: >
+            Required fields missing or editing restrictions apply
+            (can't edit certain fields based on post type)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot edit content or media for instant reposts"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Not authorized to edit this post
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to edit this post"
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post
+      description: >
+        Deletes a post and removes it from the user's activity.
+        Also deletes all associated comments, reactions, and reposts of this post.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
         - in: path
           name: postId
           required: true
@@ -3552,7 +3839,9 @@ paths:
       tags:
         - Posts
       summary: Get a specific post
-      description: Retrieves detailed information about a post including author info and comments
+      description: >
+        Retrieves detailed information about a post including author info, reactions,
+        comments, and other metadata. For reposts, includes information about the original post.
       parameters:
         - in: header
           name: Authorization
@@ -3560,6 +3849,7 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
         - in: path
           name: postId
           required: true
@@ -3567,21 +3857,27 @@ paths:
             type: string
           description: ID of the post to retrieve
           example: "6458abc123def456"
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                cursor:
-                  type: Integer
-                  description: Cursor for pagination of comments
-                  example: 11
-                limit:
-                  type: integer
-                  description: Number of comments to retrieve
-                  example: 10
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination of comments
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Number of comments to retrieve
+        - in: query
+          name: replyLimit
+          required: false
+          schema:
+            type: integer
+            default: 2
+          description: Maximum number of replies to include per comment
       responses:
         '200':
           description: Post retrieved successfully
@@ -3601,120 +3897,104 @@ paths:
                         example: "6458abc123def456"
                       user_id:
                         type: string
-                        example: "6457abc123def456"
+                        example: "6806a1938db9403282340f11"
                       content:
                         type: string
                         example: "Excited to share my latest project!"
                       media:
-                        type: array
-                        items:
-                          type: string
-                        example: ["https://example.com/image1.jpg"]
-                      mediaType:
+                        type: object
+                        properties:
+                          link:
+                            type: array
+                            items:
+                              type: string
+                            example: ["https://example.com/image1.jpg"]
+                          media_type:
+                            type: string
+                            example: "image"
+                      comments_disabled:
                         type: string
-                        example: "image"
-                      commentsDisabled:
-                        type: string
-                        example: "Anyone"
-                      publicPost:
+                        example: "none"
+                      public_post:
                         type: boolean
                         example: true
-                      taggedUsers:
+                      tagged_users:
                         type: array
                         items:
                           type: string
-                        example: ["6457abc123def457"]
+                        example: ["Amr-Doma81","Darwin-Núñez32"]
+                      is_edited:
+                        type: boolean
+                        example: false
                       date:
                         type: number
-                        example: "1745194451"
+                        example: 1745266574
+                      post_type:
+                        type: string
+                        enum: [standard, repost_instant, repost_thought]
+                        example: "standard"
+                      is_saved:
+                        type: boolean
+                        example: false
+                      user_reaction:
+                        type: string
+                        example: "like"
+                        nullable: true
+                      top_reactions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["like", "celebrate", "love"]
+                      reactions_count:
+                        type: number
+                        example: 15
+                      comments_count:
+                        type: number
+                        example: 5
                       author:
                         type: object
                         properties:
+                          _id:
+                            type: string
+                            example: "6806a1938db9403282340f11"
                           username:
                             type: string
                             example: "johndoe"
-                          finstName:
+                          first_name:
                             type: string
                             example: "John"
-                          lastName:
+                          last_name:
                             type: string
-                            example: "doe"
+                            example: "Doe"
                           headline:
                             type: string
                             example: "Software Engineer"
-                          profilePicture:
+                          profile_picture:
                             type: string
                             example: "https://example.com/profile.jpg"
-                          connectionDegree:
-                            type: string
-                            example: "3rd+"
+                      original_post:
+                        type: object
+                        description: Only included for reposts
+                        nullable: true
+                      original_author:
+                        type: object
+                        description: Only included for reposts
+                        nullable: true
                   comments:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "68058fa5f67c3a130d2b0372"
-                        post_id: 
-                          type: string
-                          example: "68058dd3ca03555f929d0ecc"
-                        user_id:
-                          type: string
-                          exapmle: "67e6b2e1ef869d719662ca10"
-                        content:
-                          type: string
-                          example: "content will be written here"
-                        media:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 5
+                      comments:
+                        type: array
+                        items:
                           type: object
-                          properties:
-                            link:
-                              type: string
-                              example: "https://example.com/media.jpg"
-                            mediaType:
-                              type: string
-                              example: "image"
-                        reacts:
-                          type: object
-                          properties:
-                            total: 
-                              type: number
-                              example: 100
-                            mostCommmon:
-                              type: object
-                        tagged_users:
-                          type: array
-                          example: ["67e6b2e1ef869d719662ca10"]
-                        is_edited:
-                          type: boolean
-                        date:
-                          type: number
-                          example: 1745194451
-                        author:
-                          type: object
-                          properties:
-                            username:
-                              type: string
-                              example: "johndoe"
-                            firstName:
-                              type: string
-                              example: "John"
-                            lastName:
-                              type: string
-                              example: "doe"
-                            headline:
-                              type: string
-                              example: "Software Engineer"
-                            profilePicture:
-                              type: string
-                              example: "https://example.com/profile.jpg"
-                            connectionDegree:
-                              type: string
-                              example: "3rd+"
-                        children:
-                          type: array
-                          items: 
-                            type: object
+                          # Comment structure same as in comments API
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        description: Cursor for the next page of comments
         '401':
           description: Invalid or expired token
           content:
@@ -3726,7 +4006,7 @@ paths:
                     type: string
                     example: "Invalid or expired token"
         '404':
-          description: Post not found or Post author not found
+          description: Post not found
           content:
             application/json:
               schema:
@@ -3746,82 +4026,50 @@ paths:
                     type: string
                     example: "Server error"
                   error:
-                    type: object                   
-  /api/v1/post/save-post:
-    post:
-      tags:
-        - Saved Posts
-      summary: Save a post
-      description: Saves a post to the user's saved posts list.
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-            example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                postId:
-                  type: string
-                  description: ID of the post to save.
-              required:
-                - postId
-      responses:
-        '200':
-          description: Post successfully saved for user.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Post successfully saved for user."
-        '400':
-          description: Required fields missing.
-        '401':
-          description: Invalid or expired token.
-        '404':
-          description: Post does not exist.
-        '500':
-          description: Server error.
+                    type: object
 
+  /api/v2/post/posts/user/{user_id}:
     get:
       tags:
-        - Saved Posts
-      summary: Display saved posts
-      description: Retrieves the user's saved posts in batches.
+        - Posts
+      summary: Get posts by user
+      description: >
+        Retrieves posts created by a specific user with pagination.
+        Private posts are only visible to the owner or connections.
+        If the viewing user is not the profile owner or a connection, 
+        only public posts will be returned.
       parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose posts are being retrieved
+          example: "6806a1938db9403282340f11"
         - in: header
           name: Authorization
           required: true
           schema:
             type: string
-            example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                limit:
-                  type: integer
-                  description: Number of posts to retrieve in a batch.
-                cursor:
-                  type: integer
-                  description: Cursor for pagination.
-              required:
-                - limit
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of posts to return per page
       responses:
         '200':
-          description: Posts returned successfully.
+          description: User posts retrieved successfully
           content:
             application/json:
               schema:
@@ -3829,26 +4077,63 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Posts returned successfully."
+                    example: "Posts returned successfully"
+                  is_me:
+                    type: boolean
+                    example: false
+                    description: Whether the authenticated user is viewing their own profile
                   posts:
                     type: array
                     items:
                       type: object
-                  nextCursor:
+                      # Same post structure as in feed endpoint
+                  next_cursor:
                     type: integer
-                    description: Cursor for the next batch of posts.
+                    nullable: true
+                    example: 10
+                    description: Cursor for the next page of results, null if no more results
         '400':
-          description: Required fields missing.
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
         '500':
-          description: Server error.
-
-    delete:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+  
+  /api/v2/post/save-post:
+    post:
       tags:
         - Saved Posts
-      summary: Delete a saved post
-      description: Deletes a post from the user's saved posts list.
+      summary: Save a post
+      description: Saves a post to the user's saved posts list for later reference.
       parameters:
         - in: header
           name: Authorization
@@ -3856,6 +4141,7 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
       requestBody:
         required: true
         content:
@@ -3865,12 +4151,13 @@ paths:
               properties:
                 postId:
                   type: string
-                  description: ID of the post to delete.
+                  description: ID of the post to save
+                  example: "6458abc123def456"
               required:
                 - postId
       responses:
         '200':
-          description: Deleted saved post successfully for user.
+          description: Post successfully saved
           content:
             application/json:
               schema:
@@ -3878,15 +4165,221 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Deleted saved post successfully for user."
+                    example: "Post successfully saved for user"
         '400':
-          description: Required fields missing.
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
         '404':
-          description: Post does not exist.
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+    
+    delete:
+      tags:
+        - Saved Posts
+      summary: Remove a saved post
+      description: Removes a post from the user's saved posts list.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the saved post to remove
+                  example: "6458abc123def456"
+              required:
+                - postId
+      responses:
+        '200':
+          description: Saved post removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deleted saved post successfully for user"
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
+    get:
+      tags:
+        - Saved Posts
+      summary: Get saved posts
+      description: >
+        Retrieves the posts saved by the authenticated user.
+        Results are paginated with cursor-based pagination.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination (position to start from)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of posts to return per page
+      responses:
+        '200':
+          description: Saved posts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      # Same post structure as in feed endpoint
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    example: 10
+                    description: Cursor for the next page of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
 
   /api/v1/user/profile/licenses/{user_id}:
     get:
@@ -4271,7 +4764,7 @@ paths:
                   message:
                     type: string
                     example: "Error fetching user education details"
-  /api/v1/post/comment:
+  /api/v2/post/comment/{postId}:
     post:
       tags:
         - Comments
@@ -4280,6 +4773,13 @@ paths:
         Creates a new comment on a post or as a reply to another comment.
         Only allows one level of nesting (replies to comments but not replies to replies).
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to comment on
+          example: "6458abc123def456"
         - in: header
           name: Authorization
           required: true
@@ -4293,28 +4793,32 @@ paths:
             schema:
               type: object
               properties:
-                post_id:
-                  type: string
-                  description: ID of the post to comment on.
-                comment_id:
-                  type: string
-                  description: ID of the parent comment (if this is a reply).
                 content:
                   type: string
-                  description: Text content of the comment.
+                  description: Text content of the comment
+                  example: "Great post! I really enjoyed reading this."
                 media:
+                  type: array
+                  items:
+                    type: string
+                  description: Media URL or base64 encoded string for the comment
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                parent_id:
                   type: string
-                  description: Media URL for the comment.
+                  description: ID of the parent comment if this is a reply (null for top-level comments)
+                  example: "6511b82172d92e69ee81c39b"
+                  nullable: true
                 tagged_users:
                   type: array
                   items:
                     type: string
-                  description: Array of user IDs tagged in the comment.
+                  description: Array of user IDs tagged in the comment
+                  example: ["Amr-Doma81", "Darwin-Núñez32"]
               required:
-                - post_id
+                - content
       responses:
         '200':
-          description: Comment successfully created.
+          description: Comment successfully created
           content:
             application/json:
               schema:
@@ -4323,11 +4827,58 @@ paths:
                   message:
                     type: string
                     example: "comment successfully created"
-                  commentId:
-                    type: string
-                    example: "6511b82172d92e69ee81c39b"
+                  comment:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6511b82172d92e69ee81c39b"
+                      post_id: 
+                        type: string
+                        example: "68058dd3ca03555f929d0ecc"
+                      user_id:
+                        type: string
+                        example: "67e6b2e1ef869d719662ca10"
+                      content:
+                        type: string
+                        example: "Great post! I really enjoyed reading this."
+                      media:
+                        type: string
+                        example: "https://example.com/media.jpg"
+                      tagged_users:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Amr-Doma81", "Darwin-Núñez32"]
+                      is_edited:
+                        type: boolean
+                        example: false
+                      date:
+                        type: number
+                        example: 1745268741
+                      author:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                            example: "67e6b2e1ef869d719662ca10"
+                          username:
+                            type: string
+                            example: "john_doe"
+                          first_name:
+                            type: string
+                            example: "John"
+                          last_name:
+                            type: string
+                            example: "Doe"
+                          headline:
+                            type: string
+                            example: "Software Engineer"
+                          profile_picture:
+                            type: string
+                            example: "https://example.com/profile.jpg"
         '400':
-          description: Required fields missing.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4337,7 +4888,7 @@ paths:
                     type: string
                     example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
           content:
             application/json:
               schema:
@@ -4350,7 +4901,7 @@ paths:
                     type: boolean
                     example: false
         '403':
-          description: Not allowed to comment on this post.
+          description: Not allowed to comment on this post
           content:
             application/json:
               schema:
@@ -4360,7 +4911,7 @@ paths:
                     type: string
                     example: "You are not allowed to comment on this post"
         '404':
-          description: Post or parent comment not found.
+          description: Post or parent comment not found
           content:
             application/json:
               schema:
@@ -4370,7 +4921,7 @@ paths:
                     type: string
                     example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4379,47 +4930,63 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-
+                  error:
+                    type: object
     get:
       tags:
         - Comments
       summary: Get comments for a post
       description: >
         Retrieves comments for a specific post with pagination support.
+        Includes both top-level comments and a limited number of replies per comment.
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to get comments for
+          example: "6458abc123def456"
         - in: header
           name: Authorization
           required: true
           schema:
             type: string
-            example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                post_id:
-                  type: string
-                  description: ID of the post to get comments for.
-                cursor:
-                  type: number
-                  description: Cursor for pagination.
-                limit:
-                  type: integer
-                  description: Maximum number of comments to return.
-              required:
-                - post_id
-                - limit
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination (position to start from)
+        - in: query
+          name: limit
+          required: true
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of comments to return per page
+        - in: query
+          name: replyLimit
+          required: false
+          schema:
+            type: integer
+            default: 2
+          description: Maximum number of replies to include per comment
       responses:
         '200':
-          description: Comments retrieved successfully.
+          description: Comments retrieved successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
+                  count:
+                    type: integer
+                    example: 5
+                    description: Number of comments returned
                   comments:
                     type: array
                     items:
@@ -4427,70 +4994,79 @@ paths:
                       properties:
                         _id:
                           type: string
-                          example: "68058fa5f67c3a130d2b0372"
-                        post_id: 
-                          type: string
-                          example: "68058dd3ca03555f929d0ecc"
-                        user_id:
-                          type: string
-                          exapmle: "67e6b2e1ef869d719662ca10"
+                          example: "6511b82172d92e69ee81c39b"
                         content:
                           type: string
-                          example: "content will be written here"
+                          example: "This is a great post!"
+                        date:
+                          type: number
+                          example: 1745268741
                         media:
                           type: object
                           properties:
                             link:
                               type: string
-                              example: "https://example.com/media.jpg"
-                            mediaType:
+                              example: "https://example.com/image.jpg"
+                            media_type:
                               type: string
                               example: "image"
-                        reacts:
-                          type: object
-                          properties:
-                            total: 
-                              type: number
-                              example: 100
-                            mostCommmon:
-                              type: object
                         tagged_users:
                           type: array
-                          example: ["67e6b2e1ef869d719662ca10"]
+                          items:
+                            type: string
+                          example: ["Amr-Doma81", "Darwin-Núñez32"]
                         is_edited:
                           type: boolean
-                        date:
-                          type: number
-                          example: 1745194451
+                          example: false
                         author:
                           type: object
                           properties:
+                            _id:
+                              type: string
+                              example: "67e6b2e1ef869d719662ca10"
                             username:
                               type: string
-                              example: "johndoe"
-                            firstName:
+                              example: "john_doe"
+                            first_name:
                               type: string
                               example: "John"
-                            lastName:
+                            last_name:
                               type: string
-                              example: "doe"
+                              example: "Doe"
                             headline:
                               type: string
                               example: "Software Engineer"
-                            profilePicture:
+                            profile_picture:
                               type: string
                               example: "https://example.com/profile.jpg"
-                            connectionDegree:
-                              type: string
-                              example: "3rd+"
+                        user_reaction:
+                          type: string
+                          example: "like"
+                          nullable: true
+                        top_reactions:
+                          type: array
+                          items:
+                            type: string
+                          example: ["like", "love", "celebrate"]
+                        reactions_count:
+                          type: integer
+                          example: 15
+                        children_count:
+                          type: integer
+                          example: 8
+                          description: Total number of replies to this comment
                         children:
                           type: array
-                          items: 
+                          items:
                             type: object
-                  nextCursor:
-                    type: string
+                            description: Array of replies to this comment (limited by replyLimit)
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    description: Cursor for the next page of results, null if no more results
+                    example: 10
         '400':
-          description: Required fields missing.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4500,9 +5076,17 @@ paths:
                     type: string
                     example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
         '404':
-          description: Post not found.
+          description: Post not found
           content:
             application/json:
               schema:
@@ -4512,7 +5096,7 @@ paths:
                     type: string
                     example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4520,8 +5104,8 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "An error occurred while fetching comments"
-
+                    example: "An error occurred while fetching comments"  
+  /api/v2/post/comment/{postId}/{commentId}:
     patch:
       tags:
         - Comments
@@ -4530,6 +5114,20 @@ paths:
         Updates an existing comment's content, media, or tagged users.
         Only the comment owner can update their comment.
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post the comment belongs to
+          example: "6458abc123def456"
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to update
+          example: "6511b82172d92e69ee81c39b"
         - in: header
           name: Authorization
           required: true
@@ -4543,29 +5141,25 @@ paths:
             schema:
               type: object
               properties:
-                post_id:
-                  type: string
-                  description: ID of the post the comment belongs to.
-                comment_id:
-                  type: string
-                  description: ID of the comment to update.
                 content:
                   type: string
-                  description: Updated text content of the comment.
+                  description: Updated text content of the comment
+                  example: "This is my updated comment text."
                 media:
                   type: string
-                  description: Updated media URL for the comment.
+                  description: Updated media URL or base64 encoded string for the comment
+                  example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
                 tagged_users:
                   type: array
                   items:
                     type: string
-                  description: Updated array of user IDs tagged in the comment.
+                  description: Updated array of user IDs tagged in the comment
+                  example: ["Amr-Doma81", "Darwin-Núñez32"]
               required:
-                - post_id
-                - comment_id
+                - content
       responses:
         '200':
-          description: Comment updated successfully.
+          description: Comment updated successfully
           content:
             application/json:
               schema:
@@ -4576,8 +5170,26 @@ paths:
                     example: "Comment updated successfully"
                   comment:
                     type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "6511b82172d92e69ee81c39b"
+                      content:
+                        type: string
+                        example: "This is my updated comment text."
+                      media:
+                        type: string
+                        example: "https://example.com/updated-media.jpg"
+                      tagged_users:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Amr-Doma81", "Darwin-Núñez32"]
+                      is_edited:
+                        type: boolean
+                        example: true
         '400':
-          description: Required fields missing.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4587,7 +5199,7 @@ paths:
                     type: string
                     example: "Required fields missing"
         '401':
-          description: Not authorized to update this comment.
+          description: Not authorized to update this comment
           content:
             application/json:
               schema:
@@ -4597,7 +5209,7 @@ paths:
                     type: string
                     example: "Not authorized to update this comment"
         '404':
-          description: Post or comment not found.
+          description: Post or comment not found
           content:
             application/json:
               schema:
@@ -4605,9 +5217,9 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Comment does not exist"
+                    example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4616,7 +5228,8 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-
+                  error:
+                    type: object
     delete:
       tags:
         - Comments
@@ -4625,27 +5238,29 @@ paths:
         Deletes a comment and all its replies.
         Only the comment owner can delete their comment.
       parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post the comment belongs to
+          example: "6458abc123def456"
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the comment to delete
+          example: "6511b82172d92e69ee81c39b"
         - in: header
           name: Authorization
           required: true
           schema:
             type: string
             example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                comment_id:
-                  type: string
-                  description: ID of the comment to delete.
-              required:
-                - comment_id
       responses:
         '200':
-          description: Comment deleted successfully.
+          description: Comment deleted successfully
           content:
             application/json:
               schema:
@@ -4657,8 +5272,9 @@ paths:
                   deletedReplies:
                     type: integer
                     example: 3
+                    description: Number of replies that were also deleted
         '400':
-          description: Comment ID is required.
+          description: Required parameters missing
           content:
             application/json:
               schema:
@@ -4666,9 +5282,9 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Comment ID is required"
+                    example: "Required parameters are missing"
         '401':
-          description: Not authorized to delete this comment.
+          description: Not authorized to delete this comment
           content:
             application/json:
               schema:
@@ -4678,17 +5294,17 @@ paths:
                     type: string
                     example: "Not authorized to delete this comment"
         '404':
-          description: Comment not found.
+          description: Post or comment not found
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error:
+                  message:
                     type: string
-                    example: "Comment does not exist"
+                    example: "Post does not exist"
         '500':
-          description: Server error.
+          description: Server error
           content:
             application/json:
               schema:
@@ -4697,6 +5313,151 @@ paths:
                   error:
                     type: string
                     example: "An error occurred while deleting the comment"
+    get:
+      tags:
+        - Comments
+      summary: Get replies for a comment
+      description: >
+        Retrieves replies for a specific comment with pagination support.
+        Only returns one level of replies as the API only supports single-level nesting.
+      parameters:
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+          example: "6458abc123def456"
+        - in: path
+          name: commentId
+          required: true
+          schema:
+            type: string
+          description: ID of the parent comment to get replies for
+          example: "6511b82172d92e69ee81c39b"
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Cursor for pagination
+        - in: query
+          name: replyLimit
+          required: true
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of replies to return
+      responses:
+        '200':
+          description: Replies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 5
+                    description: Number of replies returned
+                  replies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "65120a9384f2b7dca1e4f932"
+                        content:
+                          type: string
+                          example: "This is a reply to the main comment"
+                        date:
+                          type: number
+                          example: 1745268850
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: string
+                              example: "https://example.com/reply-image.jpg"
+                            media_type:
+                              type: string
+                              example: "image"
+                        tagged_users:
+                          type: array
+                          items:
+                            type: string
+                          example: ["Amr-Doma81"]
+                        is_edited:
+                          type: boolean
+                          example: false
+                        author:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            username:
+                              type: string
+                            first_name:
+                              type: string
+                            last_name:
+                              type: string
+                            headline:
+                              type: string
+                            profile_picture:
+                              type: string
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    description: Cursor for the next page of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Post or comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "An error occurred while fetching comments"
   # Invitation Settings Endpoints
   /api/v1/user/privacy-settings/invitations-requests:
     get:
@@ -5571,7 +6332,364 @@ paths:
                   error:
                     type: object
                     description: Error details
-        
+  /api/v2/post/react/{postId}:
+    post:
+      tags:
+        - Reactions
+      summary: Add a reaction to a post or comment
+      description: >
+        Adds or updates a user's reaction to a post or comment.
+        If the user has already reacted, it will update their reaction.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to react to
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_type
+                - reaction
+              properties:
+                comment_id:
+                  type: string
+                  description: Required when reacting to a comment
+                  example: "60d5ec69c5d019ab15c55789"
+                target_type:
+                  type: string
+                  enum: [Post, Comment]
+                  example: "Post"
+                  description: The type of content to react to
+                reaction:
+                  type: string
+                  enum: [like, celebrate, support, love, insightful, funny]
+                  example: "like"
+            examples:
+              postReaction:
+                summary: Example of reacting to a post
+                value:
+                  target_type: "Post"
+                  reaction: "love"
+              commentReaction:
+                summary: Example of reacting to a comment
+                value:
+                  comment_id: "60d5ec69c5d019ab15c55789"
+                  target_type: "Comment"
+                  reaction: "insightful"
+      responses:
+        '200':
+          description: Reaction added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reaction added successfully"
+                  reaction:
+                    type: object
+                  top_reactions:
+                    type: array
+                    items:
+                      type: string
+                    example: ["like", "love", "celebrate"]
+                  totalCount:
+                    type: integer
+                    example: 42
+    delete:
+      tags:
+        - Reactions
+      summary: Remove a reaction from a post or comment
+      description: >
+        Removes the authenticated user's reaction from a post or comment.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post containing the reaction
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+            example: "Bearer jwt_token"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - target_type
+              properties:
+                comment_id:
+                  type: string
+                  description: Required when removing a reaction from a comment
+                  example: "60d5ec69c5d019ab15c55789"
+                target_type:
+                  type: string
+                  enum: [Post, Comment]
+                  example: "Post"
+            examples:
+              postReaction:
+                summary: Example of removing a reaction to a post
+                value:
+                  target_type: "Post"
+              commentReaction:
+                summary: Example of removing a reaction to a comment
+                value:
+                  comment_id: "60d5ec69c5d019ab15c55789"
+                  target_type: "Comment"
+      responses:
+        '200':
+          description: Reaction removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reaction removed successfully"
+                  reaction:
+                    type: object
+                    nullable: true
+                  top_reactions:
+                    type: array
+                    items:
+                      type: string
+                    example: ["like", "love"]
+                  totalCount:
+                    type: integer
+                    example: 41
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Post or comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+    
+    get:
+      tags:
+        - Reactions
+      summary: Get reactions for a post or comment
+      description: >
+        Retrieves paginated reactions for a post or comment, with options to filter by reaction type.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - name: commentId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID of the comment (required when target_type is 'Comment')
+          example: "60d5ec69c5d019ab15c55789"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            default: 10
+          description: Number of results per page
+        - name: targetType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment]
+          description: The type of content to get reactions for
+        - name: specificReaction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [like, celebrate, support, love, insightful, funny]
+          description: Filter by specific reaction type, if nothing is sent all reactions will be returned
+      responses:
+        '200':
+          description: Reactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "reactions successfully retrieved"
+                  reactions:
+                    type: object
+                    properties:
+                      reactions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60f2e5c4c3a1b905d4f88e92"
+                            user_id:
+                              type: string
+                              example: "60d5ec69c5d019ab15c55789"
+                            target_id:
+                              type: string
+                              example: "6458abc123def456"
+                            target_type:
+                              type: string
+                              example: "Post"
+                            reaction:
+                              type: string
+                              example: "like"
+                            date:
+                              type: number
+                              example: 1745268741
+                            author:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  example: "60d5ec69c5d019ab15c55789"
+                                username:
+                                  type: string
+                                  example: "jane_smith"
+                                first_name:
+                                  type: string
+                                  example: "Jane"
+                                last_name:
+                                  type: string
+                                  example: "Smith"
+                                headline:
+                                  type: string
+                                  example: "Product Manager"
+                                profile_picture:
+                                  type: string
+                                  example: "https://example.com/profile2.jpg"
+                      reactions_count:
+                        type: integer
+                        example: 42
+                      reaction_counts:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          like: 25
+                          love: 10
+                          celebrate: 7
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        example: 10
+                        description: Cursor for the next page of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '404':
+          description: Post or comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
   # Add these paths to your openapi.yaml file
   /api/v1/user/subscription/status:
     get:
@@ -5633,6 +6751,12 @@ paths:
                         format: date-time
                         nullable: true
                         example: null
+                      subscription_ends_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: "2023-05-01T00:00:00Z"
+                        
         '401':
           description: Unauthorized - invalid or expired token
           content:
@@ -6034,7 +7158,7 @@ paths:
                             flag_who_can_send_you_invitations:
                               type: string
                               example: "Everyone"
-                  nextCursor:
+                  next_cursor:
                     type: string
                     nullable: true
                     description: Cursor for fetching the next page of results
@@ -6168,6 +7292,9 @@ paths:
                         is_in_received_connections:
                           type: boolean
                           example: false
+                        is_connect_by_email:
+                          type: boolean
+                          example: false
                   pagination:
                     type: object
                     properties:
@@ -6187,6 +7314,9 @@ paths:
                         type: integer
                         example: 5
                         description: Total number of pages
+                      next_cursor:
+                        type: number
+                        example: 2
         '400':
           description: Invalid request parameters
           content:
@@ -6379,6 +7509,12 @@ paths:
       summary: Search for jobs
       description: Search for jobs by keyword or industry
       parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
         - name: query
           in: query
           required: true
@@ -6443,6 +7579,9 @@ paths:
                         timeAgo:
                           type: string
                           example: "3 days ago"
+                        is_saved:
+                          type: boolean
+                          example: true
                         organization:
                           type: object
                           properties:
@@ -6455,7 +7594,7 @@ paths:
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
-                  nextCursor:
+                  next_cursor:
                     type: string
                     example: "60d21b4667d0d8992e610c85"
         '400':
@@ -6478,685 +7617,7 @@ paths:
                   message:
                     type: string
                     example: "Error searching jobs"
-
-
-  /api/v1/jobs/get-top-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Get personalized job recommendations
-      description: >
-        Provides job recommendations tailored to the user's skills, experience, and preferences.
-        Uses a recommendation algorithm that matches user skills with job requirements, excludes jobs
-        from the user's current organization, and excludes jobs the user has already applied to.
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Bearer token for authentication
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Cursor for pagination
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: Number of results per page (default is 10)
-      responses:
-        '200':
-          description: Successfully retrieved personalized job recommendations
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Personalized job recommendations retrieved successfully"
-                  count:
-                    type: integer
-                    example: 5
-                  total:
-                    type: integer
-                    example: 50
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "60d21b4667d0d8992e610c85"
-                        job_title:
-                          type: string
-                          example: "Software Engineer"
-                        location:
-                          type: string
-                          example: "Remote"
-                        workplace_type:
-                          type: string
-                          example: "Hybrid"
-                        experience_level:
-                          type: string
-                          example: "Mid-Senior"
-                        salary:
-                          type: number
-                          example: 85000
-                        timeAgo:
-                          type: string
-                          example: "3 days ago"
-                        organization:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                              example: "60d21b4667d0d8992e610c80"
-                            name:
-                              type: string
-                              example: "Tech Company"
-                            logo:
-                              type: string
-                              example: "https://example.com/logo.png"
-                  nextCursor:
-                    type: string
-                    example: "60d21b4667d0d8992e610c85"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Failed to retrieve job recommendations"
-
-  /api/v1/jobs/get-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Get all jobs
-      description: Retrieves a paginated list of all available jobs with organization details.
-      parameters:
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Cursor for pagination
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: Number of results per page (default is 10)
-      responses:
-        '200':
-          description: Successfully retrieved jobs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs retrieved successfully"
-                  count:
-                    type: integer
-                    example: 10
-                  total:
-                    type: integer
-                    example: 100
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "60d21b4667d0d8992e610c85"
-                        job_title:
-                          type: string
-                          example: "Software Engineer"
-                        location:
-                          type: string
-                          example: "Remote"
-                        workplace_type:
-                          type: string
-                          example: "Hybrid"
-                        experience_level:
-                          type: string
-                          example: "Mid-Senior"
-                        salary:
-                          type: number
-                          example: 85000
-                        timeAgo:
-                          type: string
-                          example: "3 days ago"
-                        organization:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                              example: "60d21b4667d0d8992e610c80"
-                            name:
-                              type: string
-                              example: "Tech Company"
-                            logo:
-                              type: string
-                              example: "https://example.com/logo.png"
-                  nextCursor:
-                    type: string
-                    example: "60d21b4667d0d8992e610c85"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error retrieving jobs"
-
-  /api/v1/jobs/get-job/{jobId}:
-    get:
-      tags:
-        - Jobs
-      summary: Get job details
-      description: Retrieves detailed information about a specific job.
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the job to retrieve
-      responses:
-        '200':
-          description: Successfully retrieved job details
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job retrieved successfully"
-                  data:
-                    type: object
-                    properties:
-                      _id:
-                        type: string
-                        example: "60d21b4667d0d8992e610c85"
-                      job_title:
-                        type: string
-                        example: "Software Engineer"
-                      location:
-                        type: string
-                        example: "Remote"
-                      workplace_type:
-                        type: string
-                        example: "Hybrid"
-                      experience_level:
-                        type: string
-                        example: "Mid-Senior"
-                      salary:
-                        type: number
-                        example: 85000
-                      description:
-                        type: string
-                        example: "We are looking for a skilled Software Engineer to join our team..."
-                      benefits:
-                        type: array
-                        items:
-                          type: string
-                        example: ["Health insurance", "401(k) matching", "Remote work options"]
-                      qualifications:
-                        type: array
-                        items:
-                          type: string
-                        example: ["Bachelor's degree", "3+ years experience", "JavaScript"]
-                      responsibilities:
-                        type: array
-                        items:
-                          type: string
-                        example: ["Develop web applications", "Code review", "Testing"]
-                      timeAgo:
-                        type: string
-                        example: "3 days ago"
-                      is_saved:
-                        type: boolean
-                        example: true
-                      organization:
-                        type: object
-                        properties:
-                          _id:
-                            type: string
-                            example: "60d21b4667d0d8992e610c80"
-                          name:
-                            type: string
-                            example: "Tech Company"
-                          logo:
-                            type: string
-                            example: "https://example.com/logo.png"
-        '400':
-          description: Invalid job ID
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid job ID format"
-        '404':
-          description: Job not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job not found"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Failed to retrieve job"
-
-  /api/v1/jobs/save-jobs/{jobId}:
-    post:
-      tags:
-        - Jobs
-      summary: Save a job
-      description: Saves a job to the user's saved jobs list.
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the job to save
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Bearer token for authentication
-      responses:
-        '200':
-          description: Job saved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job saved successfully"
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job is already saved"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-        '404':
-          description: Job not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job not found"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error saving job"
-
-  /api/v1/jobs/unsave-jobs/{jobId}:
-    delete:
-      tags:
-        - Jobs
-      summary: Unsave a job
-      description: Removes a job from the user's saved jobs list.
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the job to unsave
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Bearer token for authentication
-      responses:
-        '200':
-          description: Job unsaved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job unsaved successfully"
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job is not saved"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-        '404':
-          description: Job not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Job not found"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error unsaving job"
-
-  /api/v1/jobs/get-saved-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Get saved jobs
-      description: Retrieves all jobs saved by the user.
-      parameters:
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Bearer token for authentication
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Cursor for pagination
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: Number of results per page (default is 10)
-      responses:
-        '200':
-          description: Successfully retrieved saved jobs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Saved jobs retrieved successfully"
-                  count:
-                    type: integer
-                    example: 5
-                  total:
-                    type: integer
-                    example: 15
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "60d21b4667d0d8992e610c85"
-                        job_title:
-                          type: string
-                          example: "Software Engineer"
-                        location:
-                          type: string
-                          example: "Remote"
-                        workplace_type:
-                          type: string
-                          example: "Hybrid"
-                        experience_level:
-                          type: string
-                          example: "Mid-Senior"
-                        salary:
-                          type: number
-                          example: 85000
-                        timeAgo:
-                          type: string
-                          example: "3 days ago"
-                        organization:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                              example: "60d21b4667d0d8992e610c80"
-                            name:
-                              type: string
-                              example: "Tech Company"
-                            logo:
-                              type: string
-                              example: "https://example.com/logo.png"
-                  nextCursor:
-                    type: string
-                    example: "60d21b4667d0d8992e610c85"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error retrieving saved jobs"
-
-  /api/v1/jobs/filter-jobs:
-    get:
-      tags:
-        - Jobs
-      summary: Filter jobs
-      description: Filters jobs based on specified criteria.
-      parameters:
-        - name: Authorization
-          in: header
-          required: false
-          schema:
-            type: string
-          description: Bearer token for authentication (optional)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                location:
-                  type: string
-                  example: "New York"
-                  description: Location to filter by
-                experienceLevel:
-                  type: array
-                  items:
-                    type: string
-                  example: ["Entry Level", "Associate"]
-                  description: Experience levels to filter by
-                companyId:
-                  type: string
-                  example: "60d21b4667d0d8992e610c80"
-                  description: Company ID to filter by
-                minSalary:
-                  type: number
-                  example: 50000
-                  description: Minimum salary to filter by
-                maxSalary:
-                  type: number
-                  example: 100000
-                  description: Maximum salary to filter by
-      responses:
-        '200':
-          description: Successfully filtered jobs
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Jobs filtered successfully"
-                  count:
-                    type: integer
-                    example: 3
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "60d21b4667d0d8992e610c85"
-                        job_title:
-                          type: string
-                          example: "Junior Developer"
-                        location:
-                          type: string
-                          example: "New York"
-                        workplace_type:
-                          type: string
-                          example: "On-site"
-                        experience_level:
-                          type: string
-                          example: "Entry Level"
-                        salary:
-                          type: number
-                          example: 65000
-                        organization_id:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                              example: "60d21b4667d0d8992e610c80"
-                            name:
-                              type: string
-                              example: "Tech Company"
-                            logo:
-                              type: string
-                              example: "https://example.com/logo.png"
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "At least one filter must be provided"
-        '404':
-          description: No matching jobs found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "No jobs found matching the provided filters"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error filtering jobs"
   
-# Add this section to your paths in openapi.yaml
-
   /api/v1/jobs/get-top-jobs:
     get:
       tags:
@@ -7164,8 +7625,12 @@ paths:
       summary: Get personalized job recommendations
       description: >
         Provides job recommendations tailored to the user's skills, experience, and preferences.
-        Uses a recommendation algorithm that matches user skills with job requirements, excludes jobs
-        from the user's current organization, and excludes jobs the user has already applied to.
+        Uses a sophisticated matching algorithm that:
+        - Matches user skills with job required skills
+        - Excludes jobs the user has already applied to
+        - Excludes jobs from the user's current organizations
+        - Considers industries matching user's experience
+        - Returns ranked job recommendations with organization details
       parameters:
         - name: Authorization
           in: header
@@ -7178,13 +7643,14 @@ paths:
           required: false
           schema:
             type: string
-          description: Cursor for pagination
+          description: Cursor for pagination (ID of the last job in previous page)
         - name: limit
           in: query
           required: false
           schema:
             type: integer
-          description: Number of results per page (default is 10)
+            default: 10
+          description: Maximum number of jobs to return per page
       responses:
         '200':
           description: Successfully retrieved personalized job recommendations
@@ -7198,10 +7664,12 @@ paths:
                     example: "Personalized job recommendations retrieved successfully"
                   count:
                     type: integer
-                    example: 5
+                    description: Number of jobs returned in this page
+                    example: 10
                   total:
                     type: integer
-                    example: 50
+                    description: Total number of matching jobs
+                    example: 42
                   data:
                     type: array
                     items:
@@ -7209,42 +7677,35 @@ paths:
                       properties:
                         _id:
                           type: string
-                          example: "60d21b4667d0d8992e610c85"
                         job_title:
                           type: string
-                          example: "Software Engineer"
                         location:
                           type: string
-                          example: "Remote"
                         workplace_type:
                           type: string
-                          example: "Hybrid"
                         experience_level:
                           type: string
-                          example: "Mid-Senior"
                         salary:
                           type: number
-                          example: 85000
+                        posted_time:
+                          type: string
+                          format: date-time
                         timeAgo:
                           type: string
-                          example: "3 days ago"
                         organization:
                           type: object
                           properties:
                             _id:
                               type: string
-                              example: "60d21b4667d0d8992e610c80"
                             name:
                               type: string
-                              example: "Tech Company"
                             logo:
                               type: string
-                              example: "https://example.com/logo.png"
-                  nextCursor:
+                  next_cursor:
                     type: string
-                    example: "60d21b4667d0d8992e610c85"
+                    description: Cursor for the next page of results (null if no more results)
         '401':
-          description: Unauthorized
+          description: Unauthorized - invalid or expired token
           content:
             application/json:
               schema:
@@ -7263,26 +7724,32 @@ paths:
                   message:
                     type: string
                     example: "Failed to retrieve job recommendations"
+      security:
+        - bearerAuth: []
 
   /api/v1/jobs/get-jobs:
     get:
       tags:
         - Jobs
       summary: Get all jobs
-      description: Retrieves a paginated list of all available jobs with organization details.
+      description: >
+        Retrieves a paginated list of all available jobs with organization details.
+        Results are sorted by most recent first and include essential job information
+        along with the associated organization details.
       parameters:
         - name: cursor
           in: query
           required: false
           schema:
             type: string
-          description: Cursor for pagination
+          description: Cursor for pagination (ID of the last job in previous page)
         - name: limit
           in: query
           required: false
           schema:
             type: integer
-          description: Number of results per page (default is 10)
+            default: 10
+          description: Maximum number of jobs to return per page
       responses:
         '200':
           description: Successfully retrieved jobs
@@ -7296,10 +7763,12 @@ paths:
                     example: "Jobs retrieved successfully"
                   count:
                     type: integer
+                    description: Number of jobs returned in this page
                     example: 10
                   total:
                     type: integer
-                    example: 100
+                    description: Total number of jobs available
+                    example: 150
                   data:
                     type: array
                     items:
@@ -7307,40 +7776,30 @@ paths:
                       properties:
                         _id:
                           type: string
-                          example: "60d21b4667d0d8992e610c85"
                         job_title:
                           type: string
-                          example: "Software Engineer"
                         location:
                           type: string
-                          example: "Remote"
                         workplace_type:
                           type: string
-                          example: "Hybrid"
                         experience_level:
                           type: string
-                          example: "Mid-Senior"
                         salary:
                           type: number
-                          example: 85000
                         timeAgo:
                           type: string
-                          example: "3 days ago"
                         organization:
                           type: object
                           properties:
                             _id:
                               type: string
-                              example: "60d21b4667d0d8992e610c80"
                             name:
                               type: string
-                              example: "Tech Company"
                             logo:
                               type: string
-                              example: "https://example.com/logo.png"
-                  nextCursor:
+                  next_cursor:
                     type: string
-                    example: "60d21b4667d0d8992e610c85"
+                    description: Cursor for the next page of results (null if no more results)
         '500':
           description: Server error
           content:
@@ -7350,14 +7809,17 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error retrieving jobs"
+                    example: "Failed to retrieve jobs"
 
   /api/v1/jobs/get-job/{jobId}:
     get:
       tags:
         - Jobs
       summary: Get job details
-      description: Retrieves detailed information about a specific job.
+      description: >
+        Retrieves detailed information about a specific job including its full description,
+        qualifications, responsibilities, benefits, and organization details. For authenticated users,
+        also indicates whether the job is saved by the user.
       parameters:
         - name: jobId
           in: path
@@ -7365,6 +7827,12 @@ paths:
           schema:
             type: string
           description: ID of the job to retrieve
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional bearer token for authentication (to check saved status)
       responses:
         '200':
           description: Successfully retrieved job details
@@ -7381,60 +7849,57 @@ paths:
                     properties:
                       _id:
                         type: string
-                        example: "60d21b4667d0d8992e610c85"
                       job_title:
                         type: string
-                        example: "Software Engineer"
                       location:
                         type: string
-                        example: "Remote"
                       workplace_type:
                         type: string
-                        example: "Hybrid"
                       experience_level:
                         type: string
-                        example: "Mid-Senior"
                       salary:
                         type: number
-                        example: 85000
+                      posted_time:
+                        type: string
+                        format: date-time
                       description:
                         type: string
-                        example: "We are looking for a skilled Software Engineer to join our team..."
                       benefits:
                         type: array
                         items:
                           type: string
-                        example: ["Health insurance", "401(k) matching", "Remote work options"]
                       qualifications:
                         type: array
                         items:
                           type: string
-                        example: ["Bachelor's degree", "3+ years experience", "JavaScript"]
                       responsibilities:
                         type: array
                         items:
                           type: string
-                        example: ["Develop web applications", "Code review", "Testing"]
                       timeAgo:
                         type: string
-                        example: "3 days ago"
                       is_saved:
                         type: boolean
-                        example: true
+                        description: Whether the job is saved by the authenticated user
                       organization:
                         type: object
                         properties:
                           _id:
                             type: string
-                            example: "60d21b4667d0d8992e610c80"
                           name:
                             type: string
-                            example: "Tech Company"
                           logo:
                             type: string
-                            example: "https://example.com/logo.png"
+                          industry:
+                            type: string
+                          size:
+                            type: string
+                          description:
+                            type: string
+                          followers_count:
+                            type: integer
         '400':
-          description: Invalid job ID
+          description: Invalid job ID format
           content:
             application/json:
               schema:
@@ -7686,7 +8151,7 @@ paths:
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
-                  nextCursor:
+                  next_cursor:
                     type: string
                     example: "60d21b4667d0d8992e610c85"
         '401':
@@ -7831,34 +8296,61 @@ paths:
                   message:
                     type: string
                     example: "Error filtering jobs"
-  /api/v1/jobs/search-jobs:
+
+
+  /api/v1/user/privacy-settings:
     get:
       tags:
-        - Jobs
-      summary: Search for jobs
-      description: Search for jobs by keyword or industry
+        - Privacy Settings
+      summary: Get all privacy settings
+      description: >
+        Retrieves all privacy settings for the authenticated user in a single request.
+        This includes profile visibility, invitation settings, follow settings, messaging preferences, and more.
       parameters:
-        - name: query
-          in: query
+        - name: Authorization
+          in: header
           required: true
           schema:
             type: string
-          description: Search term to look for in all job fields
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: string
-          description: Cursor for pagination
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: Number of results per page (default is 10)
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
       responses:
         '200':
-          description: Successfully retrieved search results
+          description: Successfully retrieved all privacy settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messagingRequests:
+                    type: boolean
+                    description: Whether non-connections can send you messages
+                    example: true
+                  isFollowPrimary:
+                    type: boolean
+                    description: Whether "Follow" is the primary action instead of "Connect"
+                    example: false
+                  readReceipts:
+                    type: boolean
+                    description: Whether other users can see when you've read their messages
+                    example: true
+                  followSetting:
+                    type: string
+                    enum: ["Everyone", "Connections only"]
+                    description: Who can follow you
+                    example: "Everyone"
+                  invitationSetting:
+                    type: string
+                    enum: ["Everyone", "Email"]
+                    description: Who can send you connection invitations
+                    example: "Everyone"
+                  profileVisibility:
+                    type: string
+                    enum: ["Public", "Connections only"]
+                    description: Who can view your full profile
+                    example: "Public"
+        '401':
+          description: Unauthorized - invalid or expired token
           content:
             application/json:
               schema:
@@ -7866,16 +8358,297 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Job search results"
-                  query:
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
                     type: string
-                    example: "software"
+                    example: "Error retrieving all privacy settings"
+                  error:
+                    type: object
+  
+  /api/v1/job-application/apply-for-job:
+    get:
+      tags:
+        - Job Applications
+      summary: Get user data for job application
+      description: >
+        Retrieves the authenticated user's profile data that would be needed for a job application,
+        including name, contact information, and resume.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      bio:
+                        type: object
+                        properties:
+                          first_name:
+                            type: string
+                            example: "John"
+                          last_name:
+                            type: string
+                            example: "Doe"
+                          headline:
+                            type: string
+                            example: "Software Engineer"
+                          contact_info:
+                            type: object
+                            properties:
+                              phone_number:
+                                type: number
+                                example: 1234567890
+                              country_code:
+                                type: string
+                                example: "+1"
+                      email:
+                        type: string
+                        example: "john.doe@example.com"
+                      profile_photo:
+                        type: string
+                        example: "https://example.com/photo.jpg"
+                      location:
+                        type: string
+                        example: "New York, USA"
+                      resume:
+                        type: string
+                        example: "https://example.com/resume.pdf"
+                  message:
+                    type: string
+                    example: "User data retrieved successfully for job application"
+        '401':
+          description: Unauthorized or invalid token
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /api/v1/job-application/create-job-application/{job_id}:
+    post:
+      tags:
+        - Job Applications
+      summary: Submit job application
+      description: >
+        Submits a job application for a specific job. Creates a new job application record,
+        adds the application to the job's applications list, and updates the user's applied jobs list.
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to apply for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email_address
+                - phone_number
+                - country_code
+                - resume
+              properties:
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+                email_address:
+                  type: string
+                  example: "john.doe@example.com"
+                phone_number:
+                  type: number
+                  example: 1234567890
+                country_code:
+                  type: string
+                  example: "US"
+                resume:
+                  type: string
+                  example: "https://example.com/resume.pdf"
+      responses:
+        '201':
+          description: Job application submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job application submitted successfully"
+                  application:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c86"
+                      job_id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      application_status:
+                        type: string
+                        example: "Pending"
+        '400':
+          description: Bad request - Invalid job ID or already applied for this job
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found
+        '500':
+          description: Server error
+
+  /api/v1/job-application/get-job-applications/{job_id}:
+    get:
+      tags:
+        - Job Applications
+      summary: Get all applications for a job
+      description: >
+        Retrieves all job applications submitted for a specific job. Includes applicant information
+        such as name, contact details, and resume. Only accessible by admins of the organization that 
+        posted the job.
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to get applications for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Job applications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c86"
+                        job_id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c87"
+                            bio:
+                              type: object
+                            profile_photo:
+                              type: string
+                            location:
+                              type: string
+                            resume:
+                              type: string
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        email_address:
+                          type: string
+                          example: "john.doe@example.com"
+                        phone_number:
+                          type: number
+                          example: 1234567890
+                        country_code:
+                          type: string
+                          example: "US"
+                        resume:
+                          type: string
+                          example: "https://example.com/resume.pdf"
+                        application_status:
+                          type: string
+                          enum: [Pending, Viewed, Accepted, Rejected]
+                          example: "Pending"
+        '400':
+          description: Invalid job ID
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not an admin of the organization
+        '404':
+          description: Job not found
+        '500':
+          description: Server error
+
+  /api/v1/job-application/get-applied-jobs:
+    get:
+      tags:
+        - Job Applications
+      summary: Get user's applied jobs
+      description: >
+        Retrieves all jobs that the authenticated user has applied for.
+        Includes job details, organization information, and application status.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Applied jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Applied jobs retrieved successfully"
                   count:
                     type: integer
-                    example: 5
-                  total:
-                    type: integer
-                    example: 15
+                    example: 2
                   data:
                     type: array
                     items:
@@ -7889,7 +8662,7 @@ paths:
                           example: "Software Engineer"
                         location:
                           type: string
-                          example: "Remote"
+                          example: "New York, USA"
                         workplace_type:
                           type: string
                           example: "Hybrid"
@@ -7898,27 +8671,71 @@ paths:
                           example: "Mid-Senior"
                         salary:
                           type: number
-                          example: 85000
-                        timeAgo:
+                          example: 100000
+                        posted_time:
                           type: string
-                          example: "3 days ago"
+                          format: date-time
+                        application_status:
+                          type: string
+                          enum: [Pending, Viewed, Accepted, Rejected]
+                          example: "Pending"
+                        application_id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c86"
                         organization:
                           type: object
                           properties:
                             _id:
                               type: string
-                              example: "60d21b4667d0d8992e610c80"
+                              example: "60d21b4667d0d8992e610c87"
                             name:
                               type: string
                               example: "Tech Company"
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
-                  nextCursor:
-                    type: string
-                    example: "60d21b4667d0d8992e610c85"
-        '400':
-          description: Bad request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/job-application/update-job-application-status/{application_id}:
+    put:
+      tags:
+        - Job Applications
+      summary: Update job application status
+      description: >
+        Updates the status of a job application (e.g., from Pending to Viewed, Accepted, or Rejected).
+        Only admins of the organization that posted the job can update application statuses.
+      parameters:
+        - name: application_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the application to update
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [Pending, Viewed, Accepted, Rejected]
+                  example: "Viewed"
+      responses:
+        '200':
+          description: Job application status updated successfully
           content:
             application/json:
               schema:
@@ -7926,7 +8743,950 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Please provide a keyword or industry to search for"
+                    example: "Job application status updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c86"
+                      job_id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      user_id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c87"
+                      application_status:
+                        type: string
+                        enum: [Pending, Viewed, Accepted, Rejected]
+                        example: "Viewed"
+                      # Other application properties
+        '400':
+          description: Invalid application ID
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not an admin of the organization
+        '404':
+          description: Job application or job not found
+        '500':
+          description: Server error
+
+  /api/v1/company/create-company-profile:
+    post:
+      tags:
+        - Company Profile
+      summary: Create a company profile
+      description: >
+        Creates a new company profile and assigns the authenticated user as an admin.
+        Uploads and processes the company logo if provided.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - industry
+              properties:
+                name:
+                  type: string
+                  example: "Acme Corporation"
+                category_type:
+                  type: string
+                  example: "Tech"
+                website:
+                  type: string
+                  example: "https://www.acmecorp.com"
+                logo:
+                  type: string
+                  format: base64
+                  description: Base64 encoded image data
+                description:
+                  type: string
+                  example: "Leading technology solutions provider"
+                industry:
+                  type: string
+                  example: "Information Technology"
+                location:
+                  type: object
+                  properties:
+                    country:
+                      type: string
+                      example: "United States"
+                    city:
+                      type: string
+                      example: "San Francisco"
+                size:
+                  type: string
+                  example: "51-200 employees"
+                type:
+                  type: string
+                  example: "Private"
+      responses:
+        '201':
+          description: Company profile created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile created successfully"
+                  companyProfile:
+                    type: object
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/company/update-company-profile/{companyId}:
+    put:
+      tags:
+        - Company Profile
+      summary: Update a company profile
+      description: >
+        Updates an existing company profile. Only company admins can update the profile.
+        Uploads and processes a new company logo if provided.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to update
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Acme Corporation"
+                category_type:
+                  type: string
+                  example: "Tech"
+                website:
+                  type: string
+                  example: "https://www.acmecorp.com"
+                logo:
+                  type: string
+                  format: base64
+                  description: Base64 encoded image data
+                description:
+                  type: string
+                  example: "Leading technology solutions provider"
+                industry:
+                  type: string
+                  example: "Information Technology"
+                location:
+                  type: object
+                  properties:
+                    country:
+                      type: string
+                      example: "United States"
+                    city:
+                      type: string
+                      example: "San Francisco"
+                tagline:
+                  type: string
+                  example: "Innovation for tomorrow"
+                size:
+                  type: string
+                  example: "51-200 employees"
+                type:
+                  type: string
+                  example: "Private"
+                phone:
+                  type: string
+                  example: "+1-123-456-7890"
+      responses:
+        '200':
+          description: Company profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile updated successfully"
+                  companyProfile:
+                    type: object
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this company
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/delete-company-profile/{companyId}:
+    delete:
+      tags:
+        - Company Profile
+      summary: Delete a company profile
+      description: >
+        Deletes a company profile and all associated jobs.
+        Updates all admin users to remove this company from their organizations list.
+        Only company admins can delete the profile.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to delete
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Company profile deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile deleted successfully"
+                  deletedJobsCount:
+                    type: integer
+                    example: 5
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this company
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-company-all-view/{companyId}:
+    get:
+      tags:
+        - Company Profile
+      summary: Get company profile (public view)
+      description: >
+        Retrieves the complete profile information for a company.
+        Accessible by any user without authentication requirements.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to retrieve
+      responses:
+        '200':
+          description: Company profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile retrieved successfully"
+                  companyProfile:
+                    type: object
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-company-admin-view/{companyId}:
+    get:
+      tags:
+        - Company Profile
+      summary: Get company profile (admin view)
+      description: >
+        Retrieves basic company information with follower count.
+        Only accessible by users who are admins of the company.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to retrieve
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Company basic info retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company basic info retrieved successfully"
+                  company:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      name:
+                        type: string
+                        example: "Acme Corporation"
+                      logo:
+                        type: string
+                        example: "https://example.com/logo.png"
+                      followerCount:
+                        type: integer
+                        example: 125
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this company
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-user-comapanies:
+    get:
+      tags:
+        - Company Profile
+      summary: Get user's admin companies
+      description: >
+        Retrieves a list of companies where the authenticated user is an admin.
+        Returns basic information including company name and logo.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User's admin companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organizations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "Acme Corporation"
+                        logo:
+                          type: string
+                          example: "https://example.com/logo.png"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  
+  /api/v1/company/make-admin/{organization_id}/{user_id}:
+    post:
+      tags:
+        - Company Settings
+      summary: Make a user an admin of an organization
+      description: >
+        Grants admin privileges to a user for a specific organization.
+        Only existing admins can add new admins to an organization.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to make admin
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User made admin successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User made admin successfully"
+                  organization:
+                    type: object
+                    properties:
+                      admins:
+                        type: array
+                        items:
+                          type: string
+        '400':
+          description: User is already an admin
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or user not found
+        '500':
+          description: Server error
+
+  /api/v1/company/remove-admin/{organization_id}/{user_id}:
+    delete:
+      tags:
+        - Company Settings
+      summary: Remove an admin from an organization
+      description: >
+        Revokes admin privileges from a user for a specific organization.
+        Only existing admins can remove other admins. Cannot remove yourself or the last admin.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the admin to remove
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Admin removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Admin removed successfully"
+                  organization:
+                    type: object
+                    properties:
+                      admins:
+                        type: array
+                        items:
+                          type: string
+        '400':
+          description: Cannot remove yourself as admin or Cannot remove the last admin
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or admin not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-admins/{organization_id}:
+    get:
+      tags:
+        - Company Settings
+      summary: Get all admins of an organization
+      description: >
+        Retrieves a list of all users with admin privileges for the specified organization.
+        Only admins of the organization can access this information.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Admins retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  admins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: string
+                          example: "auth0|123456789"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer"
+                        profile_picture:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/block-follower/{organization_id}/{follower_id}:
+    post:
+      tags:
+        - Company Settings
+      summary: Block a follower from an organization
+      description: >
+        Blocks a user from following an organization and removes any existing job applications and saved jobs
+        related to the organization. Only admins can block followers, and admins cannot be blocked.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: follower_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the follower to block
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Follower blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Follower blocked successfully"
+                  details:
+                    type: object
+                    properties:
+                      savedJobsRemoved:
+                        type: integer
+                        example: 3
+                      applicationsRemoved:
+                        type: integer
+                        example: 2
+        '400':
+          description: Cannot block an admin user
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or follower not found
+        '500':
+          description: Server error
+
+  /api/v1/company/unblock-follower/{organization_id}/{follower_id}:
+    delete:
+      tags:
+        - Company Settings
+      summary: Unblock a follower for an organization
+      description: >
+        Removes a user from the organization's blocked list and adds them back to the followers list.
+        Only admins can unblock followers.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: follower_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the follower to unblock
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Follower unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Follower unblocked successfully"
+                  blocked_followers:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or follower not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-blocked-followers/{organization_id}:
+    get:
+      tags:
+        - Company Settings
+      summary: Get blocked followers of an organization
+      description: >
+        Retrieves a list of all users who have been blocked from following the organization.
+        Only admins of the organization can access this information.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Blocked followers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocked_followers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: string
+                          example: "auth0|123456789"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer"
+                        profile_photo:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/follow-organization/{organization_id}:
+    post:
+      tags:
+        - Company Settings
+      summary: Follow an organization
+      description: >
+        Allows a user to follow an organization. Users cannot follow organizations that have blocked them.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to follow
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User followed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User followed successfully"
+                  followers:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: User is already a follower or User is blocked from following
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/unfollow-organization/{organization_id}:
+    delete:
+      tags:
+        - Company Settings
+      summary: Unfollow an organization
+      description: >
+        Allows a user to unfollow an organization they are currently following.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to unfollow
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User unfollowed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User unfollowed successfully"
+                  followers:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: User is not a follower
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-followers/{organization_id}:
+    get:
+      tags:
+        - Company Settings
+      summary: Get followers of an organization
+      description: >
+        Retrieves a list of all users who are following the organization.
+        Only admins of the organization can access this information.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Followers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  followers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: string
+                          example: "auth0|123456789"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer"
+                        profile_photo:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+  
+  /api/v1/user/profile/about:
+    post:
+      tags:
+        - User Profile
+      summary: Add user about information
+      description: >
+        Creates a new about section for the authenticated user's profile.
+        This endpoint can only be used if no about section exists yet.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about:
+                  type: string
+                  description: Text describing the user
+                  example: "Experienced software developer with 5+ years in full-stack development."
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  description: List of skills related to the user
+                  example: ["JavaScript", "React", "Node.js", "MongoDB"]
+              required:
+                - about
+      responses:
+        '200':
+          description: About section added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section added successfully"
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                        example: "Experienced software developer with 5+ years in full-stack development."
+                      skills:
+                        type: array
+                        items:
+                          type: string
+                        example: ["JavaScript", "React", "Node.js", "MongoDB"]
+        '400':
+          description: About section already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section already exists. Use update instead."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
         '500':
           description: Server error
           content:
@@ -7936,7 +9696,234 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Error searching jobs"
+                    example: "Server error"
+
+    put:
+      tags:
+        - User Profile
+      summary: Update user about information
+      description: >
+        Updates the existing about section for the authenticated user's profile.
+        This endpoint can only be used if an about section already exists.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about:
+                  type: string
+                  description: Updated text describing the user
+                  example: "Software architect with expertise in scalable systems and cloud infrastructure."
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated list of skills related to the user
+                  example: ["JavaScript", "React", "AWS", "System Design", "Microservices"]
+              required:
+                - about
+      responses:
+        '200':
+          description: About section updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section updated successfully"
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                      skills:
+                        type: array
+                        items:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '404':
+          description: About section not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found. Use add instead."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+    delete:
+      tags:
+        - User Profile
+      summary: Delete user about information
+      description: Removes the about section from the authenticated user's profile
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: About section deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '404':
+          description: About section not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/user/profile/about/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user about information
+      description: >
+        Retrieves the about section for a specific user. Access is limited based on
+        the target user's privacy settings and connection status with the requesting user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose about information is being requested
+          example: "john-doe123"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: About section retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the requested profile belongs to the authenticated user
+                    example: false
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                        example: "Experienced software developer with 5+ years in full-stack development."
+                      skills:
+                        type: array
+                        items:
+                          type: string
+                        example: ["JavaScript", "React", "Node.js", "MongoDB"]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Target profile is private and you are not connected."
+        '404':
+          description: About section or user not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+security:
+  - bearerAuth: []
 
 components:
   securitySchemes:

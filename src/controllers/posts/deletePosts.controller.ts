@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { findUserByUserId } from '../../utils/database.helper.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
+import { deleteAllComments } from '../../repositories/comment.repository.ts';
+import { deleteAllPostReactions, deleteCommentReactions } from '../../repositories/reacts.repository.ts';
+import { postTypeEnum } from '../../models/posts.model.ts';
 
 
 /**
@@ -27,8 +30,26 @@ const deletePost = async (req: Request, res: Response): Promise<Response | void>
         if (!post){
             return res.status(400).json({message:'Post does not exist ' })
         }
+        await deleteAllPostReactions(postId);
+        await deleteAllComments(postId);
+        if(post.reposts){
+            const repostIds = post.reposts.map(repost => repost.toString());
+            await postRepository.deleteAllRepostsOfPost(repostIds);
+
+        }
         // remove post from the user
-        user.activity.posts = user.activity.posts.filter((userPost) => userPost.toString() !== postId);
+        if (post.post_type === postTypeEnum.standard){
+            user.activity.posts = user.activity.posts.filter((userPost) => userPost.toString() !== postId);
+
+        } else{
+            user.activity.reposted_posts = user.activity.reposted_posts.filter((userPost) => userPost.toString() !== postId);
+            const originalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (originalPost){
+                originalPost.reposts = originalPost.reposts!.filter((userPost) => userPost.toString() !== postId);
+                await originalPost.save();
+            }
+
+        }
 
         // Save the updated user
         await user.save();
