@@ -545,38 +545,132 @@ export const convert_idIntoUser_id = async (
 
 
 /**
- * Gets formatted author information from a user document
- * @param userId - The user ID to fetch author information for
- * @returns A Promise containing the formatted author object
+* Gets formatted author information from a user document with correct connection degree
+* @param userId - The user ID to fetch author information for
+* @param viewerId - The ID of the viewing user
+* @returns A Promise containing the formatted author object
+*/
+export async function getFormattedAuthor(userId: string, viewerId: string) {
+ try {
+   // Get the target user's information
+   const userDoc = await Users.findOne(
+     { _id: userId },
+     {
+       user_id: 1,
+       "bio.first_name": 1,
+       "bio.last_name": 1,
+       "bio.headline": 1,
+       profile_photo: 1
+     }
+   ).lean();
+   
+   if (!userDoc) {
+     return null;
+   }
+
+   // Get the viewer's connections
+   const viewerUser = await Users.findOne(
+     { _id: viewerId },
+     {
+       user_id: 1,
+       connections: 1
+     }
+   ).lean();
+   
+   if (!viewerUser) {
+     return null;
+   }
+   
+   // Extract viewer's connections as string IDs
+   const viewerConnections = viewerUser.connections.map((conn: any) => 
+     typeof conn === 'object' && conn !== null && '_id' in conn 
+       ? conn._id.toString() 
+       : typeof conn === 'string' ? conn : String(conn)
+   );
+   
+   // Calculate second-degree connections
+   const secondDegreeConnections = await calculateSecondDegreeConnections(
+     viewerConnections,
+     viewerUser._id.toString()
+   );
+
+   // Determine connection degree
+   let connectionDegree = '3rd+';
+   
+   if (viewerId === userId.toString()) {
+     connectionDegree = 'self';
+   } else if (viewerConnections.includes(userId.toString())) {
+     connectionDegree = '1st';
+   } else if (secondDegreeConnections.has(userId.toString())) {
+     connectionDegree = '2nd';
+   }
+   
+   return {
+     username: userDoc.user_id,
+     first_name: userDoc.bio?.first_name || "",
+     last_name: userDoc.bio?.last_name || "",
+     headline: userDoc.bio?.headline || "",
+     profile_picture: userDoc.profile_photo || "",
+     connection_degree: connectionDegree
+   };
+ } catch (err) {
+   console.error("Error fetching author info:", err);
+   return null;
+ }
+}
+
+/**
+ * Calculates second-degree connections for a user
+ * 
+ * Second-degree connections are people connected to the user's direct connections,
+ * but not directly connected to the user themselves.
+ * 
+ * @param viewerConnections - Array of connection IDs for the current user
+ * @param viewerUserId - ID of the current user
+ * @returns Set of second-degree connection IDs
  */
-
-
-export async function getFormattedAuthor(userId: string) {
-  try {
-    const userDoc = await Users.findOne(
-      { _id: userId },
-      {
-        user_id: 1,
-        "bio.first_name": 1,
-        "bio.last_name": 1,
-        "bio.headline": 1,
-        profile_photo: 1
-      }
-    ).lean();
-    
-    if (!userDoc) {
-      return null;
-    }
-    
-    return {
-      username: userDoc.user_id,
-      first_name: userDoc.bio?.first_name || "",
-      last_name: userDoc.bio?.last_name || "",
-      headline: userDoc.bio?.headline || "",
-      profile_picture: userDoc.profile_photo || ""
-    };
-  } catch (err) {
-    console.error("Error fetching author info:", err);
-    return null;
+export async function calculateSecondDegreeConnections(
+  viewerConnections: string[],
+  viewerUserId: string
+): Promise<Set<string>> {
+  const secondDegreeConnections = new Set<string>();
+  
+  if (viewerConnections.length === 0) {
+    return secondDegreeConnections;
   }
+  
+  // Find all first-degree connections to extract their connections
+  const firstDegreeConnectionUsers = await Users.find(
+    { _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) } },
+    { connections: 1 }
+  ).lean();
+  
+  // Process each user's connections
+  firstDegreeConnectionUsers.forEach(connUser => {
+    if (Array.isArray(connUser.connections)) {
+      connUser.connections.forEach(secondConn => {
+        const secondConnId = extractConnectionId(secondConn);
+        
+        // Only add if not already a 1st degree connection and not the viewer
+        if (!viewerConnections.includes(secondConnId) && secondConnId !== viewerUserId) {
+          secondDegreeConnections.add(secondConnId);
+        }
+      });
+    }
+  });
+  
+  return secondDegreeConnections;
+}
+
+/**
+ * Extracts a standardized ID from a connection object or string
+ * 
+ * @param connection - Connection that might be an object with _id or a string ID
+ * @returns Standardized string ID
+ */
+function extractConnectionId(connection: any): string {
+  if (typeof connection === 'object' && connection !== null && '_id' in connection) {
+    return connection._id.toString();
+  }
+  return typeof connection === 'string' ? connection : String(connection);
 }
