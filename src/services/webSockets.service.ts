@@ -151,12 +151,21 @@ export class WebSocketService {
         throw new CustomError("Conversation ID is required", 400);
       }
 
+      //get other userId from the conversation
+      const conversation = await this.conversationRepo.getConversation(conversationId);
+      if (!conversation) {
+        throw new CustomError("Conversation not found", 404);
+      }
+      const otherUserId = conversation.user1_id.toString() === userId
+        ? conversation.user2_id.toString() 
+        : conversation.user1_id.toString();
+
       // Attempt to mark the conversation as unread in the repository
-      const updated = await this.conversationRepo.markConversationAsUnread(conversationId, userId);
+      const updated = await this.conversationRepo.markConversationAsUnread(conversationId, otherUserId);
       
       // Proceed only if the repository indicated an update occurred
       if (updated) {
-        console.log(`Conversation ${conversationId} marked as unread for user ${userId}`);
+        console.log(`Conversation ${conversationId} marked as unread for user ${otherUserId}`);
         
         // Fetch the conversation details to find the other participant
         // This is necessary to notify the other user
@@ -165,10 +174,6 @@ export class WebSocketService {
             console.error(`Mark as unread error: Conversation ${conversationId} not found after update.`);
             return; 
         }
-
-        const otherUserId = conversation.user1_id.toString() === userId 
-          ? conversation.user2_id.toString() 
-          : conversation.user1_id.toString();
 
         // Notify the other user if they are online
         const otherUserSocketId = this.userSockets.get(otherUserId);
@@ -184,19 +189,19 @@ export class WebSocketService {
 
         // Get the specific unread count for *this* conversation for the requesting user
         const conversationUnreadCount = conversation.user1_id.toString() === userId 
-            ? conversation.unread_count_user1 
-            : conversation.unread_count_user2;
+            ? conversation.unread_count_user2 
+            : conversation.unread_count_user1;
 
         // Emit the unread count specific to this conversation
-        console.log(`Updating conversation unread count for user ${userId} in conversation ${conversationId} to ${conversationUnreadCount}`);
-        socket.emit("conversation_unread_count", { 
+        console.log(`Updating conversation unread count for user ${otherUserId} in conversation ${conversationId} to ${conversationUnreadCount}`);
+        socket.to(otherUserSocketId!).emit("conversation_unread_count", { 
             conversationId: conversationId, 
             count: conversationUnreadCount 
         });
 
         // Update the total unread message count for the requesting user
-        const totalUnreadCount = await this.getUnseenMessagesCount(userId);
-        console.log(`Updating total unread count for user ${userId} to ${totalUnreadCount}`);
+        const totalUnreadCount = await this.getUnseenMessagesCount(otherUserId);
+        console.log(`Updating total unread count for user ${otherUserId} to ${totalUnreadCount}`);
         socket.emit("unread_messages_count", { count: totalUnreadCount }); 
 
       } else {
