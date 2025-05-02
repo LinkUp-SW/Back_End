@@ -5,7 +5,7 @@ import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { targetTypeEnum } from '../../models/reactions.model.ts';
 import comments from '../../models/comments.model.ts';
 import { getPaginatedReactions, getTopReactions, ReactionRepository } from '../../repositories/reacts.repository.ts';
-import posts from '../../models/posts.model.ts';
+import posts, { postTypeEnum } from '../../models/posts.model.ts';
 import users from '../../models/users.model.ts';
 
 
@@ -25,10 +25,15 @@ export const reactOnPost = async (req: Request, res: Response): Promise<Response
         if (!post_id || !target_type || !reaction){
             return res.status(400).json({message:'Required fields missing' });
         }
-        const postsRepository = new PostRepository();
-        const post = await postsRepository.findByPostId(post_id);
+        const postRepository = new PostRepository();
+        let post = await postRepository.findByPostId(post_id);
         if (!post){
             return res.status(404).json({message:'Post not found' });
+        }
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
         const reactionRepository = new ReactionRepository();
         let target: any;
@@ -64,8 +69,8 @@ export const reactOnPost = async (req: Request, res: Response): Promise<Response
         return res.status(200).json({
         message: 'Reaction added successfully',
         reaction: react,
-        topReactions: finalArray,
-        totalCount: totalCount
+        top_reactions: finalArray,
+        reactions_count: totalCount
         });
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -92,10 +97,15 @@ export const removeReaction = async (req: Request, res: Response): Promise<Respo
         if (!post_id || !target_type){
             return res.status(400).json({message:'Required fields missing' });
         }
-        const postsRepository = new PostRepository();
-        const post = await postsRepository.findByPostId(post_id);
+        const postRepository = new PostRepository();
+        let post = await postRepository.findByPostId(post_id);
         if (!post){
             return res.status(404).json({message:'Post not found' });
+        }
+        if (post.post_type===postTypeEnum.repost_instant){
+            const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+            if (orignalPost) post=orignalPost;
+            else return res.status(404).json({ message: 'Original post does not exist' });
         }
         const reactionRepository = new ReactionRepository();
         let target: any;
@@ -124,7 +134,7 @@ export const removeReaction = async (req: Request, res: Response): Promise<Respo
                 break;
             case targetTypeEnum.post:
                 await posts.updateOne(
-                    { _id: post_id },
+                    { _id: target._id },
                     { $pull: { reacts: removedReact._id } }
                 );
                 break;
@@ -140,8 +150,8 @@ export const removeReaction = async (req: Request, res: Response): Promise<Respo
     return res.status(200).json({
         message: 'Reaction removed successfully',
         reaction: removedReact,
-        topReactions: finalArray,
-        totalCount: totalCount
+        top_reactions: finalArray,
+        reactions_count: totalCount
         }); 
     }catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -171,10 +181,15 @@ export const getReactionsForTarget = async (req: Request, res: Response): Promis
     if (!post_id || !target_type || !limit){
         return res.status(400).json({message:'Required fields missing' });
     }
-    const postsRepository = new PostRepository();
-    const post = await postsRepository.findByPostId(post_id);
+    const postRepository = new PostRepository();
+    let post = await postRepository.findByPostId(post_id);
     if (!post){
         return res.status(404).json({message:'Post not found' });
+    }
+    if (post.post_type===postTypeEnum.repost_instant){
+        const orignalPost = await postRepository.findByPostId(post.media.link[0]);
+        if (orignalPost) post=orignalPost;
+        else return res.status(404).json({ message: 'Original post does not exist' });
     }
     let targetId: string;
     switch(target_type){

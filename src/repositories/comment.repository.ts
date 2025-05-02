@@ -31,14 +31,7 @@ export class CommentRepository {
       media: media || null,
       tagged_users:taggedUsers
     });
-    const authorInfo = {
-        username: user.user_id,
-        firstName: user.bio.first_name,
-        lastName: user.bio.last_name,
-        headline:user.bio.headline,
-        profilePicture: user.profile_photo,
-        connectionDegree:"3rd+"
-    };
+    const authorInfo = await getFormattedAuthor(user._id);
     return {comment:comment,author:authorInfo}
   }
 
@@ -57,11 +50,11 @@ export class CommentRepository {
   ) {
     const updateFields: Record<string, any> = {};
     if (content !== undefined) updateFields.content = content;
-    if (media !== undefined) updateFields.media = media;
+    if (media !== null) updateFields.media = media;
     if (taggedUsers !== null) updateFields.tagged_users = taggedUsers;
-    // Add isEdited flag when updating
+    // Add is_edited flag when updating
     if (Object.keys(updateFields).length > 0) {
-      updateFields.isEdited = true;
+      updateFields.is_edited = true;
     }
     
     return comments.findOneAndUpdate(
@@ -139,7 +132,7 @@ export const getComments = async (
     postId: string,
     replyLimit: number,
     userId?: string
-  ): Promise<{ count: number; comments: Record<string, any>; nextCursor: number | null }> => {
+  ): Promise<{ count: number; comments: Record<string, any>; next_cursor: number | null }> => {
     try {
       // Fetch root comments and count in a single aggregation
       const [rootCommentResults, countResults] = await Promise.all([
@@ -159,7 +152,7 @@ export const getComments = async (
       const rootComments = rootCommentResults;
       const totalRootComments = countResults;
       if (rootComments.length === 0) {
-        return { count: 0, comments: [], nextCursor: null };
+        return { count: 0, comments: [], next_cursor: null };
       }
       
       // Get all root comment IDs for reply fetching
@@ -275,13 +268,13 @@ export const getComments = async (
           ...rootComment,
           media: rootComment.media ? {
             link: rootComment.media,
-            mediaType: rootComment.media ? 'image' : 'none'
+            media_type: rootComment.media ? 'image' : 'none'
           } : {
             link: '',
-            mediaType: 'none'
+            media_type: 'none'
           },
-          topReactions: rootReactions.finalArray,
-          reactionsCount: rootReactions.totalCount
+          top_reactions: rootReactions.finalArray,
+          reactions_count: rootReactions.totalCount
         };
   
         // Process replies for this root comment
@@ -301,15 +294,15 @@ export const getComments = async (
             ...reply,
             media: reply.media ? {
               link: reply.media,
-              mediaType: reply.media ? 'image' : 'none'
+              media_type: reply.media ? 'image' : 'none'
             } : {
               link: '',
-              mediaType: 'none'
+              media_type: 'none'
             },
             author: replyAuthorInfo,
-            userReaction: userReactionsMap.get(replyId) || null,
-            topReactions: replyReactions.finalArray,
-            reactionsCount: replyReactions.totalCount
+            user_reaction: userReactionsMap.get(replyId) || null,
+            top_reactions: replyReactions.finalArray,
+            reactions_count: replyReactions.totalCount
           };
         }
         
@@ -317,8 +310,8 @@ export const getComments = async (
         result[rootId] = {
           ...transformedRootComment,
           author: rootAuthorInfo,
-          userReaction: userReactionsMap.get(rootId) || null,
-          childrenCount:replyCountByParentId.get(rootId) ||null,
+          user_reaction: userReactionsMap.get(rootId) || null,
+          children_count:replyCountByParentId.get(rootId) ||null,
           children: Object.values(repliesWithAuthors)
         };
       }
@@ -330,7 +323,7 @@ export const getComments = async (
       return {
         count: rootComments.length,
         comments: Object.values(result),
-        nextCursor
+        next_cursor:nextCursor
       };
     } catch (err) {
       if (err instanceof Error) {
@@ -352,7 +345,7 @@ export const getReplies = async (
     commentId: string,
     cursor: number,
     limit: number
-  ): Promise<{ count: number; replies: Record<string, any>; nextCursor: number | null }> => {
+  ): Promise<{ count: number; replies: Record<string, any>; next_cursor: number | null }> => {
     try {
       // Fetch replies and count in a single promise
       const [replyResults, totalRepliesCount] = await Promise.all([
@@ -370,7 +363,7 @@ export const getReplies = async (
       ]);
       
       if (replyResults.length === 0) {
-        return { count: 0, replies: [], nextCursor: null };
+        return { count: 0, replies: [], next_cursor: null };
       }
       
       // Collect all unique user IDs
@@ -404,10 +397,10 @@ export const getReplies = async (
           ...reply,
           media: reply.media ? {
             link: reply.media,
-            mediaType: reply.media ? 'image' : 'none'
+            media_type: reply.media ? 'image' : 'none'
           } : {
             link: '',
-            mediaType: 'none'
+            media_type: 'none'
           },
           author: replyAuthorInfo
         };
@@ -420,7 +413,7 @@ export const getReplies = async (
       return {
         count: replyResults.length,
         replies: Object.values(result),
-        nextCursor
+        next_cursor:nextCursor
       };
     } catch (err) {
       if (err instanceof Error) {

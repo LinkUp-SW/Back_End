@@ -544,6 +544,13 @@ export const convert_idIntoUser_id = async (
 };
 
 
+/**
+ * Gets formatted author information from a user document
+ * @param userId - The user ID to fetch author information for
+ * @returns A Promise containing the formatted author object
+ */
+
+
 export async function getFormattedAuthor(userId: string) {
   try {
     const userDoc = await Users.findOne(
@@ -563,10 +570,10 @@ export async function getFormattedAuthor(userId: string) {
     
     return {
       username: userDoc.user_id,
-      firstName: userDoc.bio?.first_name || "",
-      lastName: userDoc.bio?.last_name || "",
+      first_name: userDoc.bio?.first_name || "",
+      last_name: userDoc.bio?.last_name || "",
       headline: userDoc.bio?.headline || "",
-      profilePicture: userDoc.profile_photo || ""
+      profile_picture: userDoc.profile_photo || ""
     };
   } catch (err) {
     console.error("Error fetching author info:", err);
