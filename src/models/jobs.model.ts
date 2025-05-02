@@ -34,7 +34,6 @@ export enum experienceLevelEnum{
 export enum jobStatusEnum{
     open = "Open",
     closed = "Closed",
-    draft = "Draft",
 }
 
 export interface jobsInterface extends mongoose.Document{

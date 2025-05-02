@@ -8380,8 +8380,1242 @@ paths:
                     example: "Error retrieving all privacy settings"
                   error:
                     type: object
-      security:
-        - bearerAuth: []
+  
+  /api/v1/job-application/apply-for-job:
+    get:
+      tags:
+        - Job Applications
+      summary: Get user data for job application
+      description: >
+        Retrieves the authenticated user's profile data that would be needed for a job application,
+        including name, contact information, and resume.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      bio:
+                        type: object
+                        properties:
+                          first_name:
+                            type: string
+                            example: "John"
+                          last_name:
+                            type: string
+                            example: "Doe"
+                          headline:
+                            type: string
+                            example: "Software Engineer"
+                          contact_info:
+                            type: object
+                            properties:
+                              phone_number:
+                                type: number
+                                example: 1234567890
+                              country_code:
+                                type: string
+                                example: "+1"
+                      email:
+                        type: string
+                        example: "john.doe@example.com"
+                      profile_photo:
+                        type: string
+                        example: "https://example.com/photo.jpg"
+                      location:
+                        type: string
+                        example: "New York, USA"
+                      resume:
+                        type: string
+                        example: "https://example.com/resume.pdf"
+                  message:
+                    type: string
+                    example: "User data retrieved successfully for job application"
+        '401':
+          description: Unauthorized or invalid token
+        '404':
+          description: User not found
+        '500':
+          description: Server error
+
+  /api/v1/job-application/create-job-application/{job_id}:
+    post:
+      tags:
+        - Job Applications
+      summary: Submit job application
+      description: >
+        Submits a job application for a specific job. Creates a new job application record,
+        adds the application to the job's applications list, and updates the user's applied jobs list.
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to apply for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email_address
+                - phone_number
+                - country_code
+                - resume
+              properties:
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+                email_address:
+                  type: string
+                  example: "john.doe@example.com"
+                phone_number:
+                  type: number
+                  example: 1234567890
+                country_code:
+                  type: string
+                  example: "US"
+                resume:
+                  type: string
+                  example: "https://example.com/resume.pdf"
+      responses:
+        '201':
+          description: Job application submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job application submitted successfully"
+                  application:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c86"
+                      job_id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      application_status:
+                        type: string
+                        example: "Pending"
+        '400':
+          description: Bad request - Invalid job ID or already applied for this job
+        '401':
+          description: Unauthorized
+        '404':
+          description: Job not found
+        '500':
+          description: Server error
+
+  /api/v1/job-application/get-job-applications/{job_id}:
+    get:
+      tags:
+        - Job Applications
+      summary: Get all applications for a job
+      description: >
+        Retrieves all job applications submitted for a specific job. Includes applicant information
+        such as name, contact details, and resume. Only accessible by admins of the organization that 
+        posted the job.
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to get applications for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Job applications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c86"
+                        job_id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c87"
+                            bio:
+                              type: object
+                            profile_photo:
+                              type: string
+                            location:
+                              type: string
+                            resume:
+                              type: string
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        email_address:
+                          type: string
+                          example: "john.doe@example.com"
+                        phone_number:
+                          type: number
+                          example: 1234567890
+                        country_code:
+                          type: string
+                          example: "US"
+                        resume:
+                          type: string
+                          example: "https://example.com/resume.pdf"
+                        application_status:
+                          type: string
+                          enum: [Pending, Viewed, Accepted, Rejected]
+                          example: "Pending"
+        '400':
+          description: Invalid job ID
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not an admin of the organization
+        '404':
+          description: Job not found
+        '500':
+          description: Server error
+
+  /api/v1/job-application/get-applied-jobs:
+    get:
+      tags:
+        - Job Applications
+      summary: Get user's applied jobs
+      description: >
+        Retrieves all jobs that the authenticated user has applied for.
+        Includes job details, organization information, and application status.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Applied jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Applied jobs retrieved successfully"
+                  count:
+                    type: integer
+                    example: 2
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Software Engineer"
+                        location:
+                          type: string
+                          example: "New York, USA"
+                        workplace_type:
+                          type: string
+                          example: "Hybrid"
+                        experience_level:
+                          type: string
+                          example: "Mid-Senior"
+                        salary:
+                          type: number
+                          example: 100000
+                        posted_time:
+                          type: string
+                          format: date-time
+                        application_status:
+                          type: string
+                          enum: [Pending, Viewed, Accepted, Rejected]
+                          example: "Pending"
+                        application_id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c86"
+                        organization:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c87"
+                            name:
+                              type: string
+                              example: "Tech Company"
+                            logo:
+                              type: string
+                              example: "https://example.com/logo.png"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/job-application/update-job-application-status/{application_id}:
+    put:
+      tags:
+        - Job Applications
+      summary: Update job application status
+      description: >
+        Updates the status of a job application (e.g., from Pending to Viewed, Accepted, or Rejected).
+        Only admins of the organization that posted the job can update application statuses.
+      parameters:
+        - name: application_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the application to update
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [Pending, Viewed, Accepted, Rejected]
+                  example: "Viewed"
+      responses:
+        '200':
+          description: Job application status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job application status updated successfully"
+                  data:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c86"
+                      job_id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      user_id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c87"
+                      application_status:
+                        type: string
+                        enum: [Pending, Viewed, Accepted, Rejected]
+                        example: "Viewed"
+                      # Other application properties
+        '400':
+          description: Invalid application ID
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not an admin of the organization
+        '404':
+          description: Job application or job not found
+        '500':
+          description: Server error
+
+  /api/v1/company/create-company-profile:
+    post:
+      tags:
+        - Company Profile
+      summary: Create a company profile
+      description: >
+        Creates a new company profile and assigns the authenticated user as an admin.
+        Uploads and processes the company logo if provided.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - industry
+              properties:
+                name:
+                  type: string
+                  example: "Acme Corporation"
+                category_type:
+                  type: string
+                  example: "Tech"
+                website:
+                  type: string
+                  example: "https://www.acmecorp.com"
+                logo:
+                  type: string
+                  format: base64
+                  description: Base64 encoded image data
+                description:
+                  type: string
+                  example: "Leading technology solutions provider"
+                industry:
+                  type: string
+                  example: "Information Technology"
+                location:
+                  type: object
+                  properties:
+                    country:
+                      type: string
+                      example: "United States"
+                    city:
+                      type: string
+                      example: "San Francisco"
+                size:
+                  type: string
+                  example: "51-200 employees"
+                type:
+                  type: string
+                  example: "Private"
+      responses:
+        '201':
+          description: Company profile created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile created successfully"
+                  companyProfile:
+                    type: object
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+
+  /api/v1/company/update-company-profile/{companyId}:
+    put:
+      tags:
+        - Company Profile
+      summary: Update a company profile
+      description: >
+        Updates an existing company profile. Only company admins can update the profile.
+        Uploads and processes a new company logo if provided.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to update
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Acme Corporation"
+                category_type:
+                  type: string
+                  example: "Tech"
+                website:
+                  type: string
+                  example: "https://www.acmecorp.com"
+                logo:
+                  type: string
+                  format: base64
+                  description: Base64 encoded image data
+                description:
+                  type: string
+                  example: "Leading technology solutions provider"
+                industry:
+                  type: string
+                  example: "Information Technology"
+                location:
+                  type: object
+                  properties:
+                    country:
+                      type: string
+                      example: "United States"
+                    city:
+                      type: string
+                      example: "San Francisco"
+                tagline:
+                  type: string
+                  example: "Innovation for tomorrow"
+                size:
+                  type: string
+                  example: "51-200 employees"
+                type:
+                  type: string
+                  example: "Private"
+                phone:
+                  type: string
+                  example: "+1-123-456-7890"
+      responses:
+        '200':
+          description: Company profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile updated successfully"
+                  companyProfile:
+                    type: object
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this company
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/delete-company-profile/{companyId}:
+    delete:
+      tags:
+        - Company Profile
+      summary: Delete a company profile
+      description: >
+        Deletes a company profile and all associated jobs.
+        Updates all admin users to remove this company from their organizations list.
+        Only company admins can delete the profile.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to delete
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Company profile deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile deleted successfully"
+                  deletedJobsCount:
+                    type: integer
+                    example: 5
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this company
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-company-all-view/{companyId}:
+    get:
+      tags:
+        - Company Profile
+      summary: Get company profile (public view)
+      description: >
+        Retrieves the complete profile information for a company.
+        Accessible by any user without authentication requirements.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to retrieve
+      responses:
+        '200':
+          description: Company profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company profile retrieved successfully"
+                  companyProfile:
+                    type: object
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-company-admin-view/{companyId}:
+    get:
+      tags:
+        - Company Profile
+      summary: Get company profile (admin view)
+      description: >
+        Retrieves basic company information with follower count.
+        Only accessible by users who are admins of the company.
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the company to retrieve
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Company basic info retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company basic info retrieved successfully"
+                  company:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      name:
+                        type: string
+                        example: "Acme Corporation"
+                      logo:
+                        type: string
+                        example: "https://example.com/logo.png"
+                      followerCount:
+                        type: integer
+                        example: 125
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this company
+        '404':
+          description: Company not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-user-comapanies:
+    get:
+      tags:
+        - Company Profile
+      summary: Get user's admin companies
+      description: >
+        Retrieves a list of companies where the authenticated user is an admin.
+        Returns basic information including company name and logo.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User's admin companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organizations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "Acme Corporation"
+                        logo:
+                          type: string
+                          example: "https://example.com/logo.png"
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  
+  /api/v1/company/make-admin/{organization_id}/{user_id}:
+    post:
+      tags:
+        - Company Settings
+      summary: Make a user an admin of an organization
+      description: >
+        Grants admin privileges to a user for a specific organization.
+        Only existing admins can add new admins to an organization.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to make admin
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User made admin successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User made admin successfully"
+                  organization:
+                    type: object
+                    properties:
+                      admins:
+                        type: array
+                        items:
+                          type: string
+        '400':
+          description: User is already an admin
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or user not found
+        '500':
+          description: Server error
+
+  /api/v1/company/remove-admin/{organization_id}/{user_id}:
+    delete:
+      tags:
+        - Company Settings
+      summary: Remove an admin from an organization
+      description: >
+        Revokes admin privileges from a user for a specific organization.
+        Only existing admins can remove other admins. Cannot remove yourself or the last admin.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the admin to remove
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Admin removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Admin removed successfully"
+                  organization:
+                    type: object
+                    properties:
+                      admins:
+                        type: array
+                        items:
+                          type: string
+        '400':
+          description: Cannot remove yourself as admin or Cannot remove the last admin
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or admin not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-admins/{organization_id}:
+    get:
+      tags:
+        - Company Settings
+      summary: Get all admins of an organization
+      description: >
+        Retrieves a list of all users with admin privileges for the specified organization.
+        Only admins of the organization can access this information.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Admins retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  admins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: string
+                          example: "auth0|123456789"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer"
+                        profile_picture:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/block-follower/{organization_id}/{follower_id}:
+    post:
+      tags:
+        - Company Settings
+      summary: Block a follower from an organization
+      description: >
+        Blocks a user from following an organization and removes any existing job applications and saved jobs
+        related to the organization. Only admins can block followers, and admins cannot be blocked.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: follower_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the follower to block
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Follower blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Follower blocked successfully"
+                  details:
+                    type: object
+                    properties:
+                      savedJobsRemoved:
+                        type: integer
+                        example: 3
+                      applicationsRemoved:
+                        type: integer
+                        example: 2
+        '400':
+          description: Cannot block an admin user
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or follower not found
+        '500':
+          description: Server error
+
+  /api/v1/company/unblock-follower/{organization_id}/{follower_id}:
+    delete:
+      tags:
+        - Company Settings
+      summary: Unblock a follower for an organization
+      description: >
+        Removes a user from the organization's blocked list and adds them back to the followers list.
+        Only admins can unblock followers.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: follower_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the follower to unblock
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Follower unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Follower unblocked successfully"
+                  blocked_followers:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization or follower not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-blocked-followers/{organization_id}:
+    get:
+      tags:
+        - Company Settings
+      summary: Get blocked followers of an organization
+      description: >
+        Retrieves a list of all users who have been blocked from following the organization.
+        Only admins of the organization can access this information.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Blocked followers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocked_followers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: string
+                          example: "auth0|123456789"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer"
+                        profile_photo:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/follow-organization/{organization_id}:
+    post:
+      tags:
+        - Company Settings
+      summary: Follow an organization
+      description: >
+        Allows a user to follow an organization. Users cannot follow organizations that have blocked them.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to follow
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User followed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User followed successfully"
+                  followers:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: User is already a follower or User is blocked from following
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/unfollow-organization/{organization_id}:
+    delete:
+      tags:
+        - Company Settings
+      summary: Unfollow an organization
+      description: >
+        Allows a user to unfollow an organization they are currently following.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to unfollow
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: User unfollowed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User unfollowed successfully"
+                  followers:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: User is not a follower
+        '401':
+          description: Unauthorized
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-followers/{organization_id}:
+    get:
+      tags:
+        - Company Settings
+      summary: Get followers of an organization
+      description: >
+        Retrieves a list of all users who are following the organization.
+        Only admins of the organization can access this information.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Followers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  followers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        user_id:
+                          type: string
+                          example: "auth0|123456789"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Doe"
+                        headline:
+                          type: string
+                          example: "Software Engineer"
+                        profile_photo:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not an admin of this organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
   
   /api/v1/user/profile/about:
     post:
@@ -8693,7 +9927,10 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-                    
+
+security:
+  - bearerAuth: []
+
 components:
   securitySchemes:
     bearerAuth:

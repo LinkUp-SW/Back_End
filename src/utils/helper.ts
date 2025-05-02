@@ -175,3 +175,24 @@ export const handleLogoUpload = async (logo: string, existingLogoUrl?: string): 
     throw new Error("Failed to process logo image");
   }
 };
+
+
+export const handleResumeUpload = async (resume: string): Promise<string> => {
+  
+  try {
+    // Upload new resume to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(resume, {
+      folder: "resumes",
+      resource_type: "raw",
+      format: resume.startsWith('data:application/pdf') ? 'pdf' : 'docx',
+      public_id: `resume_${Date.now()}`,
+      overwrite: true
+    });
+    
+    return uploadResponse.secure_url;
+  } catch (error) {
+    console.error("Error handling resume upload:", error);
+    throw new Error("Failed to process resume document");
+  }
+};
+
