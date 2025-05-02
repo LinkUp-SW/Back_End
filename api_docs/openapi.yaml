@@ -3253,12 +3253,14 @@ paths:
                     type: string
                     example: "An error occurred while retrieving the user bio."
 
-  /api/v1/post/posts:
+  /api/v2/post/posts:
     post:
       tags:
         - Posts
       summary: Create a new post
-      description: Creates a new post associated with the authenticated user's activity
+      description: >
+        Creates a new post associated with the authenticated user's activity.
+        Supports standard posts, reposts with thoughts, and instant reposts.
       parameters:
         - in: header
           name: Authorization
@@ -3266,6 +3268,7 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
       requestBody:
         required: true
         content:
@@ -3279,84 +3282,128 @@ paths:
                   example: "Excited to share my latest project!"
                 mediaType:
                   type: string
-                  description: Type of media (none, image, video, document, link, post)
                   enum: [none, image, video, document, link, post]
+                  description: Type of media attached to the post
                   example: "image"
                 media:
                   type: array
                   items:
                     type: string
-                  description: Array of media URLs or base64 encoded strings
+                  description: >
+                    Array of media URLs, base64 encoded strings, or post ID (when reposting).
+                    For image/video/document, use base64. For link, use URL string. For repost, use post ID.
                   example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
-                commentsDisabled:
+                comments_disabled:
                   type: string
+                  enum: [none, connections_only, noone]
                   description: Who can comment on the post
-                  enum: [none, connections, all]
-                  example: "all"
-                publicPost:
+                  example: "none"
+                public_post:
                   type: boolean
-                  description: Whether the post is visible to all users or just connections
+                  description: Whether the post is public or private
                   example: true
-                taggedUsers:
+                tagged_users:
                   type: array
                   items:
                     type: string
                   description: Array of user IDs tagged in the post
-                  example: ["Amr-Doma81","Darwin-Núñez32"]
-              required:
-                - commentsDisabled
-                - publicPost
-      responses:
-        '200':
-          description: Post created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Post successfully created"
-                  postId:
-                    type: string
-                    example: "6458abc123def456"
-        '400':
-          description: Required fields missing
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Required fields missing"
-        '401':
-          description: Invalid or expired token
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Invalid or expired token"
-                  success:
-                    type: boolean
-                    example: false
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Server error"
-                  error:
-                    type: object
-      /api/v1/post/posts/feed:
-  /api/v1/post/posts/feed:
+                  example: ["Amr-Doma81", "Darwin-Núñez32"]
+                postType:
+                  type: string
+                  enum: [standard, repost_instant, repost_thought]
+                  description: Type of post (standard post, instant repost, or thought repost)
+                  example: "standard"
+            examples:
+              standardPost:
+                summary: Example of a standard post with image
+                value:
+                  content: "Excited to share my latest project!"
+                  mediaType: "image"
+                  media: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                  comments_disabled: "none"
+                  public_post: true
+                  tagged_users: ["Amr-Doma81", "Darwin-Núñez32"]
+                  postType: "standard"
+              instantRepost:
+                summary: Example of an instant repost
+                value:
+                  mediaType: "post"
+                  media: ["6458abc123def456"]
+                  postType: "repost_instant"
+              thoughtRepost:
+                summary: Example of a repost with thoughts
+                value:
+                  content: "Great insights in this post!"
+                  mediaType: "post"
+                  media: ["6458abc123def456"]
+                  comments_disabled: "none"
+                  public_post: true
+                  postType: "repost_thought"
+        responses:
+          '200':
+            description: Post created successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Post successfully created"
+                    postId:
+                      type: string
+                      example: "6458abc123def456"
+                    postType:
+                      type: string
+                      enum: [standard, repost_instant, repost_thought]
+                      example: "standard"
+          '400':
+            description: Required fields missing
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Required fields missing"
+          '401':
+            description: Invalid or expired token
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Invalid or expired token"
+                    success:
+                      type: boolean
+                      example: false
+          '404':
+            description: Original post not found (for reposts)
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Original post not found"
+          '500':
+            description: Server error
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                      example: "Server error"
+                    error:
+                      type: object
+
+  /api/v2/post/posts/feed:
     get:
       tags:
         - Posts
@@ -3435,18 +3482,25 @@ paths:
                           items:
                             type: string
                           example: ["Amr-Doma81","Darwin-Núñez32"]
-                        isEdited:
+                        is_edited:
                           type: boolean
                           example: false
                         date:
                           type: number
                           example: 1745266574
-                        commentsCount:
+                        comments_count:
                           type: number
                           example: 5
-                        repostsCount:
+                        reactions_count:
                           type: number
-                          example: 2
+                          example: 15
+                        is_saved:
+                          type: boolean
+                          example: false
+                        post_type:
+                          type: string
+                          enum: [standard, repost_instant, repost_thought]
+                          example: "standard"
                         author:
                           type: object
                           properties:
@@ -3468,42 +3522,55 @@ paths:
                             profilePicture:
                               type: string
                               example: "https://example.com/profile.jpg"
-                        topReactions:
+                        top_reactions:
                           type: array
                           items:
-                            type: object
-                            properties:
-                              reaction:
-                                type: string
-                                example: "like"
-                        reactionsCount:
-                          type: number
-                          example: 15
-                        userReaction:
+                            type: string
+                          example: ["like", "celebrate", "love"]
+                        user_reaction:
                           type: string
                           example: "like"
                           nullable: true
-                        activityContext:
+                        activity_context:
                           type: object
                           nullable: true
                           properties:
                             type:
                               type: string
                               example: "comment"
-                              enum: ["comment", "reaction", "repost"]
-                            actorUserName:
-                              type: string
-                              example: "jane-smith23"
-                            actorName:
+                              enum: ["comment", "like", "love", "celebrate", "support", "insightful", "funny"]
+                            actor_name:
                               type: string
                               example: "Jane Smith"
-                            actorId:
+                            actor_username:
+                              type: string
+                              example: "jane-smith23"
+                            actor_id:
                               type: string
                               example: "6459def789ghi012"
-                              actorPicture:
-                                type: string
-                                example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1745265655/user_uploads/images/1745265652787-profile.png"
-                  nextCursor:
+                            actor_picture:
+                              type: string
+                              example: "https://example.com/profile2.jpg"
+                            comment:
+                              type: object
+                              description: Included when activity type is comment
+                        original_author:
+                          type: object
+                          description: Included for reposts
+                          properties:
+                            _id:
+                              type: string
+                            username:
+                              type: string
+                            first_name:
+                              type: string
+                            last_name:
+                              type: string
+                            headline:
+                              type: string
+                            profile_picture:
+                              type: string
+                  next_cursor:
                     type: integer
                     example: 1745190000
                     nullable: true
@@ -3543,117 +3610,18 @@ paths:
                     example: "Server error"
                   error:
                     type: object
-  /api/v1/post/posts/{postId}:
-    patch:
-          tags:
-            - Posts
-          summary: Update an existing post
-          description: Modifies an existing post's content, media, or settings
-          parameters:
-            - in: header
-              name: Authorization
-              required: true
-              schema:
-                type: string
-                example: "Bearer jwt_token"
-            - in: path
-              name: postId
-              required: true
-              schema:
-                type: string
-                description: ID of the post to delete
-                example: "6458abc123def456"
-          requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                  type: object
-                  properties:
-                    content:
-                      type: string
-                      description: Updated text content of the post
-                      example: "Updated: Excited to share my latest project with new details!"
-                    mediaType:
-                      type: string
-                      description: Type of media (none, image, video, document, link, post)
-                      enum: [none, image, video, document, link, post]
-                      example: "image"
-                    media:
-                      type: array
-                      items:
-                        type: string
-                      description: Updated array of media URLs or base64 encoded strings
-                      example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg...", "https://example.com/image.jpg"]
-                    commentsDisabled:
-                      type: string
-                      description: Updated comment permission setting
-                      enum: [none, connections, all]
-                      example: "connections"
-                    publicPost:
-                      type: boolean
-                      description: Updated visibility setting
-                      example: false
-                    taggedUsers:
-                      type: array
-                      items:
-                        type: string
-                      description: Updated array of user IDs tagged in the post
-                      example: ["Amr-Doma81","Darwin-Núñez32"]
-                  required:
-                    - postId
-          responses:
-            '200':
-              description: Post updated successfully
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Post successfully updated"
-            '400':
-              description: Post ID is required or post does not exist
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "postId is required"
-            '401':
-              description: Invalid or expired token
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Invalid or expired token"
-                      success:
-                        type: boolean
-                        example: false
-            '500':
-              description: Server error
-              content:
-                application/json:
-                  schema:
-                    type: object
-                    properties:
-                      message:
-                        type: string
-                        example: "Server error"
-                      error:
-                        type: object
 
-    delete:
+  /api/v2/post/posts/{postId}:
+    patch:
       tags:
         - Posts
-      summary: Delete a post
-      description: Deletes a post and removes it from the user's activity
+      summary: Update an existing post
+      description: >
+        Modifies an existing post's content, media, or settings.
+        Different post types have different editing restrictions:
+        - Standard posts: can edit all fields
+        - Thought reposts: can edit content and visibility settings, but not media
+        - Instant reposts: can only edit visibility settings
       parameters:
         - in: header
           name: Authorization
@@ -3661,6 +3629,158 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: path
+          name: postId
+          required: true
+          schema:
+            type: string
+          description: ID of the post to update
+          example: "6458abc123def456"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: Updated text content of the post
+                  example: "Updated content for my project announcement!"
+                mediaType:
+                  type: string
+                  enum: [none, image, video, document, link]
+                  description: Type of media to attach to the post
+                  example: "image"
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: >
+                    Updated media URLs or base64 encoded strings.
+                    For image/video/document, use base64. For link, use URL string.
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                comments_disabled:
+                  type: string
+                  enum: [none, connections_only, noone]
+                  description: Who can comment on the post
+                  example: "connections_only"
+                public_post:
+                  type: boolean
+                  description: Whether the post is public or private
+                  example: false
+                tagged_users:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated array of user IDs tagged in the post
+                  example: ["Jane_Smith92", "Amr-Doma81"]
+            examples:
+              standardPost:
+                summary: Update a standard post
+                value:
+                  content: "Updated content for my project announcement!"
+                  mediaType: "image"
+                  media: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                  comments_disabled: "connections_only"
+                  public_post: false
+                  tagged_users: ["Jane_Smith92", "Amr-Doma81"]
+              repostThought:
+                summary: Update a thought repost (restricted)
+                value:
+                  content: "Updated thoughts on this insightful post!"
+                  comments_disabled: "connections_only"
+                  public_post: false
+              repostInstant:
+                summary: Update an instant repost (very restricted)
+                value:
+                  comments_disabled: "connections_only"
+                  public_post: false
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post successfully updated"
+        '400':
+          description: >
+            Required fields missing or editing restrictions apply
+            (can't edit certain fields based on post type)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot edit content or media for instant reposts"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Not authorized to edit this post
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to edit this post"
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
+    delete:
+      tags:
+        - Posts
+      summary: Delete a post
+      description: >
+        Deletes a post and removes it from the user's activity.
+        Also deletes all associated comments, reactions, and reposts of this post.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
         - in: path
           name: postId
           required: true
@@ -3719,7 +3839,9 @@ paths:
       tags:
         - Posts
       summary: Get a specific post
-      description: Retrieves detailed information about a post including author info and comments
+      description: >
+        Retrieves detailed information about a post including author info, reactions,
+        comments, and other metadata. For reposts, includes information about the original post.
       parameters:
         - in: header
           name: Authorization
@@ -3727,6 +3849,7 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
         - in: path
           name: postId
           required: true
@@ -3774,22 +3897,25 @@ paths:
                         example: "6458abc123def456"
                       user_id:
                         type: string
-                        example: "6457abc123def456"
+                        example: "6806a1938db9403282340f11"
                       content:
                         type: string
                         example: "Excited to share my latest project!"
                       media:
-                        type: array
-                        items:
-                          type: string
-                        example: ["https://example.com/image1.jpg"]
-                      mediaType:
+                        type: object
+                        properties:
+                          link:
+                            type: array
+                            items:
+                              type: string
+                            example: ["https://example.com/image1.jpg"]
+                          media_type:
+                            type: string
+                            example: "image"
+                      comments_disabled:
                         type: string
-                        example: "image"
-                      commentsDisabled:
-                        type: string
-                        example: "Anyone"
-                      publicPost:
+                        example: "none"
+                      public_post:
                         type: boolean
                         example: true
                       tagged_users:
@@ -3797,97 +3923,78 @@ paths:
                         items:
                           type: string
                         example: ["Amr-Doma81","Darwin-Núñez32"]
+                      is_edited:
+                        type: boolean
+                        example: false
                       date:
                         type: number
-                        example: "1745194451"
+                        example: 1745266574
+                      post_type:
+                        type: string
+                        enum: [standard, repost_instant, repost_thought]
+                        example: "standard"
+                      is_saved:
+                        type: boolean
+                        example: false
+                      user_reaction:
+                        type: string
+                        example: "like"
+                        nullable: true
+                      top_reactions:
+                        type: array
+                        items:
+                          type: string
+                        example: ["like", "celebrate", "love"]
+                      reactions_count:
+                        type: number
+                        example: 15
+                      comments_count:
+                        type: number
+                        example: 5
                       author:
                         type: object
                         properties:
+                          _id:
+                            type: string
+                            example: "6806a1938db9403282340f11"
                           username:
                             type: string
                             example: "johndoe"
-                          firstName:
+                          first_name:
                             type: string
                             example: "John"
-                          lastName:
+                          last_name:
                             type: string
-                            example: "doe"
+                            example: "Doe"
                           headline:
                             type: string
                             example: "Software Engineer"
-                          profilePicture:
+                          profile_picture:
                             type: string
                             example: "https://example.com/profile.jpg"
-                          connectionDegree:
-                            type: string
-                            example: "3rd+"
+                      original_post:
+                        type: object
+                        description: Only included for reposts
+                        nullable: true
+                      original_author:
+                        type: object
+                        description: Only included for reposts
+                        nullable: true
                   comments:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "68058fa5f67c3a130d2b0372"
-                        post_id: 
-                          type: string
-                          example: "68058dd3ca03555f929d0ecc"
-                        user_id:
-                          type: string
-                          example: "67e6b2e1ef869d719662ca10"
-                        content:
-                          type: string
-                          example: "content will be written here"
-                        media:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 5
+                      comments:
+                        type: array
+                        items:
                           type: object
-                          properties:
-                            link:
-                              type: string
-                              example: "https://example.com/media.jpg"
-                            mediaType:
-                              type: string
-                              example: "image"
-                        reacts:
-                          type: object
-                          properties:
-                            total: 
-                              type: number
-                              example: 100
-                            mostCommmon:
-                              type: object
-                        tagged_users:
-                          type: array
-                          example: ["Amr-Doma81","Darwin-Núñez32"]
-                        is_edited:
-                          type: boolean
-                        date:
-                          type: number
-                          example: 1745194451
-                        author:
-                          type: object
-                          properties:
-                            username:
-                              type: string
-                              example: "johndoe"
-                            firstName:
-                              type: string
-                              example: "John"
-                            lastName:
-                              type: string
-                              example: "doe"
-                            headline:
-                              type: string
-                              example: "Software Engineer"
-                            profilePicture:
-                              type: string
-                              example: "https://example.com/profile.jpg"
-                            connectionDegree:
-                              type: string
-                              example: "3rd+"
-                        children:
-                          type: array
-                          items: 
-                            type: object
+                          # Comment structure same as in comments API
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        description: Cursor for the next page of comments
         '401':
           description: Invalid or expired token
           content:
@@ -3899,7 +4006,7 @@ paths:
                     type: string
                     example: "Invalid or expired token"
         '404':
-          description: Post not found or Post author not found
+          description: Post not found
           content:
             application/json:
               schema:
@@ -3920,44 +4027,49 @@ paths:
                     example: "Server error"
                   error:
                     type: object
-  /api/v1/post/posts/user/{user_id}:
+
+  /api/v2/post/posts/user/{user_id}:
     get:
       tags:
         - Posts
       summary: Get posts by user
       description: >
-        Retrieves posts created by a specific user with pagination. 
-        Private posts are only visible to the owner of the profile.
+        Retrieves posts created by a specific user with pagination.
+        Private posts are only visible to the owner or connections.
+        If the viewing user is not the profile owner or a connection, 
+        only public posts will be returned.
       parameters:
-        - name: user_id
-          in: path
+        - in: path
+          name: user_id
           required: true
           schema:
             type: string
           description: The ID of the user whose posts are being retrieved
-        - name: cursor
-          in: query
+          example: "6806a1938db9403282340f11"
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - in: query
+          name: cursor
           required: false
           schema:
             type: integer
             default: 0
-          description: Cursor for pagination (position to start from)
-        - name: limit
-          in: query
+          description: Cursor for pagination
+        - in: query
+          name: limit
           required: false
           schema:
             type: integer
             default: 10
           description: Maximum number of posts to return per page
-        - name: Authorization
-          in: header
-          required: true
-          schema:
-            type: string
-          description: Bearer token for authentication
       responses:
         '200':
-          description: Posts retrieved successfully
+          description: User posts retrieved successfully
           content:
             application/json:
               schema:
@@ -3968,17 +4080,28 @@ paths:
                     example: "Posts returned successfully"
                   is_me:
                     type: boolean
-                    description: Indicates if the authenticated user is viewing their own posts
-                    example: true
+                    example: false
+                    description: Whether the authenticated user is viewing their own profile
                   posts:
                     type: array
                     items:
                       type: object
-                  nextCursor:
+                      # Same post structure as in feed endpoint
+                  next_cursor:
                     type: integer
-                    description: Cursor for the next batch of posts
+                    nullable: true
+                    example: 10
+                    description: Cursor for the next page of results, null if no more results
         '400':
           description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
           description: Invalid or expired token
           content:
@@ -4002,12 +4125,15 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-  /api/v1/post/save-post:
+                  error:
+                    type: object
+  
+  /api/v2/post/save-post:
     post:
       tags:
         - Saved Posts
       summary: Save a post
-      description: Saves a post to the user's saved posts list.
+      description: Saves a post to the user's saved posts list for later reference.
       parameters:
         - in: header
           name: Authorization
@@ -4015,6 +4141,7 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
+          description: Bearer token for authentication
       requestBody:
         required: true
         content:
@@ -4024,12 +4151,13 @@ paths:
               properties:
                 postId:
                   type: string
-                  description: ID of the post to save.
+                  description: ID of the post to save
+                  example: "6458abc123def456"
               required:
                 - postId
       responses:
         '200':
-          description: Post successfully saved for user.
+          description: Post successfully saved
           content:
             application/json:
               schema:
@@ -4037,21 +4165,58 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Post successfully saved for user."
+                    example: "Post successfully saved for user"
         '400':
-          description: Required fields missing.
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
         '404':
-          description: Post does not exist.
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
         '500':
-          description: Server error.
-
-    get:
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+    
+    delete:
       tags:
         - Saved Posts
-      summary: Display saved posts
-      description: Retrieves the user's saved posts in batches.
+      summary: Remove a saved post
+      description: Removes a post from the user's saved posts list.
       parameters:
         - in: header
           name: Authorization
@@ -4059,23 +4224,109 @@ paths:
           schema:
             type: string
             example: "Bearer jwt_token"
-        - in: query
-          name: limit
-          required: false
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: ID of the saved post to remove
+                  example: "6458abc123def456"
+              required:
+                - postId
+      responses:
+        '200':
+          description: Saved post removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Deleted saved post successfully for user"
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+
+    get:
+      tags:
+        - Saved Posts
+      summary: Get saved posts
+      description: >
+        Retrieves the posts saved by the authenticated user.
+        Results are paginated with cursor-based pagination.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
           schema:
-            type: integer
-            default: 10
-          description: Number of posts to retrieve in a batch.
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
         - in: query
           name: cursor
           required: false
           schema:
             type: integer
             default: 0
-          description: Cursor for pagination.
+          description: Cursor for pagination (position to start from)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of posts to return per page
       responses:
         '200':
-          description: Posts returned successfully.
+          description: Saved posts retrieved successfully
           content:
             application/json:
               schema:
@@ -4083,63 +4334,19 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Posts returned successfully."
-                  author:
-                    type: object
-                    properties:
-                      username:
-                        type: string
-                      firstName:
-                        type: string
-                      lastName:
-                        type: string
-                      headline:
-                        type: string
-                      profilePicture:
-                        type: string
-                      connectionDegree:
-                        type: string
+                    example: "Posts returned successfully"
                   posts:
                     type: array
                     items:
                       type: object
-                  nextCursor:
+                      # Same post structure as in feed endpoint
+                  next_cursor:
                     type: integer
-                    description: Cursor for the next batch of posts.
+                    nullable: true
+                    example: 10
+                    description: Cursor for the next page of results, null if no more results
         '400':
-          description: Required fields missing.
-        '401':
-          description: Invalid or expired token.
-        '500':
-          description: Server error.
-
-    delete:
-      tags:
-        - Saved Posts
-      summary: Delete a saved post
-      description: Deletes a post from the user's saved posts list.
-      parameters:
-        - in: header
-          name: Authorization
-          required: true
-          schema:
-            type: string
-            example: "Bearer jwt_token"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                postId:
-                  type: string
-                  description: ID of the post to delete.
-              required:
-                - postId
-      responses:
-        '200':
-          description: Deleted saved post successfully for user.
+          description: Required fields missing
           content:
             application/json:
               schema:
@@ -4147,15 +4354,32 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Deleted saved post successfully for user."
-        '400':
-          description: Required fields missing.
+                    example: "Required fields missing"
         '401':
-          description: Invalid or expired token.
-        '404':
-          description: Post does not exist.
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
         '500':
-          description: Server error.
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
 
   /api/v1/user/profile/licenses/{user_id}:
     get:
@@ -4540,7 +4764,7 @@ paths:
                   message:
                     type: string
                     example: "Error fetching user education details"
-  /api/v1/post/comment/{postId}:
+  /api/v2/post/comment/{postId}:
     post:
       tags:
         - Comments
@@ -4569,10 +4793,6 @@ paths:
             schema:
               type: object
               properties:
-                parent_id:
-                  type: string
-                  description: ID of the parent comment (if this is a reply)
-                  example: null
                 content:
                   type: string
                   description: Text content of the comment
@@ -4581,14 +4801,21 @@ paths:
                   type: array
                   items:
                     type: string
-                    description: Media URL or base64 encoded string for the comment
-                    example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                  description: Media URL or base64 encoded string for the comment
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                parent_id:
+                  type: string
+                  description: ID of the parent comment if this is a reply (null for top-level comments)
+                  example: "6511b82172d92e69ee81c39b"
+                  nullable: true
                 tagged_users:
                   type: array
                   items:
                     type: string
                   description: Array of user IDs tagged in the comment
                   example: ["Amr-Doma81", "Darwin-Núñez32"]
+              required:
+                - content
       responses:
         '200':
           description: Comment successfully created
@@ -4628,28 +4855,28 @@ paths:
                         example: false
                       date:
                         type: number
-                        example: 1745194451
+                        example: 1745268741
                       author:
                         type: object
                         properties:
+                          _id:
+                            type: string
+                            example: "67e6b2e1ef869d719662ca10"
                           username:
                             type: string
-                            example: "johndoe"
-                          firstName:
+                            example: "john_doe"
+                          first_name:
                             type: string
                             example: "John"
-                          lastName:
+                          last_name:
                             type: string
-                            example: "doe"
+                            example: "Doe"
                           headline:
                             type: string
                             example: "Software Engineer"
-                          profilePicture:
+                          profile_picture:
                             type: string
                             example: "https://example.com/profile.jpg"
-                          connectionDegree:
-                            type: string
-                            example: "3rd+"
         '400':
           description: Required fields missing
           content:
@@ -4711,6 +4938,7 @@ paths:
       summary: Get comments for a post
       description: >
         Retrieves comments for a specific post with pagination support.
+        Includes both top-level comments and a limited number of replies per comment.
       parameters:
         - in: path
           name: postId
@@ -4724,7 +4952,8 @@ paths:
           required: true
           schema:
             type: string
-            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
         - in: query
           name: cursor
           required: false
@@ -4734,7 +4963,7 @@ paths:
           description: Cursor for pagination (position to start from)
         - in: query
           name: limit
-          required: false
+          required: true
           schema:
             type: integer
             default: 10
@@ -4754,6 +4983,10 @@ paths:
               schema:
                 type: object
                 properties:
+                  count:
+                    type: integer
+                    example: 5
+                    description: Number of comments returned
                   comments:
                     type: array
                     items:
@@ -4762,18 +4995,21 @@ paths:
                         _id:
                           type: string
                           example: "6511b82172d92e69ee81c39b"
-                        post_id: 
-                          type: string
-                          example: "68058dd3ca03555f929d0ecc"
-                        user_id:
-                          type: string
-                          example: "67e6b2e1ef869d719662ca10"
                         content:
                           type: string
-                          example: "Great post! I really enjoyed reading this."
+                          example: "This is a great post!"
+                        date:
+                          type: number
+                          example: 1745268741
                         media:
-                          type: string
-                          example: "https://example.com/media.jpg"
+                          type: object
+                          properties:
+                            link:
+                              type: string
+                              example: "https://example.com/image.jpg"
+                            media_type:
+                              type: string
+                              example: "image"
                         tagged_users:
                           type: array
                           items:
@@ -4782,38 +5018,52 @@ paths:
                         is_edited:
                           type: boolean
                           example: false
-                        date:
-                          type: number
-                          example: 1745194451
                         author:
                           type: object
                           properties:
+                            _id:
+                              type: string
+                              example: "67e6b2e1ef869d719662ca10"
                             username:
                               type: string
-                              example: "johndoe"
-                            firstName:
+                              example: "john_doe"
+                            first_name:
                               type: string
                               example: "John"
-                            lastName:
+                            last_name:
                               type: string
-                              example: "doe"
+                              example: "Doe"
                             headline:
                               type: string
                               example: "Software Engineer"
-                            profilePicture:
+                            profile_picture:
                               type: string
                               example: "https://example.com/profile.jpg"
-                            connectionDegree:
-                              type: string
-                              example: "3rd+"
+                        user_reaction:
+                          type: string
+                          example: "like"
+                          nullable: true
+                        top_reactions:
+                          type: array
+                          items:
+                            type: string
+                          example: ["like", "love", "celebrate"]
+                        reactions_count:
+                          type: integer
+                          example: 15
+                        children_count:
+                          type: integer
+                          example: 8
+                          description: Total number of replies to this comment
                         children:
                           type: array
-                          description: Replies to this comment
                           items:
                             type: object
-                  nextCursor:
+                            description: Array of replies to this comment (limited by replyLimit)
+                  next_cursor:
                     type: integer
-                    description: Cursor for the next page of results
+                    nullable: true
+                    description: Cursor for the next page of results, null if no more results
                     example: 10
         '400':
           description: Required fields missing
@@ -4854,8 +5104,8 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "An error occurred while fetching comments"
-  /api/v1/post/comment/{postId}/{commentId}:
+                    example: "An error occurred while fetching comments"  
+  /api/v2/post/comment/{postId}/{commentId}:
     patch:
       tags:
         - Comments
@@ -4924,18 +5174,12 @@ paths:
                       _id:
                         type: string
                         example: "6511b82172d92e69ee81c39b"
-                      post_id: 
-                        type: string
-                        example: "68058dd3ca03555f929d0ecc"
-                      user_id:
-                        type: string
-                        example: "67e6b2e1ef869d719662ca10"
                       content:
                         type: string
                         example: "This is my updated comment text."
                       media:
                         type: string
-                        example: "https://example.com/media.jpg"
+                        example: "https://example.com/updated-media.jpg"
                       tagged_users:
                         type: array
                         items:
@@ -4944,9 +5188,6 @@ paths:
                       is_edited:
                         type: boolean
                         example: true
-                      date:
-                        type: number
-                        example: 1745194451
         '400':
           description: Required fields missing
           content:
@@ -4967,9 +5208,6 @@ paths:
                   message:
                     type: string
                     example: "Not authorized to update this comment"
-                  success:
-                    type: boolean
-                    example: false
         '404':
           description: Post or comment not found
           content:
@@ -4979,7 +5217,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Comment does not exist"
+                    example: "Post does not exist"
         '500':
           description: Server error
           content:
@@ -5034,8 +5272,9 @@ paths:
                   deletedReplies:
                     type: integer
                     example: 3
+                    description: Number of replies that were also deleted
         '400':
-          description: Required fields missing
+          description: Required parameters missing
           content:
             application/json:
               schema:
@@ -5043,7 +5282,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "Comment ID is required"
+                    example: "Required parameters are missing"
         '401':
           description: Not authorized to delete this comment
           content:
@@ -5055,15 +5294,15 @@ paths:
                     type: string
                     example: "Not authorized to delete this comment"
         '404':
-          description: Comment not found
+          description: Post or comment not found
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  error:
+                  message:
                     type: string
-                    example: "Comment does not exist"
+                    example: "Post does not exist"
         '500':
           description: Server error
           content:
@@ -5087,7 +5326,7 @@ paths:
           required: true
           schema:
             type: string
-          description: ID of the post the comment belongs to
+          description: ID of the post
           example: "6458abc123def456"
         - in: path
           name: commentId
@@ -5101,21 +5340,22 @@ paths:
           required: true
           schema:
             type: string
-            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
         - in: query
           name: cursor
           required: false
           schema:
             type: integer
             default: 0
-          description: Cursor for pagination (position to start from)
+          description: Cursor for pagination
         - in: query
           name: replyLimit
-          required: false
+          required: true
           schema:
             type: integer
-            default: 2
-          description: Maximum number of replies to return per page
+            default: 10
+          description: Maximum number of replies to return
       responses:
         '200':
           description: Replies retrieved successfully
@@ -5126,8 +5366,8 @@ paths:
                 properties:
                   count:
                     type: integer
-                    description: Total number of replies for this comment
-                    example: 15
+                    example: 5
+                    description: Number of replies returned
                   replies:
                     type: array
                     items:
@@ -5135,58 +5375,49 @@ paths:
                       properties:
                         _id:
                           type: string
-                          example: "6511b82172d92e69ee81c39c"
-                        post_id: 
-                          type: string
-                          example: "68058dd3ca03555f929d0ecc"
-                        user_id:
-                          type: string
-                          example: "67e6b2e1ef869d719662ca10"
-                        parentId:
-                          type: string
-                          example: "6511b82172d92e69ee81c39b"
+                          example: "65120a9384f2b7dca1e4f932"
                         content:
                           type: string
-                          example: "I completely agree with your comment!"
+                          example: "This is a reply to the main comment"
+                        date:
+                          type: number
+                          example: 1745268850
                         media:
-                          type: string
-                          example: "https://example.com/media.jpg"
+                          type: object
+                          properties:
+                            link:
+                              type: string
+                              example: "https://example.com/reply-image.jpg"
+                            media_type:
+                              type: string
+                              example: "image"
                         tagged_users:
                           type: array
                           items:
                             type: string
-                          example: ["Amr-Doma81", "Darwin-Núñez32"]
+                          example: ["Amr-Doma81"]
                         is_edited:
                           type: boolean
                           example: false
-                        date:
-                          type: number
-                          example: 1745194451
                         author:
                           type: object
                           properties:
+                            _id:
+                              type: string
                             username:
                               type: string
-                              example: "johndoe"
-                            firstName:
+                            first_name:
                               type: string
-                              example: "John"
-                            lastName:
+                            last_name:
                               type: string
-                              example: "doe"
                             headline:
                               type: string
-                              example: "Software Engineer"
-                            profilePicture:
+                            profile_picture:
                               type: string
-                              example: "https://example.com/profile.jpg"
-                            connectionDegree:
-                              type: string
-                              example: "3rd+"
-                  nextCursor:
+                  next_cursor:
                     type: integer
-                    description: Cursor for the next page of replies, null if no more replies
-                    example: 2
+                    nullable: true
+                    description: Cursor for the next page of results, null if no more results
         '400':
           description: Required fields missing
           content:
@@ -6101,7 +6332,7 @@ paths:
                   error:
                     type: object
                     description: Error details
-  /api/v1/post/react/{postId}:
+  /api/v2/post/react/{postId}:
     post:
       tags:
         - Reactions
@@ -6140,6 +6371,7 @@ paths:
                   type: string
                   enum: [Post, Comment]
                   example: "Post"
+                  description: The type of content to react to
                 reaction:
                   type: string
                   enum: [like, celebrate, support, love, insightful, funny]
@@ -6169,10 +6401,14 @@ paths:
                     example: "Reaction added successfully"
                   reaction:
                     type: object
-                  topReactions:
+                  top_reactions:
                     type: array
+                    items:
+                      type: string
+                    example: ["like", "love", "celebrate"]
                   totalCount:
                     type: integer
+                    example: 42
     delete:
       tags:
         - Reactions
@@ -6186,12 +6422,14 @@ paths:
           schema:
             type: string
           description: ID of the post containing the reaction
+          example: "6458abc123def456"
         - name: Authorization
           in: header
           required: true
           schema:
             type: string
           description: Bearer token for authentication
+            example: "Bearer jwt_token"
       requestBody:
         required: true
         content:
@@ -6204,6 +6442,7 @@ paths:
                 comment_id:
                   type: string
                   description: Required when removing a reaction from a comment
+                  example: "60d5ec69c5d019ab15c55789"
                 target_type:
                   type: string
                   enum: [Post, Comment]
@@ -6221,14 +6460,65 @@ paths:
       responses:
         '200':
           description: Reaction removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reaction removed successfully"
+                  reaction:
+                    type: object
+                    nullable: true
+                  top_reactions:
+                    type: array
+                    items:
+                      type: string
+                    example: ["like", "love"]
+                  totalCount:
+                    type: integer
+                    example: 41
         '400':
           description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
           description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
         '404':
           description: Post or comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
     
     get:
       tags:
@@ -6243,18 +6533,21 @@ paths:
           schema:
             type: string
           description: ID of the post
+          example: "6458abc123def456"
         - name: Authorization
           in: header
           required: true
           schema:
             type: string
           description: Bearer token for authentication
+          example: "Bearer jwt_token"
         - name: commentId
           in: query
           required: false
           schema:
             type: string
           description: ID of the comment (required when target_type is 'Comment')
+          example: "60d5ec69c5d019ab15c55789"
         - name: cursor
           in: query
           required: false
@@ -6293,26 +6586,110 @@ paths:
                 properties:
                   message:
                     type: string
+                    example: "reactions successfully retrieved"
                   reactions:
                     type: object
                     properties:
                       reactions:
                         type: array
-                      totalCount:
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                              example: "60f2e5c4c3a1b905d4f88e92"
+                            user_id:
+                              type: string
+                              example: "60d5ec69c5d019ab15c55789"
+                            target_id:
+                              type: string
+                              example: "6458abc123def456"
+                            target_type:
+                              type: string
+                              example: "Post"
+                            reaction:
+                              type: string
+                              example: "like"
+                            date:
+                              type: number
+                              example: 1745268741
+                            author:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                  example: "60d5ec69c5d019ab15c55789"
+                                username:
+                                  type: string
+                                  example: "jane_smith"
+                                first_name:
+                                  type: string
+                                  example: "Jane"
+                                last_name:
+                                  type: string
+                                  example: "Smith"
+                                headline:
+                                  type: string
+                                  example: "Product Manager"
+                                profile_picture:
+                                  type: string
+                                  example: "https://example.com/profile2.jpg"
+                      reactions_count:
                         type: integer
-                      reactionCounts:
+                        example: 42
+                      reaction_counts:
                         type: object
-                      nextCursor:
+                        additionalProperties:
+                          type: integer
+                        example:
+                          like: 25
+                          love: 10
+                          celebrate: 7
+                      next_cursor:
                         type: integer
                         nullable: true
+                        example: 10
+                        description: Cursor for the next page of results, null if no more results
         '400':
           description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
         '401':
           description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
         '404':
           description: Post or comment not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
         '500':
           description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
   # Add these paths to your openapi.yaml file
   /api/v1/user/subscription/status:
     get:
@@ -6374,6 +6751,12 @@ paths:
                         format: date-time
                         nullable: true
                         example: null
+                      subscription_ends_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: "2023-05-01T00:00:00Z"
+                        
         '401':
           description: Unauthorized - invalid or expired token
           content:
@@ -6775,7 +7158,7 @@ paths:
                             flag_who_can_send_you_invitations:
                               type: string
                               example: "Everyone"
-                  nextCursor:
+                  next_cursor:
                     type: string
                     nullable: true
                     description: Cursor for fetching the next page of results
@@ -6909,6 +7292,9 @@ paths:
                         is_in_received_connections:
                           type: boolean
                           example: false
+                        is_connect_by_email:
+                          type: boolean
+                          example: false
                   pagination:
                     type: object
                     properties:
@@ -6928,7 +7314,7 @@ paths:
                         type: integer
                         example: 5
                         description: Total number of pages
-                      nextCursor:
+                      next_cursor:
                         type: number
                         example: 2
         '400':
@@ -7123,6 +7509,12 @@ paths:
       summary: Search for jobs
       description: Search for jobs by keyword or industry
       parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
         - name: query
           in: query
           required: true
@@ -7202,7 +7594,7 @@ paths:
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
-                  nextCursor:
+                  next_cursor:
                     type: string
                     example: "60d21b4667d0d8992e610c85"
         '400':
@@ -7309,7 +7701,7 @@ paths:
                               type: string
                             logo:
                               type: string
-                  nextCursor:
+                  next_cursor:
                     type: string
                     description: Cursor for the next page of results (null if no more results)
         '401':
@@ -7405,7 +7797,7 @@ paths:
                               type: string
                             logo:
                               type: string
-                  nextCursor:
+                  next_cursor:
                     type: string
                     description: Cursor for the next page of results (null if no more results)
         '500':
@@ -7759,7 +8151,7 @@ paths:
                             logo:
                               type: string
                               example: "https://example.com/logo.png"
-                  nextCursor:
+                  next_cursor:
                     type: string
                     example: "60d21b4667d0d8992e610c85"
         '401':
@@ -9221,6 +9613,317 @@ paths:
 
 security:
   - bearerAuth: []
+  
+  /api/v1/user/profile/about:
+    post:
+      tags:
+        - User Profile
+      summary: Add user about information
+      description: >
+        Creates a new about section for the authenticated user's profile.
+        This endpoint can only be used if no about section exists yet.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about:
+                  type: string
+                  description: Text describing the user
+                  example: "Experienced software developer with 5+ years in full-stack development."
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  description: List of skills related to the user
+                  example: ["JavaScript", "React", "Node.js", "MongoDB"]
+              required:
+                - about
+      responses:
+        '200':
+          description: About section added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section added successfully"
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                        example: "Experienced software developer with 5+ years in full-stack development."
+                      skills:
+                        type: array
+                        items:
+                          type: string
+                        example: ["JavaScript", "React", "Node.js", "MongoDB"]
+        '400':
+          description: About section already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section already exists. Use update instead."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+    put:
+      tags:
+        - User Profile
+      summary: Update user about information
+      description: >
+        Updates the existing about section for the authenticated user's profile.
+        This endpoint can only be used if an about section already exists.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                about:
+                  type: string
+                  description: Updated text describing the user
+                  example: "Software architect with expertise in scalable systems and cloud infrastructure."
+                skills:
+                  type: array
+                  items:
+                    type: string
+                  description: Updated list of skills related to the user
+                  example: ["JavaScript", "React", "AWS", "System Design", "Microservices"]
+              required:
+                - about
+      responses:
+        '200':
+          description: About section updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section updated successfully"
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                      skills:
+                        type: array
+                        items:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '404':
+          description: About section not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found. Use add instead."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+    delete:
+      tags:
+        - User Profile
+      summary: Delete user about information
+      description: Removes the about section from the authenticated user's profile
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: About section deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '404':
+          description: About section not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/user/profile/about/{user_id}:
+    get:
+      tags:
+        - User Profile
+      summary: Get user about information
+      description: >
+        Retrieves the about section for a specific user. Access is limited based on
+        the target user's privacy settings and connection status with the requesting user.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the user whose about information is being requested
+          example: "john-doe123"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: About section retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Indicates if the requested profile belongs to the authenticated user
+                    example: false
+                  about:
+                    type: object
+                    properties:
+                      about:
+                        type: string
+                        example: "Experienced software developer with 5+ years in full-stack development."
+                      skills:
+                        type: array
+                        items:
+                          type: string
+                        example: ["JavaScript", "React", "Node.js", "MongoDB"]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Unauthorized access"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Target profile is private and you are not connected."
+        '404':
+          description: About section or user not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "About section not found."
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
               
 components:
   securitySchemes:

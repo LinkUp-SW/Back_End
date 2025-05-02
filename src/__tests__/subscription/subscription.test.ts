@@ -511,11 +511,16 @@ describe('Automatic Payment at Period End', () => {
       const userAfter = await users.findById(premium_id);
       expect(userAfter?.subscription?.status).toBe('active');
       expect(userAfter?.subscription?.plan).toBe('premium');
+      
+      // Add null check for dates before comparing
+      expect(userAfter?.subscription?.current_period_start).toBeTruthy();
+      expect(originalPeriodEnd).toBeTruthy();
+      
       // The key test: verify that the period dates have been updated
-      expect(userAfter?.subscription?.current_period_start.getTime())
+      expect(userAfter!.subscription!.current_period_start!.getTime())
         .toBeGreaterThan(originalPeriodEnd!.getTime() - 86400000); // Allow a day of variance
         
-      expect(userAfter?.subscription?.current_period_end.getTime())
+      expect(userAfter!.subscription!.current_period_end!.getTime())
         .toBeGreaterThan(originalPeriodEnd!.getTime() + 86400000); // At least one day later
         
       // Verify the subscription remains active and premium

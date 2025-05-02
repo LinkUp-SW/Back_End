@@ -108,11 +108,22 @@ async function handleSubscriptionDeleted(subscription: any) {
   const user = await users.findOne({ 'subscription.customer_id': customerId });
   if (!user) return;
 
+  // Update subscription to free plan and null out date fields
   user.subscription.status = 'canceled';
   user.subscription.plan = 'free';
   user.subscription.canceled_at = new Date();
   user.subscription.cancel_at_period_end = false;
   user.subscription.subscribed = false;
+
+  // Null out period date fields when subscription fully expires
+  user.subscription.current_period_start = null;
+  user.subscription.current_period_end = null;
+  
+  // Keep a record of when the subscription ended
+  user.subscription.subscription_ends_at = null;
+  
+  // Log the subscription deletion
+  console.log(`Subscription deleted for user ${user.user_id}, nulling out period dates`);
   
   await user.save();
 }
