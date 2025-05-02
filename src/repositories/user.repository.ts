@@ -6,6 +6,8 @@ import { ConnectionUserInterface} from "../models/users.model.ts";
 import Users from "../models/users.model.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
 import { Request , Response } from "express";
+import { CustomError } from '../utils/customError.utils.ts';
+import cloudinary from '../../config/cloudinary.ts';
 export class UserRepository {
   async create(userId: string, firstName: string, lastName: string, email: string, password: string,
     country: string,
@@ -268,8 +270,203 @@ export class UserRepository {
     return User.updateOne({ user_id: user_id }, { $set: { email: email.toLowerCase() } });
   }
 
-  async deleteAccount(user_id: string) {
-    return User.deleteOne({ user_id: user_id });
+  async deleteAccount(userId: string) {
+    try {
+      // Find the user to be deleted
+      const user = await User.findOne({ user_id: userId });
+      if (!user) {
+        throw new CustomError('User not found', 404);
+      }
+  
+      const userObjectId = user.id;
+  
+      // 1. Clean up posts, comments, reactions
+      await this.cleanupUserPosts(userObjectId);
+      
+      // 2. Clean up network connections
+      await this.cleanupUserNetwork(userObjectId);
+      
+      // 3. Clean up job applications and saved jobs
+      await this.cleanupUserJobs(userObjectId);
+      
+      // 4. Clean up media files from cloud storage
+      await this.cleanupUserMedia(user);
+      
+      // 5. Clean up organization relationships
+      await this.cleanupUserOrganizations(userObjectId);
+
+      // 6. Clean up user conversations
+      //await this.cleanupUserConversations(userObjectId);  --> TODO: Implement this method when conversations model is ready
+      
+      // 7. Delete the user account itself
+      const deletedUser = await User.findOneAndDelete({ user_id: userId });
+      
+      return deletedUser;
+    } catch (error) {
+      console.error('Error deleting user account:', error);
+      throw error;
+    }
+  }
+
+  // private async cleanupUserConversations(userId: mongoose.Types.ObjectId) {
+
+  
+  // Helper methods to organize the cleanup process
+  private async cleanupUserPosts(userId: mongoose.Types.ObjectId) {
+    // Get post IDs created by this user
+    const userPosts = await mongoose.model('posts').find({ user_id: userId });
+    const userPostIds = userPosts.map(post => post._id);
+    
+    // Delete all comments by this user
+    await mongoose.model('comments').deleteMany({ user_id: userId });
+    
+    // Delete all reactions by this user
+    await mongoose.model('reactions').deleteMany({ user_id: userId });
+    
+    // Remove user reactions from other users' activity
+    await User.updateMany(
+      {}, 
+      { $pull: { 'activity.reacts': { user_id: userId } } }
+    );
+    
+    // Delete reposts by this user
+    await mongoose.model('posts').deleteMany({ 
+      user_id: userId,
+      post_type: 'repost' 
+    });
+    
+    // Delete all comments and reactions on the user's posts
+    for (const postId of userPostIds) {
+      await mongoose.model('comments').deleteMany({ post_id: postId });
+      await mongoose.model('reactions').deleteMany({ target_id: postId });
+    }
+    
+    // Delete all posts by this user
+    await mongoose.model('posts').deleteMany({ user_id: userId });
+  }
+  
+  private async cleanupUserNetwork(userId: mongoose.Types.ObjectId) {
+    // Remove user from others' connections, followers, following lists
+    await User.updateMany(
+      {}, 
+      { 
+        $pull: { 
+          connections: { _id: userId },
+          followers: userId,
+          following: userId,
+          sent_connections: { _id: userId },
+          received_connections: { _id: userId },
+          blocked: { _id: userId },
+          withdrawn_connections: { _id: userId }
+        } 
+      }
+    );
+  }
+  
+  private async cleanupUserJobs(userId: mongoose.Types.ObjectId) {
+    // Delete job applications by this user
+    await mongoose.model('jobApplications').deleteMany({ user_id: userId });
+    
+    // Remove job applications from jobs
+    const jobs = await mongoose.model('jobs').find({ 
+      applied_applications: { $in: [userId] } 
+    });
+    
+    for (const job of jobs) {
+      // Filter out the user's ID from the job's applied applications
+      job.applied_applications = job.applied_applications.filter(
+        (applicantId: mongoose.Types.ObjectId) => applicantId.toString() !== userId.toString()
+      );
+      await job.save();
+    }
+  }
+  
+  private async cleanupUserMedia(user: any) {
+    // Delete profile photo from Cloudinary
+    if (user.profile_photo && user.profile_photo !== process.env.DEFAULT_IMAGE_URL) {
+      const profilePhotoId = this.extractPublicId(user.profile_photo);
+      await cloudinary.uploader.destroy(profilePhotoId, { invalidate: true });
+    }
+    
+    // Delete cover photo from Cloudinary
+    if (user.cover_photo && user.cover_photo !== process.env.DEFAULT_IMAGE_URL) {
+      const coverPhotoId = this.extractPublicId(user.cover_photo);
+      await cloudinary.uploader.destroy(coverPhotoId, { invalidate: true });
+    }
+    
+    // Delete resume from Cloudinary
+    if (user.resume) {
+      let resumeId = this.extractPublicId(user.resume);
+      if (!resumeId.endsWith('.pdf')) {
+        resumeId += '.pdf';
+      }
+      await cloudinary.uploader.destroy(resumeId, { invalidate: true, resource_type: "raw" });
+    }
+    
+    // Delete media from education, work experience, licenses
+    const mediaUrls = this.collectAllMediaUrls(user);
+    await deleteMediaFromCloud(mediaUrls);
+  }
+  
+  private async cleanupUserOrganizations(userId: mongoose.Types.ObjectId) {
+    // Remove user from organization admins and followers
+    await mongoose.model('organizations').updateMany(
+      {}, 
+      { 
+        $pull: { 
+          admins: userId,
+          followers: userId,
+          blocked: userId
+        } 
+      }
+    );
+  }
+  
+  private extractPublicId(url: string): string {
+    if (!url) return '';
+    const urlParts = url.split('/');
+    const fileNameWithExtension = urlParts[urlParts.length - 1];
+    const publicId = fileNameWithExtension.split('.')[0];
+    return publicId;
+  }
+  
+  private collectAllMediaUrls(user: any): string[] {
+    const mediaUrls: string[] = [];
+    
+    // Collect from education
+    if (user.education) {
+      user.education.forEach((edu: any) => {
+        if (edu.media) {
+          edu.media.forEach((media: any) => {
+            if (media.media) mediaUrls.push(media.media);
+          });
+        }
+      });
+    }
+    
+    // Collect from work experience
+    if (user.work_experience) {
+      user.work_experience.forEach((exp: any) => {
+        if (exp.media) {
+          exp.media.forEach((media: any) => {
+            if (media.media) mediaUrls.push(media.media);
+          });
+        }
+      });
+    }
+    
+    // Collect from licenses
+    if (user.liscence_certificates) {
+      user.liscence_certificates.forEach((lic: any) => {
+        if (lic.media) {
+          lic.media.forEach((media: any) => {
+            if (media.media) mediaUrls.push(media.media);
+          });
+        }
+      });
+    }
+    
+    return mediaUrls;
   }
 }
 
@@ -632,3 +829,47 @@ export async function getFormattedAuthor(userId: string) {
     return null;
   }
 }
+/**
+ * Deletes multiple media files from Cloudinary
+ * @param mediaUrls - Array of media URLs to delete
+ * @returns Promise that resolves when all deletions are complete
+ */
+async function deleteMediaFromCloud(mediaUrls: string[]): Promise<void> {
+  if (!mediaUrls || mediaUrls.length === 0) {
+    return;
+  }
+
+  const deletePromises = mediaUrls.map(async (url) => {
+    try {
+      if (!url) return;
+      
+      // Extract the public ID from the URL
+      const urlParts = url.split('/');
+      const fileNameWithExtension = urlParts[urlParts.length - 1];
+      const fileName = fileNameWithExtension.split('.')[0];
+      
+      // Determine resource type based on file extension
+      const extension = fileNameWithExtension.split('.').pop()?.toLowerCase();
+      const resourceType = 
+        ['pdf', 'doc', 'docx', 'txt', 'csv'].includes(extension || '') 
+          ? 'raw' 
+          : ['mp4', 'mov', 'avi', 'wmv'].includes(extension || '')
+            ? 'video'
+            : 'image';
+      
+      // Delete the file from Cloudinary
+      await cloudinary.uploader.destroy(fileName, { 
+        invalidate: true,
+        resource_type: resourceType
+      });
+      
+      console.log(`Successfully deleted file: ${fileName}`);
+    } catch (error) {
+      console.error(`Failed to delete media file ${url}:`, error);
+    }
+  });
+  
+  // Wait for all deletion operations to complete
+  await Promise.all(deletePromises);
+}
+
