@@ -42,92 +42,114 @@ export const searchPosts = async (req: Request, res: Response) => {
     const user = await findUserByUserId(userId, res);
     if (!user) return;
     
+    // Extract the viewer's connections for privacy filtering
+    const viewerConnections = user.connections?.map((connection: ConnectionRequest) => 
+      typeof connection === 'object' && connection._id 
+        ? connection._id.toString() 
+        : connection.toString()
+    ) || [];
+    
+    // Convert connections to ObjectIds for MongoDB query
+    const viewerConnectionsObjectIds = viewerConnections.map(id => 
+      new mongoose.Types.ObjectId(id)
+    );
+    
+    // Safely extract user's ObjectId
+    const userIdObject = user._id as mongoose.Types.ObjectId;
+    const userIdString = userIdObject.toString();
+    
     // Escape special regex characters in the query
     const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
-    // Extract viewer's connection IDs
-    const connectionIds = user.connections.map((connection: ConnectionRequest) => 
-      connection._id.toString()
-    );
-    
-    // Define the base aggregation pipeline
+    console.log(`Search query: "${query}"`);
+    console.log(`Viewer connections count: ${viewerConnections.length}`);
+    if (viewerConnections.length > 0) {
+      console.log(`First few connections: ${viewerConnections.slice(0, 3).join(', ')}`);
+    }
+    // Define the base aggregation pipeline with privacy filtering
     const basePipeline: PipelineStage[] = [
       // Match posts with content containing the search query
       {
         $match: {
           content: { $regex: escapedQuery, $options: 'i' },
+          post_type: "Standard",
+          $and: [
+            {
+              // Don't show the viewer's own posts
+              $or: [
+                { user_id: { $ne: userIdObject } },
+                { "user_id": { $ne: userIdString } }
+              ]
+            },
+            {
+              // Privacy filtering: Only include posts that are either:
+              // 1. Public posts, OR
+              // 2. Private posts where the author is connected to the viewer
+              $or: [
+                { public_post: true },
+                { 
+                  public_post: false, 
+                  user_id: { $in: viewerConnectionsObjectIds } 
+                }
+              ]
+            }
+          ],
           ...(cursor ? { date: { $lt: cursor } } : {}),
         }
       },
-      // Add user details for privacy checking
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user_id',
-          foreignField: '_id',
-          as: 'author'
-        }
-      },
-      { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
-      // Match based on privacy settings
-      {
-        $match: {
-          $or: [
-            { public_post: true }, // Public posts
-            { user_id: user._id }, // User's own posts
-            { user_id: { $in: connectionIds.map(id => new mongoose.Types.ObjectId(id)) } } // Posts from connections
-          ]
-        }
-      },
-      // Project only needed fields
-      {
-        $project: {
-          _id: 1,
-          user_id: 1,
-          content: 1,
-          date: 1,
-          media: 1,
-          comments_disabled: 1,
-          public_post: 1,
-          reacts: 1,
-          tagged_users: 1,
-          comments: 1,
-          is_edited: 1,
-          post_type: 1,
-          reposts: 1
-        }
-      },
-      // Sort by date (most recent first)
-      { $sort: { date: -1 } },
-      // Limit results
-      { $limit: limit + 1 } // Fetch one extra to determine if there are more posts
     ];
     
-    // Execute the aggregation
+    // Execute the aggregation and enhance posts
     const postsData = await posts.aggregate(basePipeline);
     
     // Check if there are more posts
     const hasMorePosts = postsData.length > limit;
     const resultPosts = hasMorePosts ? postsData.slice(0, limit) : postsData;
     
-    // Get user's saved posts for the enhancePosts function
-    const userSavedPosts = user.savedPosts || [];
-    
-    // Enhance posts with metadata (reactions, author info, etc.)
+    // Enhance posts with metadata
     const enhancedPosts = await enhancePosts(
       resultPosts,
-      (user._id as mongoose.Types.ObjectId).toString(),
-      userSavedPosts
+      userIdString,
+      user.savedPosts || []
     );
+
+    // Final filter to remove:
+    // 1. Posts with connection_degree "me" (current user's posts)
+    // 2. Any remaining private posts where connection check failed
+    const filteredPosts = enhancedPosts.filter(post => {
+      // Don't show the viewer's own posts
+      if (post.author?.connection_degree === "me") {
+        return false;
+      }
     
+      // Public posts are always visible
+      if (post.public_post === true) {
+        return true;
+      }
+    
+      // For private posts, ensure the author is really in connections
+      // Need to normalize IDs for comparison
+      const postUserId = post.user_id.toString();
+      const isConnected = viewerConnections.some(connId => 
+        connId.toString() === postUserId
+      );
+    
+      // Log when we find a private post from a connection
+      if (!post.public_post && isConnected) {
+        console.log(`Including private post ${post._id} from connection ${postUserId}`);
+      }
+    
+      return isConnected;
+    });
+
     // Calculate next cursor
-    const nextCursor = hasMorePosts && resultPosts.length > 0
+    const nextCursor = hasMorePosts && filteredPosts.length > 0
       ? resultPosts[resultPosts.length - 1].date
       : null;
     
     return res.status(200).json({
       message: 'Posts retrieved successfully',
-      posts: enhancedPosts,
+      posts: filteredPosts,
       next_cursor: nextCursor
     });
     
