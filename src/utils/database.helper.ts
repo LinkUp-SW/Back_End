@@ -124,7 +124,7 @@ export const checkProfileAccess = async (
 
     const isConnectionsOnlyProfile = targetUser.privacy_settings?.flag_account_status === "Connections only"
     if (isConnectionsOnlyProfile) {
-      return { accessGranted: true, reason: "Cnnections Only" };
+      return { accessGranted: true, reason: "Connections Only" };
     };
 
     // Deny access if the profile is private
@@ -471,7 +471,7 @@ export const findUserById = async (id: string, res: Response) => {
       // Query the database using the MongoDB `_id` field
       const user = await Users.findById(id);
       if (!user) {
-          res.status(404).json({ message: "User not found" });
+          res.status(404).json({ message: "User not founddddd" });
           return null;
       }
       return user;
@@ -479,5 +479,24 @@ export const findUserById = async (id: string, res: Response) => {
       console.error("Error finding user by MongoDB ID:", error);
       res.status(500).json({ message: "Error finding user", error });
       return null;
+  }
+};
+
+/**
+ * Finds a user by MongoDB _id without sending HTTP responses.
+ * Returns the user document if found; otherwise returns null.
+ */
+export const findUserByIdSilent = async (id: string) => {
+  try {
+    // Validate that the id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    // Query the database using the MongoDB `_id` field
+    const user = await Users.findById(id);
+    return user;  // Returns user or null
+  } catch (error) {
+    console.error("Error finding user by MongoDB ID:", error);
+    return null;
   }
 };
