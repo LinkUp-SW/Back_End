@@ -551,72 +551,77 @@ export const convert_idIntoUser_id = async (
 * @returns A Promise containing the formatted author object
 */
 export async function getFormattedAuthor(userId: string, viewerId: string) {
- try {
-   // Get the target user's information
-   const userDoc = await Users.findOne(
-     { _id: userId },
-     {
-       user_id: 1,
-       "bio.first_name": 1,
-       "bio.last_name": 1,
-       "bio.headline": 1,
-       profile_photo: 1
-     }
-   ).lean();
-   
-   if (!userDoc) {
-     return null;
-   }
+  try {
+    // Get the target user's information
+    const userDoc = await Users.findOne(
+      { _id: userId },
+      {
+        user_id: 1,
+        "bio.first_name": 1,
+        "bio.last_name": 1,
+        "bio.headline": 1,
+        profile_photo: 1
+      }
+    ).lean();
+    
+    if (!userDoc) {
+      return null;
+    }
 
-   // Get the viewer's connections
-   const viewerUser = await Users.findOne(
-     { _id: viewerId },
-     {
-       user_id: 1,
-       connections: 1
-     }
-   ).lean();
-   
-   if (!viewerUser) {
-     return null;
-   }
-   
-   // Extract viewer's connections as string IDs
-   const viewerConnections = viewerUser.connections.map((conn: any) => 
-     typeof conn === 'object' && conn !== null && '_id' in conn 
-       ? conn._id.toString() 
-       : typeof conn === 'string' ? conn : String(conn)
-   );
-   
-   // Calculate second-degree connections
-   const secondDegreeConnections = await calculateSecondDegreeConnections(
-     viewerConnections,
-     viewerUser._id.toString()
-   );
+    // Check if this is the viewer's own profile
+    const isSelf = viewerId === userId.toString();
+    let connectionDegree = isSelf ? null : '3rd+';
 
-   // Determine connection degree
-   let connectionDegree = '3rd+';
-   
-   if (viewerId === userId.toString()) {
-     connectionDegree = 'self';
-   } else if (viewerConnections.includes(userId.toString())) {
-     connectionDegree = '1st';
-   } else if (secondDegreeConnections.has(userId.toString())) {
-     connectionDegree = '2nd';
-   }
-   
-   return {
-     username: userDoc.user_id,
-     first_name: userDoc.bio?.first_name || "",
-     last_name: userDoc.bio?.last_name || "",
-     headline: userDoc.bio?.headline || "",
-     profile_picture: userDoc.profile_photo || "",
-     connection_degree: connectionDegree
-   };
- } catch (err) {
-   console.error("Error fetching author info:", err);
-   return null;
- }
+    // Only calculate connections if it's not the user's own profile
+    if (!isSelf) {
+      // Get the viewer's connections
+      const viewerUser = await Users.findOne(
+        { _id: viewerId },
+        {
+          user_id: 1,
+          connections: 1
+        }
+      ).lean();
+      
+      if (!viewerUser) {
+        return null;
+      }
+      
+      // Extract viewer's connections as string IDs
+      const viewerConnections = viewerUser.connections.map((conn: any) => 
+        typeof conn === 'object' && conn !== null && '_id' in conn 
+          ? conn._id.toString() 
+          : typeof conn === 'string' ? conn : String(conn)
+      );
+      
+      // Determine connection degree
+      if (viewerConnections.includes(userId.toString())) {
+        connectionDegree = '1st';
+      } else {
+        // Only calculate second-degree connections if not a first-degree connection
+        const secondDegreeConnections = await calculateSecondDegreeConnections(
+          viewerConnections,
+          viewerUser._id.toString()
+        );
+        
+        if (secondDegreeConnections.has(userId.toString())) {
+          connectionDegree = '2nd';
+        }
+      }
+    }
+    
+    return {
+      username: userDoc.user_id,
+      first_name: userDoc.bio?.first_name || "",
+      last_name: userDoc.bio?.last_name || "",
+      headline: userDoc.bio?.headline || "",
+      profile_picture: userDoc.profile_photo || "",
+      connection_degree: connectionDegree
+    };
+  } catch (err) {
+    console.error("Error fetching author info:", err);
+    return null;
+  }
 }
 
 /**
