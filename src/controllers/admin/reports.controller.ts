@@ -194,6 +194,10 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                     const post = await postRepository.findByPostId(contentRef);
                     if (post) {
                         contentInfo = await enhancePost(post, user._id!.toString());
+                        contentInfo={
+                            ...contentInfo,
+                            type:'Post',
+                        }
                     }
                     break;
                 case contentTypeEnum.Comment:
@@ -208,11 +212,12 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                         }
                         
                         contentInfo = {
-                            id: comment._id,
-                            type: 'comment',
+                            _id: comment._id,
+                            type: 'Comment',
                             content: comment.content || 'No text',
                             author,
                             media: comment.media,
+                            media_type: comment.media ? "image" : "none",
                             parent_post: parentPostInfo
                         };
                     }
@@ -224,7 +229,7 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                         if (organization) {
                             contentInfo = {
                                 id: job._id,
-                                type: 'job',
+                                type: 'Job',
                                 title: job.job_title || 'No title',
                                 description: job.description?.substring(0, 200) + (job.description?.length > 200 ? '...' : ''),
                                 organization: {
@@ -265,3 +270,4 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
         }
     }
 });
+
