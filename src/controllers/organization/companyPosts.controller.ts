@@ -282,7 +282,11 @@ export const deletePostFromCompany = async (req: Request, res: Response, next: N
 export const getCompanyPosts = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     try {
         const organizationId = req.params.organization_id;
+        const userId = await getUserIdFromToken(req, res);
+        if (!userId) return;
         
+        const user = await findUserByUserId(userId, res);
+        if (!user) return;
         // Validate organization ID
         if (!organizationId) {
             return res.status(400).json({ message: 'Organization ID is required' });
@@ -316,7 +320,7 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
         }
         
         // Use the helper function to format posts
-        const formattedPosts = formatCompanyPosts(organization.posts, organization);
+        const formattedPosts = formatCompanyPosts(organization.posts, organization, user._id as string);
         
         return res.status(200).json({
             message: 'Company posts retrieved successfully',

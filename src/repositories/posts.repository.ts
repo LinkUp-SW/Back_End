@@ -131,7 +131,7 @@ export const enhancePost = async (
   // Get author information
   let authorInfo;
   if(post.is_company){
-    authorInfo=await formatCompanyPost(post);
+    authorInfo=await formatCompanyPost(post,userId);
   }else authorInfo = await getFormattedAuthor(post.user_id,userId);
   
   // Check if post is saved by user
