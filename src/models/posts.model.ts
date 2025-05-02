@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 import { usersInterface } from "./users.model.ts";
 import { commentsInterface } from "./comments.model.ts";
 import { reactsInterface } from "./reactions.model.ts";
+import { organizationsInterface, organizationSizeEnum } from "./organizations.model.ts";
 
 
 export enum commentsEnum{
@@ -39,7 +40,8 @@ export interface postsInterface extends mongoose.Document {
     tagged_users: string[];
     comments: commentsInterface[];
     is_edited:boolean;
-    
+    is_company: boolean;
+    company: organizationsInterface;
     // Fields to support reposts
     post_type: postTypeEnum;
     reposts?: postsInterface[]
@@ -62,6 +64,8 @@ const postsSchema = new Schema<postsInterface>({
     tagged_users: [{ type: String }],
     comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
     is_edited: { type: Boolean, default: false },
+    is_company: { type: Boolean, default: false },
+    company: { type: Schema.Types.ObjectId, ref: "organizations" },
     
     // New fields for combined schema
     post_type: { 
