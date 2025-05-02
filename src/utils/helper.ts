@@ -202,10 +202,21 @@ export const handleResumeUpload = async (resume: string): Promise<string> => {
  * @param organization The organization data
  * @returns Formatted posts with author field
  */
-export const formatCompanyPosts = (posts: any[], organization: any): any[] => {
+export const formatCompanyPosts = (posts: any[], organization: any,viewerId:string): any[] => {
     // Get followers count
     const followersCount = organization.followers ? organization.followers.length : 0;
-    
+    let isFollowing = false;
+    if (organization.followers && Array.isArray(organization.followers)) {
+      // Check if viewerId exists in the followers array
+      isFollowing = organization.followers.some((follower: any) => {
+        // Handle both object with _id and direct string ID format
+        const followerId = typeof follower === 'object' && follower !== null && '_id' in follower
+          ? follower._id.toString()
+          : typeof follower === 'string' ? follower : String(follower);
+        
+        return followerId === viewerId;
+      });
+    }
     // Transform posts to include the author field in the required format
     return posts.map(post => {
         // Convert to plain object to avoid mongoose document limitations
@@ -219,17 +230,30 @@ export const formatCompanyPosts = (posts: any[], organization: any): any[] => {
             username: organization._id,
             profile_picture: organization.logo,
             followers_count: followersCount,
+            isFollowing
         };
         
         return postObj;
     });
 };
 
-export async function formatCompanyPost(posts: any){
+export async function formatCompanyPost(posts: any,viewerId:string){
  const organization= await organizations.findById(posts.company);
  if (!organization){
   return null;
  } 
+ let isFollowing = false;
+    if (organization.followers && Array.isArray(organization.followers)) {
+      // Check if viewerId exists in the followers array
+      isFollowing = organization.followers.some((follower: any) => {
+        // Handle both object with _id and direct string ID format
+        const followerId = typeof follower === 'object' && follower !== null && '_id' in follower
+          ? follower._id.toString()
+          : typeof follower === 'string' ? follower : String(follower);
+        
+        return followerId === viewerId;
+      });
+    }
   // Transform post to include the author field in the required format
   return {
           first_name: organization.name,
@@ -237,7 +261,8 @@ export async function formatCompanyPost(posts: any){
           headline: " ",
           username: organization._id,
           profile_picture: organization.logo,
-          followers_count: organization.followers ? organization.followers.length : 0
+          followers_count: organization.followers ? organization.followers.length : 0,
+          isFollowing
       };
       
 };
