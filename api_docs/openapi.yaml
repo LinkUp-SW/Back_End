@@ -8845,22 +8845,33 @@ paths:
                         items:
                           type: object
                           properties:
-                            report_id:
+                            content_id:
                               type: string
-                              example: "REP9f11"
-                            mongo_id:
+                              example: "CNT9f11"
+                              description: Formatted content ID for display
+                            content_mongo_id:
                               type: string
                               example: "6458abc123def456"
+                              description: MongoDB ID of the reported content
+                            content_ref:
+                              type: string
+                              example: "6458abc123def456"
+                              description: Reference to the reported content
                             type:
                               type: string
                               enum: [Post, Comment, Job]
                               example: "Post"
-                            reason:
-                              type: string
-                              example: "inappropriate"
+                            reasons:
+                              type: array
+                              items:
+                                type: string
+                                enum: [spam, harassment, hate_speech, misinformation, scam, inappropriate, other]
+                              example: ["spam", "inappropriate"]
+                              description: All reasons this content was reported for
                             created_at:
                               type: integer
                               example: 1714545720
+                              description: Timestamp of the most recent report
                             status:
                               type: string
                               enum: [pending, resolved]
@@ -8872,9 +8883,11 @@ paths:
                             report_count:
                               type: integer
                               example: 3
+                              description: Number of reports for this content
                       total_count:
                         type: integer
                         example: 42
+                        description: Count of unique content items with reports
                       status_counts:
                         type: object
                         properties:
@@ -8884,6 +8897,7 @@ paths:
                           resolved:
                             type: integer
                             example: 14
+                        description: Count of unique content items by report status
                       next_cursor:
                         type: integer
                         nullable: true
@@ -8948,7 +8962,7 @@ paths:
       description: >
         Retrieves all reports for a specific content item (post, comment, or job).
         This endpoint is restricted to administrators and provides detailed information
-        about the content being reported along with all individual reports.
+        about the content being reported along with a summary of report reasons.
       parameters:
         - name: contentType
           in: path
@@ -8971,20 +8985,6 @@ paths:
           schema:
             type: string
           description: Bearer token for authentication (admin access required)
-        - name: cursor
-          in: query
-          required: false
-          schema:
-            type: integer
-          description: Cursor for pagination (starting position)
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 10
-            maximum: 50
-          description: Maximum number of reports to return per page
       responses:
         '200':
           description: Content reports retrieved successfully
@@ -9006,6 +9006,9 @@ paths:
                         type: object
                         description: Details about the reported content
                         properties:
+                          id:
+                            type: string
+                            example: "6458abc123def456"
                           type:
                             type: string
                             example: "post"
@@ -9032,56 +9035,21 @@ paths:
                             items:
                               type: string
                             description: Media URLs if the content has images/videos
-                      reports:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            report_id:
-                              type: string
-                              example: "REP9f11"
-                            mongo_id:
-                              type: string
-                              example: "6458abc123def456"
-                            reason:
-                              type: string
-                              enum: [spam, harassment, hate_speech, misinformation, scam, inappropriate, other]
-                              example: "inappropriate"
-                            created_at:
-                              type: integer
-                              example: 1714545720
-                            status:
-                              type: string
-                              enum: [pending, resolved]
-                              example: "pending"
-                            admin_action:
-                              type: string
-                              enum: [none, content_removed, warning_issued, account_suspended, no_action]
-                              example: "none"
-                            reporter:
-                              type: object
-                              properties:
-                                id:
-                                  type: string
-                                  example: "60d21b4667d0d8992e610c85"
-                                username:
-                                  type: string
-                                  example: "johndoe42"
-                                fullName:
-                                  type: string
-                                  example: "John Doe"
-                                profilePicture:
-                                  type: string
-                                  example: "https://example.com/photos/profile.jpg"
+                          parent_post:
+                            type: object
+                            description: For comments, contains info about the parent post (null for other types)
                       total_count:
                         type: integer
                         example: 5
-                      next_cursor:
-                        type: integer
-                        nullable: true
-                        example: 10
+                        description: Total number of reports for this content
+                      reasons_summary:
+                        type: object
+                        description: Summary of report reasons with counts
+                        example:
+                          spam: 2
+                          inappropriate: 3
         '400':
-          description: Bad request (e.g., invalid content type or limit exceeds maximum)
+          description: Bad request (e.g., invalid content type)
           content:
             application/json:
               schema:
