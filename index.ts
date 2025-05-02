@@ -56,6 +56,8 @@ import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts
 import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 import reportRoutes from './src/routes/admin/report.routes.ts'
+import dashboard from './src/routes/admin/dashboard.routes.ts'
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,7 +73,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'linkupadmin-1745264578826' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Amr-Doma81' });
   console.log('Generated Token:', token);
 };
 
@@ -186,7 +188,8 @@ app.use('/api/v1/search',
 
 app.use('/api/v1/admin',
    createAdminRoutes,
-   reportRoutes
+   reportRoutes,
+   dashboard
   );
 
 app.get('/', (req: Request, res: Response) => {
