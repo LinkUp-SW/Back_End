@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { paginatedJobQuery, getTimeAgoStage } from "../../utils/database.helper.ts";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import organizations from "../../models/organizations.model.ts"; 
 
 /**
  * Search for jobs using a single query term
@@ -30,7 +29,8 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
                 { targetted_skills: { $regex: query, $options: 'i' } },
                 { responsibilities: { $regex: query, $options: 'i' } },
                 { qualifications: { $regex: query, $options: 'i' } },
-                { organization_industry: { $regex: query, $options: 'i' } }
+                { organization_industry: { $regex: query, $options: 'i' } },
+                { location: { $regex: query, $options: 'i' } },
             ]
         };
         
