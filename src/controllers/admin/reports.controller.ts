@@ -188,6 +188,7 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
         
         // Fetch the content info based on type
         let contentInfo = null;
+        let parentPostInfo = null;
         try {
             switch (contentType) {
                 case contentTypeEnum.Post:
@@ -206,7 +207,7 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                         const author = await getFormattedAuthor(comment.user_id.toString());
                         // Find the post this comment belongs to
                         const parentPost = await postRepository.findByPostId(comment.post_id.toString());
-                        let parentPostInfo = null;
+                        
                         if (parentPost) {
                             parentPostInfo = await enhancePost(parentPost, user._id!.toString());
                         }
@@ -216,9 +217,11 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                             type: 'Comment',
                             content: comment.content || 'No text',
                             author,
-                            media: comment.media,
-                            media_type: comment.media ? "image" : "none",
-                            parent_post: parentPostInfo
+                            media:{
+                                link:comment.media,
+                                media_type: comment.media ? "image" : "none",
+                                
+                            }, 
                         };
                     }
                     break;
@@ -253,6 +256,7 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
             success: true,
             data: {
                 content: contentInfo,
+                parent_post: parentPostInfo!,
                 total_count: reportSummary.totalCount,
                 reasons_summary: reportSummary.reasonsSummary
             }
@@ -271,3 +275,64 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
     }
 });
 
+
+export const resolveReport = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+    try{
+        let userId = await getUserIdFromToken(req,res);
+        if (!userId) return;
+        const user = await findUserByUserId(userId,res);
+        if (!user) return;
+
+
+        const { contentRef, contentType } = req.params;
+        const{
+            adminAction,
+            notes
+        }=req.body;
+    
+        if(!contentRef ||!contentType ||!adminAction ){
+            return res.status(400).json({ message: 'Required fields missing' });
+        }
+        if (!Object.values(contentTypeEnum).includes(contentType as contentTypeEnum)) {
+            return res.status(400).json({
+                message: 'Invalid content type',
+                success: false
+            });
+        }
+        const reports = await reportRepository.findReportsForContent(contentRef,contentType)
+        if (reports.length === 0) {
+            return res.status(404).json({ 
+                message: 'No reports found for this content',
+                success: false
+            });
+        }
+        
+        // Check if reports are already resolved
+        if (reports[0].status === reportStatusEnum.resolved) {
+            return res.status(400).json({ 
+                message: 'Reports already resolved',
+                success: false
+            });
+        }
+        const result = await reportRepository.resolveContentReports(contentRef,contentType,user._id as string,adminAction,notes)     
+        return res.status(200).json({ 
+            message: 'Reports resolved successfully',
+            success: true,
+            data: {
+                resolved_count: result.modifiedCount,
+                admin_action: adminAction
+            }
+    });
+ }catch (error) {
+     if (error instanceof Error && error.message === 'Invalid or expired token') {
+         return res.status(401).json({ message: error.message,success:false });
+     }
+     else{
+         res.status(500).json({ message: 'Server error', error });
+ 
+     }
+ }
+ 
+ }
+ );
+ 
