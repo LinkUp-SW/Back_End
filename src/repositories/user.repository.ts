@@ -858,14 +858,31 @@ export async function getFormattedAuthor(userId: string, viewerId: string) {
         }
       }
     }
-    
+    let isFollowing = false;
+    if (userDoc.followers && Array.isArray(userDoc.followers)) {
+      // Check if viewerId exists in the followers array
+      isFollowing = userDoc.followers.some((follower: any) => {
+        // Handle both object with _id and direct string ID format
+        const followerId = typeof follower === 'object' && follower !== null && '_id' in follower
+          ? follower._id.toString()
+          : typeof follower === 'string' ? follower : String(follower);
+        
+        return followerId === viewerId;
+      });
+    }
+    let showFollowPrimary = false;
+    if(connectionDegree!=="1st" && !isFollowing){
+      showFollowPrimary =userDoc.privacy_settings.make_follow_primary
+    }
     return {
       username: userDoc.user_id,
       first_name: userDoc.bio?.first_name || "",
       last_name: userDoc.bio?.last_name || "",
       headline: userDoc.bio?.headline || "",
       profile_picture: userDoc.profile_photo || "",
-      connection_degree: connectionDegree
+      connection_degree: connectionDegree,
+      is_following:isFollowing,
+      follow_primary:showFollowPrimary
     };
   } catch (err) {
     console.error("Error fetching author info:", err);
