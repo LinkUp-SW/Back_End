@@ -7,8 +7,8 @@ const router = express.Router();
 // Start a new conversation
 router.post('/conversations/start-conversation/:user2ID', authorizeMessaging, messageController.startConversation);
 
-// Send a message
-//router.post('/conversations/:conversationId/send-message', authorizeMessaging, messageController.sendMessage);
+// Check if a conversation exists between two users
+router.get('/conversations/check-conversation/:user2ID', authorizeMessaging, messageController.checkConversationExists);
 
 // Get all conversations for the logged-in user
 router.get('/conversations',authorizeMessaging,messageController.getConversations);

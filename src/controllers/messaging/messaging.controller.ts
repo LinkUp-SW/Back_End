@@ -75,6 +75,57 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
   }
 });
 
+
+/**
+  * Check if a conversation exists between two users
+  * 
+  * @route GET /api/v1/messages/conversations/check-conversation/:user2ID
+  * @access Private - Requires authentication
+  * @param {Request} req - Express request object with user2ID in params
+  * @param {Response} res - Express response object
+  * @param {NextFunction} next - Express next middleware function
+  * @returns {Promise<Response>} JSON response with conversationId and conversationExists flag
+  * @throws {CustomError} 401 - If user is not authenticated
+  * @throws {CustomError} 400 - If user2ID is missing
+  * @throws {CustomError} 404 - If user2 is not found
+  */
+
+const checkConversationExists = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
+  const user1Id = req.user
+  const { user2ID } = req.params;
+  
+  if (!user1Id) {
+    throw new CustomError('User not authenticated', 401);
+  }
+  
+  if (!user2ID) {
+    throw new CustomError('User ID is required', 400);
+  }
+  
+  // Check if user1 exists
+  const user1 = await userRepo.findByUserId(user1Id as string);
+  if (!user1) {
+    throw new CustomError('User not found', 404);
+  }
+  // Check if user2 exists
+  const user2 = await userRepo.findByUserId(user2ID);
+  if (!user2) {
+    throw new CustomError('User not found', 404);
+  }
+  
+  // Check if the sender is blocked by the receiver
+  if (user2.blocked && user2.blocked.includes(user1.id)) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  } // Check if the receiver is blocked by the sender
+
+  // Check if conversation exists
+  const conversation = await conversationRepo.findConversationByUsers(user1Id as string, user2ID);
+  if (!conversation) {
+    return res.status(200).json({ conversationExists: false });
+  }
+  return res.status(200).json({ conversationExists: true });
+});
+
 /**
  * Get all conversations for the logged-in user
  * 
@@ -715,7 +766,7 @@ export {
   getUnseenMessagesCount,
   markMessagesInConversationAsRead,
   getUnseenMessagesCountByConversation,
-  //sendMessage,
+  checkConversationExists,
   markMessagesAsSeen,
   deleteMessage,
   deleteConversation,
