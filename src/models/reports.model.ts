@@ -43,7 +43,6 @@ export interface reportInterface extends Document {
   created_at: number;
   resolved_by?: usersInterface;   // ref: 'User' (admin)
   resolved_at?: number;
-  resolution_notes?: string;
 }
 
 /** ──────────────────────────────────────────────────────────
@@ -79,7 +78,6 @@ const ReportSchema = new Schema<reportInterface>(
     },
     resolved_by: { type: Types.ObjectId, ref: 'users' },
     resolved_at: Number,
-    resolution_notes: String
   }
 );
 

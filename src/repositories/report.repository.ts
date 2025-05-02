@@ -55,7 +55,6 @@ export class ReportRepository {
         reportId: string | Types.ObjectId,
         adminId: string | Types.ObjectId,
         adminAction: adminActionEnum,
-        notes?: string
     ): Promise<reportInterface | null> {
         return await Report.findByIdAndUpdate(
             reportId,
@@ -64,7 +63,6 @@ export class ReportRepository {
                 admin_action:adminAction,
                 resolved_by: adminId,
                 resolved_at: Math.floor(Date.now() / 1000),
-                resolution_notes: notes
             },
             { new: true }
         );
@@ -314,8 +312,7 @@ async resolveContentReports(
     contentRef: string | Types.ObjectId,
     contentType: string,
     adminId: string | Types.ObjectId,
-    adminAction: adminActionEnum,
-    notes?: string
+    adminAction: adminActionEnum
 ): Promise<{ modifiedCount: number, actionTaken: string }> {
     try {
         // Update all reports for this content to resolved status
@@ -330,7 +327,6 @@ async resolveContentReports(
                 admin_action: adminAction,
                 resolved_by: new Types.ObjectId(adminId),
                 resolved_at: Math.floor(Date.now() / 1000),
-                resolution_notes: notes
             }
         );
         
@@ -516,7 +512,6 @@ async resolveContentReports(
                             is_banned: true, 
                             banned_at: new Date(), 
                             banned_by: adminId,
-                            ban_reason: notes || "Banned due to reported content"
                         } 
                     }
                 );
@@ -532,7 +527,6 @@ async resolveContentReports(
                         admin_action: adminActionEnum.user_banned,
                         resolved_by: new Types.ObjectId(adminId),
                         resolved_at: Math.floor(Date.now() / 1000),
-                        resolution_notes: notes || "User banned"
                     }
                 );
                 
