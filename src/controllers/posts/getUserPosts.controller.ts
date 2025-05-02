@@ -38,7 +38,7 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         // Fetch posts with the potentially increased limit
         const displayedUserPosts = [...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id);
         const { posts: initialPostsData, next_cursor: initialnext_cursor } = 
-            await getSavedPostsCursorBased(displayedUserPosts as string[], cursor, fetchLimit);
+            await getSavedPostsCursorBased(displayedUserPosts as string[], cursor, fetchLimit,viewerUser._id as string);
         
         // Apply filtering if needed
         let filteredPosts = initialPostsData;
@@ -56,7 +56,7 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
             let currentCursor: number | null = initialnext_cursor;
             while (finalPosts.length < limit && currentCursor) {
                 const { posts: additionalPosts, next_cursor: newCursor } = 
-                    await getSavedPostsCursorBased(displayedUserPosts as string[], currentCursor, limit);
+                    await getSavedPostsCursorBased(displayedUserPosts as string[], currentCursor, limit,viewerUser._id as string);
                 
                 // Filter the additional posts
                 const filteredAdditionalPosts = !isFromConnection && !is_me ? 

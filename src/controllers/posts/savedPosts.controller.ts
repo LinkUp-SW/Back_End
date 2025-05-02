@@ -63,7 +63,7 @@ const displaySavedPosts = async (req: Request, res: Response): Promise<Response 
         const user = await findUserByUserId(userId,res);
         if (!user) return;
         const savedPosts = user.savedPosts.map((post: postsInterface) => post._id);
-        const { posts: postsData, next_cursor } = await getSavedPostsCursorBased(savedPosts as string[], cursor, limit);
+        const { posts: postsData, next_cursor } = await getSavedPostsCursorBased(savedPosts as string[], cursor, limit,user._id as string);
         const enhancedPosts = await enhancePosts(postsData, user._id!.toString(), user.savedPosts);
         return res.status(200).json({message:'Posts returned successfully',posts:enhancedPosts,next_cursor:next_cursor })
     } catch (error) {
