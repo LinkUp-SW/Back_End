@@ -543,7 +543,27 @@ async resolveContentReports(
         throw new Error(`Failed to resolve reports: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
+async countReports(filter: mongoose.FilterQuery<reportInterface> = {}): Promise<number> {
+    return Report.countDocuments(filter);
+}
 
+// average resolution time in hours
+async averageResolutionTime(): Promise<number> {
+    const result = await Report.aggregate([
+      { $match: { status: reportStatusEnum.resolved }}, // Fixed: changed Resolved to resolved
+      { $project: {
+          diff: { $subtract: ['$resolved_at', '$created_at'] }
+        }
+      },
+      { $group: {
+          _id: null,
+          avgMillis: { $avg: '$diff' }
+        }
+      }
+    ]);
+    if (!result.length) return 0;
+    return result[0].avgMillis/ 60 / 60; // ms → hours
+}
 
 }
 
