@@ -6,6 +6,7 @@ import { targetTypeEnum } from "../models/reactions.model.ts";
 import { convert_idIntoUser_id, getFormattedAuthor } from "./user.repository.ts";
 import { CommentRepository, deleteAllComments } from "./comment.repository.ts";
 import { mediaTypeEnum } from "../models/posts.model.ts";
+import { formatCompanyPost } from "../utils/helper.ts";
 
 export class PostRepository {
   async create(
@@ -128,7 +129,10 @@ export const enhancePost = async (
   }
   
   // Get author information
-  const authorInfo = await getFormattedAuthor(post.user_id);
+  let authorInfo;
+  if(post.is_company){
+    authorInfo=await formatCompanyPost(post);
+  }else authorInfo = await getFormattedAuthor(post.user_id);
   
   // Check if post is saved by user
   const isSaved = userSavedPosts ? 
