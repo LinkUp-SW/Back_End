@@ -9610,9 +9610,6 @@ paths:
           description: Organization not found
         '500':
           description: Server error
-
-security:
-  - bearerAuth: []
   
   /api/v1/user/profile/about:
     post:
@@ -9924,7 +9921,10 @@ security:
                   message:
                     type: string
                     example: "Server error"
-              
+
+security:
+  - bearerAuth: []
+
 components:
   securitySchemes:
     bearerAuth:
