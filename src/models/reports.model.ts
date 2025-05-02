@@ -21,8 +21,8 @@ export enum reportStatusEnum{
 export enum adminActionEnum {
     none='none',
     dismissed='dismissed',
-    content_removed='content_removed',
-    user_banned='user_banned'
+    content_removed='content removed',
+    user_banned='user banned'
 }
 
 /* use a dynamic refPath (see `contentRef` + `contentType`) */
