@@ -3,8 +3,8 @@ import users from '../../models/users.model.ts';
 import jobApplications from '../../models/job_applications.model.ts';
 import jobs from '../../models/jobs.model.ts';
 import mongoose from 'mongoose';
-import { validateTokenAndGetUser } from "../../utils/helper.ts";
-import { count } from "console";
+import { validateTokenAndGetUser, handleResumeUpload } from "../../utils/helper.ts";
+
 
 export const ApplyForJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -36,7 +36,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
         if (!user) return;
 
         const { job_id } = req.params;
-        const { first_name, last_name, email, phone_number, country_code, resume } = req.body;
+        const { first_name, last_name, email, phone_number, country_code, resume, is_uploaded } = req.body;
 
         // Validate job_id
         if (!job_id || !mongoose.Types.ObjectId.isValid(job_id)) {
@@ -62,6 +62,18 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
             return;
         }
 
+        let resumeUrl;
+        // Handle resume upload if is_uploaded is true
+        if (true) {
+            try {
+                // Use the helper function to upload the resume to Cloudinary
+                resumeUrl = await handleResumeUpload(resume);
+            } catch (uploadError) {
+                res.status(500).json({ message: "Failed to upload resume" });
+                return;
+            }
+        }
+
         // Create new job application
         const newJobApplication = new jobApplications({
             job_id,
@@ -71,7 +83,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
             email,
             phone_number,
             country_code,
-            resume,
+            resume: resumeUrl, // Use the Cloudinary URL if uploaded, otherwise use original value
             application_status: "Pending"
         });
 
@@ -82,7 +94,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
             $push: { applied_applications: newJobApplication._id }
         });
 
-        // Add job to user's applied_jobs array (assuming this field exists in your user model)
+        // Add job to user's applied_jobs array
         await users.findByIdAndUpdate(user._id, {
             $push: { applied_jobs: job_id }
         });
