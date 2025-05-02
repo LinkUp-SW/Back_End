@@ -196,3 +196,32 @@ export const handleResumeUpload = async (resume: string): Promise<string> => {
   }
 };
 
+/**
+ * Formats company posts to include organization information in the author field
+ * @param posts Array of posts from an organization
+ * @param organization The organization data
+ * @returns Formatted posts with author field
+ */
+export const formatCompanyPosts = (posts: any[], organization: any): any[] => {
+    // Get followers count
+    const followersCount = organization.followers ? organization.followers.length : 0;
+    
+    // Transform posts to include the author field in the required format
+    return posts.map(post => {
+        // Convert to plain object to avoid mongoose document limitations
+        const postObj = typeof post.toObject === 'function' ? post.toObject() : post;
+        
+        // Add author field with organization info
+        postObj.author = {
+            first_name: organization.name,
+            last_name: " ",
+            headline: " ",
+            username: organization._id,
+            profile_picture: organization.logo,
+            followers_count: followersCount,
+        };
+        
+        return postObj;
+    });
+};
+

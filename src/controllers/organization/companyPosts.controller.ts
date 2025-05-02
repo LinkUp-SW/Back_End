@@ -6,7 +6,12 @@ import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { mediaTypeEnum, postTypeEnum, commentsEnum } from '../../models/posts.model.ts';
 import { convertUser_idInto_id } from '../../repositories/user.repository.ts';
 import organizations from '../../models/organizations.model.ts';
-import { getCompanyProfileById, validateUserIsCompanyAdmin, validateTokenAndGetUser } from '../../utils/helper.ts';
+import { 
+    getCompanyProfileById, 
+    validateUserIsCompanyAdmin, 
+    validateTokenAndGetUser,
+    formatCompanyPosts 
+} from '../../utils/helper.ts';
 
 /**
  * Create a new post for a company
@@ -310,27 +315,8 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
             return res.status(404).json({ message: 'Organization not found' });
         }
         
-        // Get followers count (assuming organization.followers is an array)
-        const followersCount = organization.followers ? organization.followers.length : 0;
-        
-        // Transform posts to include the author field in the required format
-        const formattedPosts = organization.posts.map(post => {
-            // Convert to plain object to avoid mongoose document limitations
-            const postObj = post.toObject();
-            
-            // Add author field with organization info
-            postObj.author = {
-                first_name: organization.name,
-                last_name: " ",
-                headline: " ",
-                username: organization._id,
-                profile_picture: organization.logo,
-                followers_count: followersCount,
-            };
-    
-            
-            return postObj;
-        });
+        // Use the helper function to format posts
+        const formattedPosts = formatCompanyPosts(organization.posts, organization);
         
         return res.status(200).json({
             message: 'Company posts retrieved successfully',
