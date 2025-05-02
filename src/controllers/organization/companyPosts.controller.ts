@@ -6,14 +6,15 @@ import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { mediaTypeEnum, postTypeEnum, commentsEnum } from '../../models/posts.model.ts';
 import { convertUser_idInto_id } from '../../repositories/user.repository.ts';
 import organizations from '../../models/organizations.model.ts';
-import { getCompanyProfileById, validateUserIsCompanyAdmin } from '../../utils/helper.ts';
+import { getCompanyProfileById, validateUserIsCompanyAdmin, validateTokenAndGetUser } from '../../utils/helper.ts';
 
 /**
  * Create a new post for a company
 **/
 export const createPostFromCompany = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     try {
-        const organizationId = req.params.organization_id;
+        const { organization_id } = req.params;
+
         const {
             content,
             mediaType,
@@ -23,18 +24,15 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
             taggedUsers
         } = req.body;
         
-        // Get user ID from token and verify user exists
-        const userId = await getUserIdFromToken(req, res);
-        if (!userId) return;
-        
-        const user = await findUserByUserId(userId, res);
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
         if (!user) return;
+
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
         
-        // Check if user is an admin of the organization
-        const companyProfile = await getCompanyProfileById(organizationId, res);
-        if (!companyProfile) return;
-        
-        const isAdmin = validateUserIsCompanyAdmin(companyProfile, userId, res);
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
         if (!isAdmin) return;
         
         // Validate required fields
@@ -72,7 +70,7 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
         // Create the post using organization ID as the user_id
         const postRepository = new PostRepository();
         const newPost = await postRepository.create(
-            organizationId, 
+            organization_id, 
             content,
             processedMedia,
             mediaType,
@@ -84,12 +82,12 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
         
         // Mark as company post
         newPost.is_company = true;
-        newPost.company = companyProfile;
+        newPost.company = organization;
         await newPost.save();
         
         // Add the post to the organization's posts array
-        companyProfile.posts.push(newPost);
-        await companyProfile.save();
+        organization.posts.push(newPost);
+        await organization.save();
         
         return res.status(201).json({ 
             message: 'Company post successfully created', 
@@ -312,9 +310,26 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
             return res.status(404).json({ message: 'Organization not found' });
         }
         
+        // Transform posts to include the author field in the required format
+        const formattedPosts = organization.posts.map(post => {
+            // Convert to plain object to avoid mongoose document limitations
+            const postObj = post.toObject();
+            
+            // Add author field with organization info
+            postObj.author = {
+                first_name: organization.name,
+                last_name: " ",
+                headline: " ",
+                username: organization._id,
+                profile_picture: organization.logo
+            };
+            
+            return postObj;
+        });
+        
         return res.status(200).json({
             message: 'Company posts retrieved successfully',
-            posts: organization.posts
+            posts: formattedPosts
         });
     } catch (error) {
         return res.status(500).json({ message: 'Server error', error });
