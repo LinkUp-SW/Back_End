@@ -61,7 +61,7 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
     if (firstMessage) {
       await conversationRepo.addMessage(conversation._id, user1Id as string, firstMessage, media, mediaTypes);
     }
-    return res.status(200).json({ conversationId: conversation._id, conversationExists: true});
+    return res.status(200).json({ conversationId: conversation._id, conversationExists: true, message: firstMessage});
   } else {
     const newConversation = await conversationRepo.createConversation(user1Id as string , user2ID);
     if (!newConversation) {
