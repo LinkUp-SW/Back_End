@@ -225,3 +225,19 @@ export const formatCompanyPosts = (posts: any[], organization: any): any[] => {
     });
 };
 
+export async function formatCompanyPost(posts: any){
+ const organization= await organizations.findById(posts.company);
+ if (!organization){
+  return null;
+ } 
+  // Transform post to include the author field in the required format
+  return {
+          first_name: organization.name,
+          last_name: " ",
+          headline: " ",
+          username: organization._id,
+          profile_picture: organization.logo,
+          followers_count: organization.followers ? organization.followers.length : 0
+      };
+      
+};
