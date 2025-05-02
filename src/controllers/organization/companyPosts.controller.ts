@@ -310,6 +310,9 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
             return res.status(404).json({ message: 'Organization not found' });
         }
         
+        // Get followers count (assuming organization.followers is an array)
+        const followersCount = organization.followers ? organization.followers.length : 0;
+        
         // Transform posts to include the author field in the required format
         const formattedPosts = organization.posts.map(post => {
             // Convert to plain object to avoid mongoose document limitations
@@ -321,15 +324,17 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
                 last_name: " ",
                 headline: " ",
                 username: organization._id,
-                profile_picture: organization.logo
+                profile_picture: organization.logo,
+                followers_count: followersCount,
             };
+    
             
             return postObj;
         });
         
         return res.status(200).json({
             message: 'Company posts retrieved successfully',
-            posts: formattedPosts
+            posts: formattedPosts,
         });
     } catch (error) {
         return res.status(500).json({ message: 'Server error', error });
