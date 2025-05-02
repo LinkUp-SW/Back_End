@@ -73,12 +73,20 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
   }
 
+  if (update) {
+    const tempEmail = await userRepository.findByTempEmail(user.user_id);
+    if (!tempEmail) {
+      throw new CustomError('Temporary email not found', 404, 'TEMP_EMAIL_NOT_FOUND');
+    }
+    await userRepository.updateEmail(user.user_id, tempEmail.email);
+    await userRepository.deleteTempEmail(user.user_id);
+  }
   
   user.is_verified = true;
   await user.save();
 
   if (update) {
-    return res.status(200).json({ message: 'OTP verified successfully', isVerified: true });
+    return res.status(200).json({ message: 'OTP verified successfully and email updated', isVerified: true });
   }
 
 

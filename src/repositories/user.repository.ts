@@ -180,6 +180,58 @@ export class UserRepository {
     return User.findOne({ user_id: id });
   }
 
+  // createTempEmail method to create a temporary email for a user
+  // This method updates the user's temp_email field in the database
+  // It uses the findOneAndUpdate method to find the user by userId and set the temp_email field
+  // The new option is set to true to return the updated document
+  // The upsert option is set to false to avoid creating a new document if no match is found
+  // Returns the updated user document
+  async createTempEmail(userId: string, email: string) {
+    // Calculate expiry time (10 minutes from now)
+    const expiryTime = new Date();
+    expiryTime.setMinutes(expiryTime.getMinutes() + 10);
+    
+    return User.findOneAndUpdate(
+      { user_id: userId },
+      { 
+        $set: { 
+          temp_email: email,
+          temp_email_expiry: expiryTime 
+        }
+      },
+      { new: true, upsert: false }
+    );
+  }
+
+  async findByTempEmail(email: string) {
+    const user = await User.findOne({
+      temp_email: email,
+      temp_email_expiry: { $gt: new Date() } // Only return if not expired
+    });
+    
+    if (!user) {
+      // Clean up expired temp_email if found
+      await User.updateOne(
+        { temp_email: email },
+        { $unset: { temp_email: "", temp_email_expiry: "" } }
+      );
+      return null;
+    }
+    
+    return user;
+  }
+
+  async cleanupExpiredTempEmails() {
+    return User.updateMany(
+      { temp_email_expiry: { $lte: new Date() } },
+      { $unset: { temp_email: "", temp_email_expiry: "" } }
+    );
+  }
+
+  async deleteTempEmail(userId: string) {
+    return User.updateOne({ user_id: userId }, { $unset: { temp_email: "", temp_email_expiry: "" } });
+  }
+
   async createGoogleUser(user_id: string, email: string, firstName: string, lastName: string, password: string) {
     return User.create({
       user_id: user_id,
