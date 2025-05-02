@@ -9922,6 +9922,199 @@ paths:
                     type: string
                     example: "Server error"
 
+  /api/v2/post/search/posts:
+    get:
+      tags:
+        - Posts
+      summary: Search posts by content
+      description: >
+        Searches for posts containing specific text content with cursor-based pagination.
+        Results respect privacy settings - only showing public posts and private posts from connections.
+        The authenticated user's own posts are excluded from search results.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          description: Text to search for within post content
+          example: "code"
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Timestamp cursor for pagination (Unix timestamp of oldest post from previous batch)
+          example: 1746106223
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+          description: Maximum number of posts to return per page
+      responses:
+        '200':
+          description: Posts matching search criteria retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts retrieved successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "68153c32acf7b34e5fe67d0d"
+                        user_id:
+                          type: string
+                          example: "6806a1938db9403282340f11"
+                        content:
+                          type: string
+                          example: "Whispers of Code\n\nIn silent rooms where circuits hum,\nA whisper weaves through data's drum..."
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: string
+                              nullable: true
+                              example: null
+                            media_type:
+                              type: string
+                              example: "none"
+                        comments_disabled:
+                          type: string
+                          example: "Anyone"
+                        public_post:
+                          type: boolean
+                          example: true
+                        reacts:
+                          type: array
+                          items:
+                            type: string
+                        tagged_users:
+                          type: array
+                          items:
+                            type: string
+                        comments:
+                          type: array
+                          items:
+                            type: string
+                        is_edited:
+                          type: boolean
+                          example: false
+                        is_company:
+                          type: boolean
+                          example: false
+                        post_type:
+                          type: string
+                          example: "Standard"
+                        reposts:
+                          type: array
+                          items:
+                            type: string
+                          example: ["68153cb1acf7b34e5fe67d1b"]
+                        date:
+                          type: integer
+                          example: 1746222130
+                        author:
+                          type: object
+                          properties:
+                            username:
+                              type: string
+                              example: "Amr-Doma81"
+                            first_name:
+                              type: string
+                              example: "Amr"
+                            last_name:
+                              type: string
+                              example: "Doma"
+                            headline:
+                              type: string
+                              example: "Software Engineer"
+                            profile_picture:
+                              type: string
+                              example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1745877547/user_uploads/images/1745877546444-profile.png"
+                            connection_degree:
+                              type: string
+                              example: "1st"
+                        is_saved:
+                          type: boolean
+                          example: false
+                        user_reaction:
+                          type: string
+                          nullable: true
+                          example: null
+                        top_reactions:
+                          type: array
+                          items:
+                            type: string
+                        reactions_count:
+                          type: integer
+                          example: 0
+                        comments_count:
+                          type: integer
+                          example: 0
+                        reposts_count:
+                          type: integer
+                          example: 1
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    description: Cursor for the next page of results, null if no more results
+                    example: null
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: string
+                    example: "Error processing search query"
+
 security:
   - bearerAuth: []
 
