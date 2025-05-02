@@ -98,34 +98,43 @@ export class ReportRepository {
                             { $count: 'count' }
                         ],
                         statusCounts: [
-                            { $group: { _id: "$status", count: { $sum: 1 } } }
-                        ],
-                        // Group by content_ref and content_type to count reports per content item
-                        contentCountGroups: [
                             { 
+                                $group: { 
+                                    _id: { 
+                                        status: "$status", 
+                                        content_ref: "$content_ref", 
+                                        content_type: "$content_type" 
+                                    }
+                                }
+                            },
+                            {
                                 $group: {
-                                    _id: { content_ref: "$content_ref", content_type: "$content_type" },
+                                    _id: "$_id.status",
                                     count: { $sum: 1 }
                                 }
                             }
+                        ],
+                        // Count unique content items with reports
+                        uniqueContentCount: [
+                            { $match: matchCondition },
+                            { 
+                                $group: { 
+                                    _id: { content_ref: "$content_ref", content_type: "$content_type" } 
+                                }
+                            },
+                            { $count: 'count' }
                         ]
                     }
                 }
             ]);
             
             const totalCount = countData[0].totalCount[0]?.count || 0;
+            const uniqueContentCount = countData[0].uniqueContentCount[0]?.count || 0;
             
             // Format status counts into a simple object
             const statusCounts: Record<string, number> = {};
             countData[0].statusCounts.forEach((item: any) => {
                 statusCounts[item._id] = item.count;
-            });
-            
-            // Create a map of report counts per content item
-            const contentReportCountMap = new Map();
-            countData[0].contentCountGroups.forEach((item: any) => {
-                const key = `${item._id.content_type}_${item._id.content_ref}`;
-                contentReportCountMap.set(key, item.count);
             });
             
             // If no reports, return empty result
@@ -138,44 +147,59 @@ export class ReportRepository {
                 };
             }
     
-            // Execute query with sort and limit, selecting only needed fields
-            const paginatedReports = await Report.find(matchCondition)
-                .select('_id content_ref content_type reason created_at status admin_action')
-                .sort({ created_at: -1 })
-                .skip(cursor ?? 0)
-                .limit(limit + 1) // Get one extra to check if there are more
-                .lean()
-                .exec();
+            // Get distinct content items with their latest report time, sorted by most recent
+            const distinctContentItems = await Report.aggregate([
+                { $match: matchCondition },
+                {
+                    $sort: { created_at: -1 } // Sort by newest first
+                },
+                {
+                    $group: {
+                        _id: { content_ref: "$content_ref", content_type: "$content_type" },
+                        mongo_id: { $first: "$_id" },
+                        latest_created_at: { $max: "$created_at" },
+                        reasons: { $addToSet: "$reason" },
+                        content_ref: { $first: "$content_ref" },
+                        content_type: { $first: "$content_type" },
+                        status: { $first: "$status" },
+                        report_count: { $sum: 1 }
+                    }
+                },
+                { $sort: { latest_created_at: -1 } }, // Sort groups by latest report time
+                { $skip: cursor ?? 0 },
+                { $limit: limit + 1 } // Get one extra to check if there are more
+            ]);
     
             // Check if there are more results
-            const hasMore = paginatedReports.length > limit;
-            const results = hasMore ? paginatedReports.slice(0, limit) : paginatedReports;
+            const hasMore = distinctContentItems.length > limit;
+            const results = hasMore ? distinctContentItems.slice(0, limit) : distinctContentItems;
             
-            // Format the reports with simplified structure and REP#### IDs
-            const formattedResults = results.map((report) => {
-                // Get report count for this content
-                const contentKey = `${report.content_type}_${report.content_ref}`;
-                const reportCount = contentReportCountMap.get(contentKey) || 1;
+            // Format the grouped reports
+            const formattedResults = results.map((item) => {
+                // Format content ID instead of report ID
+                const contentRefStr = item.content_ref.toString();
+                const shortId = contentRefStr.substring(contentRefStr.length - 4);
+                const formattedId = `REP${shortId}`;
                 
-                // Include the virtual reportId field that is automatically added
                 return {
-                    report_id:`REP${report._id.toString().substring(report._id.toString().length - 4)}`, // Fallback if virtual isn't available
-                    mongo_id: report._id, // Keep the original ID for reference
-                    type: report.content_type,
-                    reason: report.reason,
-                    created_at: report.created_at,
-                    status: report.status,
-                    admin_action: report.admin_action,
-                    report_count: reportCount
+                    content_id: formattedId,
+                    content_mongo_id: item.content_ref,
+                    content_ref: item.content_ref,
+                    type: item.content_type,
+                    reasons: item.reasons, // Array of all reasons for this content
+                    created_at: item.latest_created_at, // Most recent report time
+                    status: item.status,
+                    admin_action: 'none', // Default since we're grouping multiple reports
+                    report_count: item.report_count
                 };
-            });
+            });;
     
             // Calculate next cursor
             const nextCursor = hasMore ? (cursor ?? 0) + limit : null;
     
             return {
                 reports: formattedResults,
-                totalCount,
+                totalCount: uniqueContentCount, // Return count of unique content items
                 statusCounts,
                 nextCursor
             };
@@ -207,22 +231,17 @@ async findExistingReport(
     });
 }
 /**
- * Get paginated reports for a specific content item
+ * Get reports for a specific content item
  * @param contentRef - ID of the content being reported
  * @param contentType - Type of content (post, comment, etc.)
- * @param cursor - The position to start fetching from
- * @param limit - Maximum number of reports to fetch
- * @returns Promise containing paginated reports for the content
+ * @returns Promise containing reports summary and content info
  */
 async getContentReports(
     contentRef: string | Types.ObjectId,
-    contentType: contentTypeEnum,
-    cursor: number | null = 0,
-    limit: number = 10
+    contentType: contentTypeEnum
 ): Promise<{
-    reports: any[],
     totalCount: number,
-    nextCursor: number | null
+    reasonsSummary: Record<string, number>
 }> {
     try {
         // Build match condition for the specific content
@@ -231,68 +250,40 @@ async getContentReports(
             content_type: contentType
         };
         
-        // Count total reports for this content
-        const totalCount = await Report.countDocuments(matchCondition);
+        // Get reports aggregate data: count, reasons summary
+        const aggregateData = await Report.aggregate([
+            { $match: matchCondition },
+            {
+                $facet: {
+                    totalCount: [
+                        { $count: 'count' }
+                    ],
+                    reasonsSummary: [
+                        { $group: { _id: "$reason", count: { $sum: 1 } } }
+                    ]
+                }
+            }
+        ]);
+        
+        const totalCount = aggregateData[0].totalCount[0]?.count || 0;
+        
+        // Format reasons summary into a simple object
+        const reasonsSummary: Record<string, number> = {};
+        aggregateData[0].reasonsSummary.forEach((item: any) => {
+            reasonsSummary[item._id] = item.count;
+        });
         
         // If no reports, return early
         if (totalCount === 0) {
             return {
-                reports: [],
                 totalCount: 0,
-                nextCursor: null
+                reasonsSummary: {}
             };
         }
 
-        // Get paginated reports with reporter info
-        const paginatedReports = await Report.find(matchCondition)
-            .populate('reporter', 'user_id bio.first_name bio.last_name profile_photo')
-            .sort({ created_at: -1 })
-            .skip(cursor ?? 0)
-            .limit(limit + 1) // Get one extra to check if there are more
-            .lean()
-            .exec();
-
-        // Check if there are more results
-        const hasMore = paginatedReports.length > limit;
-        const results = hasMore ? paginatedReports.slice(0, limit) : paginatedReports;
-        
-        // Format the reports with simplified structure
-        const formattedResults = results.map((report) => {
-            // Format report ID
-            const reportIdStr = report._id.toString();
-            const shortId = reportIdStr.substring(reportIdStr.length - 4);
-            const formattedId = `REP${shortId}`;
-            
-            // Format reporter info
-            let formattedReporter = null;
-            if (report.reporter) {
-                formattedReporter = {
-                    id: report.reporter._id,
-                    username: report.reporter.user_id,
-                    fullName: `${report.reporter.bio?.first_name || ''} ${report.reporter.bio?.last_name || ''}`.trim(),
-                    profilePicture: report.reporter.profile_photo
-                };
-            }
-            
-            // Return formatted report
-            return {
-                report_id: formattedId,
-                mongo_id: report._id,
-                reason: report.reason,
-                created_at: report.created_at,
-                status: report.status,
-                admin_action: report.admin_action,
-                reporter: formattedReporter
-            };
-        });
-
-        // Calculate next cursor
-        const nextCursor = hasMore ? (cursor ?? 0) + limit : null;
-
         return {
-            reports: formattedResults,
             totalCount,
-            nextCursor
+            reasonsSummary
         };
     } catch (err) {
         if (err instanceof Error) {
