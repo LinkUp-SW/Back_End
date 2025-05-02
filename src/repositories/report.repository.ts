@@ -466,6 +466,18 @@ async resolveContentReports(
                 case contentTypeEnum.Job:
                     // Handle job deletion
                     await mongoose.model('jobs').deleteOne({ _id: new Types.ObjectId(contentRef) });
+                    // Remove job from user's saved jobs and applied jobs
+                    await users.updateMany(
+                        { 'saved_jobs': contentRef },
+                        { $pull: { saved_jobs: { job_id: contentRef } } }
+                    );
+                    await users.updateMany(
+                        { 'applied_jobs': contentRef },
+                        { $pull: { applied_jobs: { job_id: contentRef } } }
+                    );
+                    // Remove job from applications
+                    await mongoose.model('jobapplications').deleteMany({ job_id: contentRef });
+
                     actionTaken = "content_removed";
                     break;
             }
