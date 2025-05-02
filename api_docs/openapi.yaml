@@ -8741,7 +8741,6 @@ paths:
                     example: "report created successfully"
                   report:
                     type: string
-                    description: ID of the created report
                     example: "6458abc123def466"
         '400':
           description: Bad request (e.g., missing fields or user already reported this content)
@@ -8844,63 +8843,20 @@ paths:
                         type: array
                         items:
                           type: object
-                          properties:
-                            content_id:
-                              type: string
-                              example: "CNT9f11"
-                              description: Formatted content ID for display
-                            content_mongo_id:
-                              type: string
-                              example: "6458abc123def456"
-                              description: MongoDB ID of the reported content
-                            content_ref:
-                              type: string
-                              example: "6458abc123def456"
-                              description: Reference to the reported content
-                            type:
-                              type: string
-                              enum: [Post, Comment, Job]
-                              example: "Post"
-                            reasons:
-                              type: array
-                              items:
-                                type: string
-                                enum: [spam, harassment, hate_speech, misinformation, scam, inappropriate, other]
-                              example: ["spam", "inappropriate"]
-                              description: All reasons this content was reported for
-                            created_at:
-                              type: integer
-                              example: 1714545720
-                              description: Timestamp of the most recent report
-                            status:
-                              type: string
-                              enum: [pending, resolved]
-                              example: "pending"
-                            admin_action:
-                              type: string
-                              enum: [none, content_removed, warning_issued, account_suspended, no_action]
-                              example: "none"
-                            report_count:
-                              type: integer
-                              example: 3
-                              description: Number of reports for this content
                       total_count:
                         type: integer
-                        example: 42
-                        description: Count of unique content items with reports
+                        example: 24
                       status_counts:
                         type: object
                         properties:
                           pending:
                             type: integer
-                            example: 28
+                            example: 15
                           resolved:
                             type: integer
-                            example: 14
-                        description: Count of unique content items by report status
+                            example: 9
                       next_cursor:
                         type: integer
-                        nullable: true
                         example: 10
         '400':
           description: Bad request (e.g., limit exceeds maximum allowed value)
@@ -8912,9 +8868,6 @@ paths:
                   message:
                     type: string
                     example: "Limit cannot exceed 50 reports per request"
-                  success:
-                    type: boolean
-                    example: false
         '401':
           description: Unauthorized - invalid or expired token
           content:
@@ -8925,9 +8878,6 @@ paths:
                   message:
                     type: string
                     example: "Invalid or expired token"
-                  success:
-                    type: boolean
-                    example: false
         '403':
           description: Forbidden - user does not have admin privileges
           content:
@@ -8938,9 +8888,6 @@ paths:
                   message:
                     type: string
                     example: "Access denied. Admin privileges required"
-                  success:
-                    type: boolean
-                    example: false
         '500':
           description: Server error
           content:
@@ -8951,9 +8898,6 @@ paths:
                   message:
                     type: string
                     example: "Server error fetching reports"
-                  success:
-                    type: boolean
-                    example: false                  
   /api/v1/admin/report/content/{contentType}/{contentRef}:
     get:
       tags:
@@ -9005,49 +8949,21 @@ paths:
                       content:
                         type: object
                         description: Details about the reported content
-                        properties:
-                          id:
-                            type: string
-                            example: "6458abc123def456"
-                          type:
-                            type: string
-                            example: "post"
-                          content:
-                            type: string
-                            example: "This is the content of the reported post"
-                          author:
-                            type: object
-                            properties:
-                              id:
-                                type: string
-                                example: "60d21b4667d0d8992e610c85"
-                              username:
-                                type: string
-                                example: "johndoe42"
-                              fullName:
-                                type: string
-                                example: "John Doe"
-                              profilePicture:
-                                type: string
-                                example: "https://example.com/photos/profile.jpg"
-                          media:
-                            type: array
-                            items:
-                              type: string
-                            description: Media URLs if the content has images/videos
-                          parent_post:
-                            type: object
-                            description: For comments, contains info about the parent post (null for other types)
+                      parent_post:
+                        type: object
+                        description: Details about the parent post (for comments)
                       total_count:
                         type: integer
                         example: 5
-                        description: Total number of reports for this content
                       reasons_summary:
                         type: object
-                        description: Summary of report reasons with counts
-                        example:
-                          spam: 2
-                          inappropriate: 3
+                        properties:
+                          inappropriate:
+                            type: integer
+                            example: 3
+                          spam:
+                            type: integer
+                            example: 2
         '400':
           description: Bad request (e.g., invalid content type)
           content:
@@ -9057,7 +8973,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Invalid content type"
+                    example: "Content reference and type are required"
                   success:
                     type: boolean
                     example: false
@@ -9100,6 +9016,241 @@ paths:
                   success:
                     type: boolean
                     example: false
+  /api/v1/admin/report/resolve/{contentType}/{contentRef}:
+    patch:
+      tags:
+        - Reports
+      summary: Resolve reports by dismissing specific content
+      description: >
+        Resolves all reports for a specific content item, taking action based on admin's decision.
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment, Job]
+          description: Type of content with reports to resolve
+          example: "Post"
+        - name: contentRef
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the content with reports to resolve
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+      responses:
+        '200':
+          description: Reports resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports resolved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      resolved_count:
+                        type: integer
+                        example: 5
+                      admin_action:
+                        type: string
+                        example: "dismissed"
+        '400':
+          description: Bad request (e.g., required fields missing, reports already resolved)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports already resolved"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: No reports found for this content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No reports found for this content"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: string
+                    example: "Error details"
+    delete:
+      tags:
+        - Reports
+      summary: Resolve reports by deleting specific content
+      description: >
+        Resolves all reports for a specific content item, taking action based on admin's decision.
+        Content removal has cascading effects, deleting all associated items like comments, reactions, etc.
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment, Job]
+          description: Type of content with reports to resolve
+          example: "Post"
+        - name: contentRef
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the content with reports to resolve
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+      responses:
+        '200':
+          description: Reports resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports resolved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      resolved_count:
+                        type: integer
+                        example: 5
+                      admin_action:
+                        type: string
+                        example: "content removed"
+        '400':
+          description: Bad request (e.g., required fields missing, reports already resolved)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports already resolved"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: No reports found for this content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No reports found for this content"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: string
+                    example: "Error details"
+
 components:
   securitySchemes:
     bearerAuth:
