@@ -1,5 +1,11 @@
 import { Report, reportInterface, reportReasonEnum, contentTypeEnum, reportStatusEnum, adminActionEnum } from '../models/reports.model.ts';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
+import { PostRepository } from './posts.repository.ts';
+import { deleteAllPostReactions, deleteCommentReactions } from './reacts.repository.ts';
+import { CommentRepository, deleteAllComments, getAllCommentChildrenIds } from './comment.repository.ts';
+import users from '../models/users.model.ts';
+import { postTypeEnum } from '../models/posts.model.ts';
+import comments from '../models/comments.model.ts';
 
 export class ReportRepository {
     
@@ -34,7 +40,7 @@ export class ReportRepository {
     /**
      * Find reports for specific content
      */
-    async findReportsForContent(contentRef: string | Types.ObjectId, contentType: contentTypeEnum): Promise<reportInterface[]> {
+    async findReportsForContent(contentRef: string | Types.ObjectId, contentType: string): Promise<reportInterface[]> {
         return await Report.find({ 
             content_ref: new Types.ObjectId(contentRef),
             content_type: contentType
@@ -293,6 +299,245 @@ async getContentReports(
         }
     }
 }
+
+/**
+ * Resolve all reports for specific content and take appropriate action
+ * @param contentRef - ID of the content that was reported
+ * @param contentType - Type of the content (post, comment, etc.)
+ * @param adminId - ID of the admin resolving the reports
+ * @param adminAction - Action taken by the admin (dismiss, remove content, ban user)
+ * @param notes - Optional resolution notes
+ * @returns Promise with update result and action taken
+ */
+async resolveContentReports(
+    contentRef: string | Types.ObjectId,
+    contentType: string,
+    adminId: string | Types.ObjectId,
+    adminAction: adminActionEnum,
+    notes?: string
+): Promise<{ modifiedCount: number, actionTaken: string }> {
+    try {
+        // Update all reports for this content to resolved status
+        const updateResult = await Report.updateMany(
+            { 
+                content_ref: new Types.ObjectId(contentRef),
+                content_type: contentType,
+                status: reportStatusEnum.pending
+            },
+            {
+                status: reportStatusEnum.resolved,
+                admin_action: adminAction,
+                resolved_by: new Types.ObjectId(adminId),
+                resolved_at: Math.floor(Date.now() / 1000),
+                resolution_notes: notes
+            }
+        );
+        
+        let actionTaken = "reports_resolved";
+        
+        // Take additional action based on adminAction
+        if (adminAction === adminActionEnum.content_removed) {
+            // Handle content removal based on content type
+            switch (contentType) {
+                case contentTypeEnum.Post: {
+                    const postRepository = new PostRepository();
+                    const post = await postRepository.findByPostId(contentRef.toString());
+                    
+                    if (post) {
+                        // Delete all reactions
+                        await deleteAllPostReactions(contentRef.toString());
+                        
+                        // Delete all comments
+                        await deleteAllComments(contentRef.toString());
+                        
+                        // Handle reposts if any
+                        if (post.reposts && post.reposts.length > 0) {
+                            const repostIds = post.reposts.map(repost => repost.toString());
+                            await postRepository.deleteAllRepostsOfPost(repostIds);
+                        }
+                        
+                        // Remove post from user's activity
+                        if (post.user_id) {
+                            const user = await users.findById(post.user_id);
+                            if (user) {
+                                if (post.post_type === postTypeEnum.standard) {
+                                    user.activity.posts = user.activity.posts.filter(
+                                        userPost => userPost.toString() !== contentRef.toString()
+                                    );
+                                } else {
+                                    user.activity.reposted_posts = user.activity.reposted_posts.filter(
+                                        userPost => userPost.toString() !== contentRef.toString()
+                                    );
+                                    
+                                    // Handle original post reference
+                                    if (post.media?.link && post.media.link.length > 0) {
+                                        const originalPost = await postRepository.findByPostId(post.media.link[0]);
+                                        if (originalPost && originalPost.reposts) {
+                                            originalPost.reposts = originalPost.reposts.filter(
+                                                repost => repost.toString() !== contentRef.toString()
+                                            );
+                                            await originalPost.save();
+                                        }
+                                    }
+                                }
+                                await user.save();
+                            }
+                        }
+                        
+                        // Finally delete the post
+                        await postRepository.deletepost(contentRef.toString());
+                    }
+                    actionTaken = "content_removed";
+                    break;
+                }
+                
+                case contentTypeEnum.Comment: {
+                    const commentRepository = new CommentRepository();
+                    const comment = await commentRepository.findById(contentRef.toString());
+                    
+                    if (comment) {
+                        const postId = comment.post_id.toString();
+                        const commentId = contentRef.toString();
+                        
+                        // Get all direct reply IDs (one level)
+                        const replyIds = await getAllCommentChildrenIds(commentId);
+                        
+                        // Delete reactions on comment and replies
+                        await deleteCommentReactions(commentId);
+                        for (const replyId of replyIds) {
+                            await deleteCommentReactions(replyId);
+                        }
+                        
+                        // Remove comment from post
+                        await mongoose.model('posts').updateOne(
+                            { _id: postId },
+                            { $pull: { comments: commentId } }
+                        );
+                        
+                        // Remove replies from post
+                        if (replyIds.length > 0) {
+                            await mongoose.model('posts').updateOne(
+                                { _id: postId },
+                                { $pull: { comments: { $in: replyIds } } }
+                            );
+                        }
+                        
+                        // Remove comment from user's activity
+                        if (comment.user_id) {
+                            await users.updateOne(
+                                { _id: comment.user_id },
+                                { $pull: { 'activity.comments': commentId } }
+                            );
+                        }
+                        
+                        // Remove replies from users' activity
+                        if (replyIds.length > 0) {
+                            const childComments = await comments.find({ _id: { $in: replyIds } });
+                            
+                            // Group by user ID for efficiency
+                            const userReplyMap = new Map<string, string[]>();
+                            childComments.forEach(reply => {
+                                const userId = reply.user_id.toString();
+                                if (!userReplyMap.has(userId)) {
+                                    userReplyMap.set(userId, []);
+                                }
+                                userReplyMap.get(userId)!.push(reply._id!.toString());
+                            });
+                            
+                            // Update each user's activity
+                            for (const [userId, userReplyIds] of userReplyMap.entries()) {
+                                await users.updateOne(
+                                    { _id: userId },
+                                    { $pull: { 'activity.comments': { $in: userReplyIds } } }
+                                );
+                            }
+                        }
+                        
+                        // Delete comment and replies
+                        await commentRepository.delete(commentId);
+                        if (replyIds.length > 0) {
+                            await comments.deleteMany({ _id: { $in: replyIds } });
+                        }
+                    }
+                    actionTaken = "content_removed";
+                    break;
+                }
+                
+                case contentTypeEnum.Job:
+                    // Handle job deletion
+                    await mongoose.model('jobs').deleteOne({ _id: new Types.ObjectId(contentRef) });
+                    actionTaken = "content_removed";
+                    break;
+            }
+        } 
+        else if (adminAction === adminActionEnum.user_banned) {
+            // First, identify the user who created the content
+            let userId: string | null = null;
+            
+            switch (contentType) {
+                case contentTypeEnum.Post: {
+                    const post = await mongoose.model('posts').findById(contentRef);
+                    userId = post?.user_id?.toString() || null;
+                    break;
+                }
+                
+                case contentTypeEnum.Comment: {
+                    const comment = await mongoose.model('comments').findById(contentRef);
+                    userId = comment?.user_id?.toString() || null;
+                    break;
+                }
+                
+                case contentTypeEnum.Job: {
+                    const job = await mongoose.model('jobs').findById(contentRef);
+                    userId = job?.created_by?.toString() || job?.user_id?.toString() || null;
+                    break;
+                }
+            }
+            
+            if (userId) {
+                // Ban the user - set is_banned flag
+                await users.updateOne(
+                    { _id: userId },
+                    { 
+                        $set: { 
+                            is_banned: true, 
+                            banned_at: new Date(), 
+                            banned_by: adminId,
+                            ban_reason: notes || "Banned due to reported content"
+                        } 
+                    }
+                );
+                
+                // Mark all user's reports as resolved with the same action
+                await Report.updateMany(
+                    { 
+                        reporter: new Types.ObjectId(userId),
+                        status: reportStatusEnum.pending
+                    },
+                    {
+                        status: reportStatusEnum.resolved,
+                        admin_action: adminActionEnum.user_banned,
+                        resolved_by: new Types.ObjectId(adminId),
+                        resolved_at: Math.floor(Date.now() / 1000),
+                        resolution_notes: notes || "User banned"
+                    }
+                );
+                
+                actionTaken = "user_banned";
+            }
+        }
+        
+        return { 
+            modifiedCount: updateResult.modifiedCount,
+            actionTaken 
+        };
+    } catch (error) {
+        console.error("Error resolving content reports:", error);
+        throw new Error(`Failed to resolve reports: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+
 }
 
 
