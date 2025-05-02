@@ -570,7 +570,7 @@ export async function getFormattedAuthor(userId: string, viewerId: string) {
 
     // Check if this is the viewer's own profile
     const isSelf = viewerId === userId.toString();
-    let connectionDegree = isSelf ? null : '3rd+';
+    let connectionDegree = isSelf ? "me" : '3rd+';
 
     // Only calculate connections if it's not the user's own profile
     if (!isSelf) {
