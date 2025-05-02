@@ -221,7 +221,8 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                                 link:comment.media,
                                 media_type: comment.media ? "image" : "none",
                                 
-                            }, 
+                            },
+                            date:comment.date 
                         };
                     }
                     break;
@@ -231,12 +232,15 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                         const organization = await organizations.findById(job.organization_id);
                         if (organization) {
                             contentInfo = {
-                                id: job._id,
+                                _id: job._id,
                                 type: 'Job',
                                 title: job.job_title || 'No title',
                                 description: job.description?.substring(0, 200) + (job.description?.length > 200 ? '...' : ''),
+                                qualifications:job.qualifications,
+                                responsibilities:job.responsibilities,
+                                benefits:job.benefits,
                                 organization: {
-                                    id: organization._id,
+                                    _id: organization._id,
                                     name: organization.name,
                                     logo: organization.logo
                                 }
