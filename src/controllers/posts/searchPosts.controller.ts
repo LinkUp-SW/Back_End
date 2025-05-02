@@ -12,7 +12,7 @@ import { ConnectionRequest } from '../../models/users.model.ts';
  * ----------------------
  * Searches for posts containing specific text content with cursor-based pagination.
  * 
- * @route GET /api/v1/posts/search
+ * @route GET /api/v2/posts/search
  * @param {string} query - Search query text
  * @param {number} cursor - Timestamp cursor for pagination (Unix timestamp)
  * @param {number} limit - Number of posts to return per page
@@ -61,11 +61,7 @@ export const searchPosts = async (req: Request, res: Response) => {
     // Escape special regex characters in the query
     const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     
-    console.log(`Search query: "${query}"`);
-    console.log(`Viewer connections count: ${viewerConnections.length}`);
-    if (viewerConnections.length > 0) {
-      console.log(`First few connections: ${viewerConnections.slice(0, 3).join(', ')}`);
-    }
+  
     // Define the base aggregation pipeline with privacy filtering
     const basePipeline: PipelineStage[] = [
       // Match posts with content containing the search query
@@ -133,12 +129,6 @@ export const searchPosts = async (req: Request, res: Response) => {
       const isConnected = viewerConnections.some(connId => 
         connId.toString() === postUserId
       );
-    
-      // Log when we find a private post from a connection
-      if (!post.public_post && isConnected) {
-        console.log(`Including private post ${post._id} from connection ${postUserId}`);
-      }
-    
       return isConnected;
     });
 
