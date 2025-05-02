@@ -6,6 +6,7 @@ import { CommentRepository, deleteAllComments, getAllCommentChildrenIds } from '
 import users from '../models/users.model.ts';
 import { postTypeEnum } from '../models/posts.model.ts';
 import comments from '../models/comments.model.ts';
+import jobApplications from '../models/job_applications.model.ts';
 
 export class ReportRepository {
     
@@ -333,7 +334,7 @@ async resolveContentReports(
             }
         );
         
-        let actionTaken = "reports_resolved";
+        let actionTaken = adminActionEnum.dismissed;
         
         // Take additional action based on adminAction
         if (adminAction === adminActionEnum.content_removed) {
@@ -387,7 +388,7 @@ async resolveContentReports(
                         // Finally delete the post
                         await postRepository.deletepost(contentRef.toString());
                     }
-                    actionTaken = "content_removed";
+                    actionTaken = adminActionEnum.content_removed;
                     break;
                 }
                 
@@ -459,7 +460,7 @@ async resolveContentReports(
                             await comments.deleteMany({ _id: { $in: replyIds } });
                         }
                     }
-                    actionTaken = "content_removed";
+                    actionTaken = adminActionEnum.content_removed;
                     break;
                 }
                 
@@ -469,16 +470,16 @@ async resolveContentReports(
                     // Remove job from user's saved jobs and applied jobs
                     await users.updateMany(
                         { 'saved_jobs': contentRef },
-                        { $pull: { saved_jobs: { job_id: contentRef } } }
+                        { $pull: { saved_jobs:contentRef } }
                     );
                     await users.updateMany(
                         { 'applied_jobs': contentRef },
-                        { $pull: { applied_jobs: { job_id: contentRef } } }
+                        { $pull: { applied_jobs:contentRef  } }
                     );
                     // Remove job from applications
-                    await mongoose.model('jobapplications').deleteMany({ job_id: contentRef });
+                    await jobApplications.deleteMany({ job_id: contentRef });
 
-                    actionTaken = "content_removed";
+                    actionTaken = adminActionEnum.content_removed;
                     break;
             }
         } 
@@ -535,7 +536,7 @@ async resolveContentReports(
                     }
                 );
                 
-                actionTaken = "user_banned";
+                actionTaken = adminActionEnum.user_banned;
             }
         }
         
