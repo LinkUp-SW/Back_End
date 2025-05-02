@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import asyncHandler from '../../middleware/asyncHandler.ts';
 import {getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 import { findUserByUserId } from '../../utils/database.helper.ts';
-import { ReportRepository } from '../../repositories/report.repository.ts';
+import { reportRepo, ReportRepository } from '../../repositories/report.repository.ts';
 import { contentTypeEnum, reportStatusEnum } from '../../models/reports.model.ts';
 import { enhancePost, PostRepository } from '../../repositories/posts.repository.ts';
 import { CommentRepository } from '../../repositories/comment.repository.ts';
@@ -161,9 +161,8 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
             });
         }
 
-        // Get content reference, type, and pagination parameters
+        // Get content reference and type
         const { contentRef, contentType } = req.params;
-        const { cursor, limit } = req.query;
         
         // Validate required parameters
         if (!contentRef || !contentType) {
@@ -181,62 +180,67 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
             });
         }
         
-        // Parse pagination parameters
-        const parsedCursor = cursor ? parseInt(cursor.toString()) : null;
-        const parsedLimit = limit ? parseInt(limit.toString()) : 10;
-        
-        // Validate limit
-        if (parsedLimit > 50) {
-            return res.status(400).json({
-                message: 'Limit cannot exceed 50 reports per request',
-                success: false
-            });
-        }
-        
-        // Get content reports
-        const result = await reportRepository.getContentReports(
+        // Get content reports summary
+        const reportSummary = await reportRepository.getContentReports(
             contentRef,
-            contentType as contentTypeEnum,
-            parsedCursor,
-            parsedLimit
+            contentType as contentTypeEnum
         );
         
-        // Also fetch the content info based on type
+        // Fetch the content info based on type
         let contentInfo = null;
-        switch (contentType) {
-            case contentTypeEnum.Post:
-                const post = await postRepository.findByPostId(contentRef);
-                if (post) {
-                    contentInfo= enhancePost(post,user._id!.toString());
-                }
-                break;
-            case contentTypeEnum.Comment:
-                const comment = await commentRepository.findById(contentRef);
-                if (comment) {
-                    contentInfo = {
-                        type: 'comment',
-                        content: comment.content || 'No text',
-                        author: getFormattedAuthor(comment._id!.toString()),
-                        media:comment.media
-                    };
-                }
-                break;
-            case contentTypeEnum.Job:
-                const job = await jobs.findById(contentRef);
-                if (job) {
-                    const organization = await organizations.findById(job.organization_id);
-                    if (organization){
-                    contentInfo = {
-                        type: 'job',
-                        title: job.job_title || 'No title',
-                        organization:{
-                            name:organization.name,
-                            logo:organization.logo
+        try {
+            switch (contentType) {
+                case contentTypeEnum.Post:
+                    const post = await postRepository.findByPostId(contentRef);
+                    if (post) {
+                        contentInfo = await enhancePost(post, user._id!.toString());
+                    }
+                    break;
+                case contentTypeEnum.Comment:
+                    const comment = await commentRepository.findById(contentRef);
+                    if (comment) {
+                        const author = await getFormattedAuthor(comment.user_id.toString());
+                        // Find the post this comment belongs to
+                        const parentPost = await postRepository.findByPostId(comment.post_id.toString());
+                        let parentPostInfo = null;
+                        if (parentPost) {
+                            parentPostInfo = await enhancePost(parentPost, user._id!.toString());
                         }
-                    };
-                }
-                }
-                break;
+                        
+                        contentInfo = {
+                            id: comment._id,
+                            type: 'comment',
+                            content: comment.content || 'No text',
+                            author,
+                            media: comment.media,
+                            parent_post: parentPostInfo
+                        };
+                    }
+                    break;
+                case contentTypeEnum.Job:
+                    const job = await jobs.findById(contentRef);
+                    if (job) {
+                        const organization = await organizations.findById(job.organization_id);
+                        if (organization) {
+                            contentInfo = {
+                                id: job._id,
+                                type: 'job',
+                                title: job.job_title || 'No title',
+                                description: job.description?.substring(0, 200) + (job.description?.length > 200 ? '...' : ''),
+                                organization: {
+                                    id: organization._id,
+                                    name: organization.name,
+                                    logo: organization.logo
+                                }
+                            };
+                        }
+                    }
+                    break;
+            }
+        } catch (error) {
+            console.error("Error fetching content info:", error);
+            // Continue without content info if there's an error
+            contentInfo = { error: "Error fetching content details" };
         }
         
         return res.status(200).json({
@@ -244,9 +248,8 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
             success: true,
             data: {
                 content: contentInfo,
-                reports: result.reports,
-                total_count: result.totalCount,
-                next_cursor: result.nextCursor
+                total_count: reportSummary.totalCount,
+                reasons_summary: reportSummary.reasonsSummary
             }
         });
         
