@@ -6,6 +6,8 @@ import { ConnectionUserInterface} from "../models/users.model.ts";
 import Users from "../models/users.model.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
 import { Request , Response } from "express";
+import { CustomError } from '../utils/customError.utils.ts';
+import cloudinary from '../../config/cloudinary.ts';
 export class UserRepository {
   async create(userId: string, firstName: string, lastName: string, email: string, password: string,
     country: string,
@@ -180,6 +182,58 @@ export class UserRepository {
     return User.findOne({ user_id: id });
   }
 
+  // createTempEmail method to create a temporary email for a user
+  // This method updates the user's temp_email field in the database
+  // It uses the findOneAndUpdate method to find the user by userId and set the temp_email field
+  // The new option is set to true to return the updated document
+  // The upsert option is set to false to avoid creating a new document if no match is found
+  // Returns the updated user document
+  async createTempEmail(userId: string, email: string) {
+    // Calculate expiry time (10 minutes from now)
+    const expiryTime = new Date();
+    expiryTime.setMinutes(expiryTime.getMinutes() + 10);
+    
+    return User.findOneAndUpdate(
+      { user_id: userId },
+      { 
+        $set: { 
+          temp_email: email,
+          temp_email_expiry: expiryTime 
+        }
+      },
+      { new: true, upsert: false }
+    );
+  }
+
+  async findByTempEmail(email: string) {
+    const user = await User.findOne({
+      temp_email: email,
+      temp_email_expiry: { $gt: new Date() } // Only return if not expired
+    });
+    
+    if (!user) {
+      // Clean up expired temp_email if found
+      await User.updateOne(
+        { temp_email: email },
+        { $unset: { temp_email: "", temp_email_expiry: "" } }
+      );
+      return null;
+    }
+    
+    return user;
+  }
+
+  async cleanupExpiredTempEmails() {
+    return User.updateMany(
+      { temp_email_expiry: { $lte: new Date() } },
+      { $unset: { temp_email: "", temp_email_expiry: "" } }
+    );
+  }
+
+  async deleteTempEmail(userId: string) {
+    return User.updateOne({ user_id: userId }, { $unset: { temp_email: "", temp_email_expiry: "" } });
+  }
+
   async createGoogleUser(user_id: string, email: string, firstName: string, lastName: string, password: string) {
     return User.create({
       user_id: user_id,
@@ -216,8 +270,203 @@ export class UserRepository {
     return User.updateOne({ user_id: user_id }, { $set: { email: email.toLowerCase() } });
   }
 
-  async deleteAccount(user_id: string) {
-    return User.deleteOne({ user_id: user_id });
+  async deleteAccount(userId: string) {
+    try {
+      // Find the user to be deleted
+      const user = await User.findOne({ user_id: userId });
+      if (!user) {
+        throw new CustomError('User not found', 404);
+      }
+  
+      const userObjectId = user.id;
+  
+      // 1. Clean up posts, comments, reactions
+      await this.cleanupUserPosts(userObjectId);
+      
+      // 2. Clean up network connections
+      await this.cleanupUserNetwork(userObjectId);
+      
+      // 3. Clean up job applications and saved jobs
+      await this.cleanupUserJobs(userObjectId);
+      
+      // 4. Clean up media files from cloud storage
+      await this.cleanupUserMedia(user);
+      
+      // 5. Clean up organization relationships
+      await this.cleanupUserOrganizations(userObjectId);
+
+      // 6. Clean up user conversations
+      //await this.cleanupUserConversations(userObjectId);  --> TODO: Implement this method when conversations model is ready
+      
+      // 7. Delete the user account itself
+      const deletedUser = await User.findOneAndDelete({ user_id: userId });
+      
+      return deletedUser;
+    } catch (error) {
+      console.error('Error deleting user account:', error);
+      throw error;
+    }
+  }
+
+  // private async cleanupUserConversations(userId: mongoose.Types.ObjectId) {
+
+  
+  // Helper methods to organize the cleanup process
+  private async cleanupUserPosts(userId: mongoose.Types.ObjectId) {
+    // Get post IDs created by this user
+    const userPosts = await mongoose.model('posts').find({ user_id: userId });
+    const userPostIds = userPosts.map(post => post._id);
+    
+    // Delete all comments by this user
+    await mongoose.model('comments').deleteMany({ user_id: userId });
+    
+    // Delete all reactions by this user
+    await mongoose.model('reactions').deleteMany({ user_id: userId });
+    
+    // Remove user reactions from other users' activity
+    await User.updateMany(
+      {}, 
+      { $pull: { 'activity.reacts': { user_id: userId } } }
+    );
+    
+    // Delete reposts by this user
+    await mongoose.model('posts').deleteMany({ 
+      user_id: userId,
+      post_type: 'repost' 
+    });
+    
+    // Delete all comments and reactions on the user's posts
+    for (const postId of userPostIds) {
+      await mongoose.model('comments').deleteMany({ post_id: postId });
+      await mongoose.model('reactions').deleteMany({ target_id: postId });
+    }
+    
+    // Delete all posts by this user
+    await mongoose.model('posts').deleteMany({ user_id: userId });
+  }
+  
+  private async cleanupUserNetwork(userId: mongoose.Types.ObjectId) {
+    // Remove user from others' connections, followers, following lists
+    await User.updateMany(
+      {}, 
+      { 
+        $pull: { 
+          connections: { _id: userId },
+          followers: userId,
+          following: userId,
+          sent_connections: { _id: userId },
+          received_connections: { _id: userId },
+          blocked: { _id: userId },
+          withdrawn_connections: { _id: userId }
+        } 
+      }
+    );
+  }
+  
+  private async cleanupUserJobs(userId: mongoose.Types.ObjectId) {
+    // Delete job applications by this user
+    await mongoose.model('jobApplications').deleteMany({ user_id: userId });
+    
+    // Remove job applications from jobs
+    const jobs = await mongoose.model('jobs').find({ 
+      applied_applications: { $in: [userId] } 
+    });
+    
+    for (const job of jobs) {
+      // Filter out the user's ID from the job's applied applications
+      job.applied_applications = job.applied_applications.filter(
+        (applicantId: mongoose.Types.ObjectId) => applicantId.toString() !== userId.toString()
+      );
+      await job.save();
+    }
+  }
+  
+  private async cleanupUserMedia(user: any) {
+    // Delete profile photo from Cloudinary
+    if (user.profile_photo && user.profile_photo !== process.env.DEFAULT_IMAGE_URL) {
+      const profilePhotoId = this.extractPublicId(user.profile_photo);
+      await cloudinary.uploader.destroy(profilePhotoId, { invalidate: true });
+    }
+    
+    // Delete cover photo from Cloudinary
+    if (user.cover_photo && user.cover_photo !== process.env.DEFAULT_IMAGE_URL) {
+      const coverPhotoId = this.extractPublicId(user.cover_photo);
+      await cloudinary.uploader.destroy(coverPhotoId, { invalidate: true });
+    }
+    
+    // Delete resume from Cloudinary
+    if (user.resume) {
+      let resumeId = this.extractPublicId(user.resume);
+      if (!resumeId.endsWith('.pdf')) {
+        resumeId += '.pdf';
+      }
+      await cloudinary.uploader.destroy(resumeId, { invalidate: true, resource_type: "raw" });
+    }
+    
+    // Delete media from education, work experience, licenses
+    const mediaUrls = this.collectAllMediaUrls(user);
+    await deleteMediaFromCloud(mediaUrls);
+  }
+  
+  private async cleanupUserOrganizations(userId: mongoose.Types.ObjectId) {
+    // Remove user from organization admins and followers
+    await mongoose.model('organizations').updateMany(
+      {}, 
+      { 
+        $pull: { 
+          admins: userId,
+          followers: userId,
+          blocked: userId
+        } 
+      }
+    );
+  }
+  
+  private extractPublicId(url: string): string {
+    if (!url) return '';
+    const urlParts = url.split('/');
+    const fileNameWithExtension = urlParts[urlParts.length - 1];
+    const publicId = fileNameWithExtension.split('.')[0];
+    return publicId;
+  }
+  
+  private collectAllMediaUrls(user: any): string[] {
+    const mediaUrls: string[] = [];
+    
+    // Collect from education
+    if (user.education) {
+      user.education.forEach((edu: any) => {
+        if (edu.media) {
+          edu.media.forEach((media: any) => {
+            if (media.media) mediaUrls.push(media.media);
+          });
+        }
+      });
+    }
+    
+    // Collect from work experience
+    if (user.work_experience) {
+      user.work_experience.forEach((exp: any) => {
+        if (exp.media) {
+          exp.media.forEach((media: any) => {
+            if (media.media) mediaUrls.push(media.media);
+          });
+        }
+      });
+    }
+    
+    // Collect from licenses
+    if (user.liscence_certificates) {
+      user.liscence_certificates.forEach((lic: any) => {
+        if (lic.media) {
+          lic.media.forEach((media: any) => {
+            if (media.media) mediaUrls.push(media.media);
+          });
+        }
+      });
+    }
+    
+    return mediaUrls;
   }
 }
 
@@ -545,14 +794,14 @@ export const convert_idIntoUser_id = async (
 
 
 /**
- * Gets formatted author information from a user document
- * @param userId - The user ID to fetch author information for
- * @returns A Promise containing the formatted author object
- */
-
-
-export async function getFormattedAuthor(userId: string) {
+* Gets formatted author information from a user document with correct connection degree
+* @param userId - The user ID to fetch author information for
+* @param viewerId - The ID of the viewing user
+* @returns A Promise containing the formatted author object
+*/
+export async function getFormattedAuthor(userId: string, viewerId: string) {
   try {
+    // Get the target user's information
     const userDoc = await Users.findOne(
       { _id: userId },
       {
@@ -567,16 +816,176 @@ export async function getFormattedAuthor(userId: string) {
     if (!userDoc) {
       return null;
     }
-    
+
+    // Check if this is the viewer's own profile
+    const isSelf = viewerId === userId.toString();
+    let connectionDegree = isSelf ? "me" : '3rd+';
+
+    // Only calculate connections if it's not the user's own profile
+    if (!isSelf) {
+      // Get the viewer's connections
+      const viewerUser = await Users.findOne(
+        { _id: viewerId },
+        {
+          user_id: 1,
+          connections: 1
+        }
+      ).lean();
+      
+      if (!viewerUser) {
+        return null;
+      }
+      
+      // Extract viewer's connections as string IDs
+      const viewerConnections = viewerUser.connections.map((conn: any) => 
+        typeof conn === 'object' && conn !== null && '_id' in conn 
+          ? conn._id.toString() 
+          : typeof conn === 'string' ? conn : String(conn)
+      );
+      
+      // Determine connection degree
+      if (viewerConnections.includes(userId.toString())) {
+        connectionDegree = '1st';
+      } else {
+        // Only calculate second-degree connections if not a first-degree connection
+        const secondDegreeConnections = await calculateSecondDegreeConnections(
+          viewerConnections,
+          viewerUser._id.toString()
+        );
+        
+        if (secondDegreeConnections.has(userId.toString())) {
+          connectionDegree = '2nd';
+        }
+      }
+    }
+    let isFollowing = false;
+    if (userDoc.followers && Array.isArray(userDoc.followers)) {
+      // Check if viewerId exists in the followers array
+      isFollowing = userDoc.followers.some((follower: any) => {
+        // Handle both object with _id and direct string ID format
+        const followerId = typeof follower === 'object' && follower !== null && '_id' in follower
+          ? follower._id.toString()
+          : typeof follower === 'string' ? follower : String(follower);
+        
+        return followerId === viewerId;
+      });
+    }
+    let showFollowPrimary = false;
+    if(connectionDegree!=="1st" && !isFollowing){
+      showFollowPrimary =userDoc.privacy_settings.make_follow_primary
+    }
     return {
       username: userDoc.user_id,
       first_name: userDoc.bio?.first_name || "",
       last_name: userDoc.bio?.last_name || "",
       headline: userDoc.bio?.headline || "",
-      profile_picture: userDoc.profile_photo || ""
+      profile_picture: userDoc.profile_photo || "",
+      connection_degree: connectionDegree,
+      is_following:isFollowing,
+      follow_primary:showFollowPrimary
     };
   } catch (err) {
     console.error("Error fetching author info:", err);
     return null;
   }
+}
+/**
+ * Deletes multiple media files from Cloudinary
+ * @param mediaUrls - Array of media URLs to delete
+ * @returns Promise that resolves when all deletions are complete
+ */
+async function deleteMediaFromCloud(mediaUrls: string[]): Promise<void> {
+  if (!mediaUrls || mediaUrls.length === 0) {
+    return;
+  }
+
+  const deletePromises = mediaUrls.map(async (url) => {
+    try {
+      if (!url) return;
+      
+      // Extract the public ID from the URL
+      const urlParts = url.split('/');
+      const fileNameWithExtension = urlParts[urlParts.length - 1];
+      const fileName = fileNameWithExtension.split('.')[0];
+      
+      // Determine resource type based on file extension
+      const extension = fileNameWithExtension.split('.').pop()?.toLowerCase();
+      const resourceType = 
+        ['pdf', 'doc', 'docx', 'txt', 'csv'].includes(extension || '') 
+          ? 'raw' 
+          : ['mp4', 'mov', 'avi', 'wmv'].includes(extension || '')
+            ? 'video'
+            : 'image';
+      
+      // Delete the file from Cloudinary
+      await cloudinary.uploader.destroy(fileName, { 
+        invalidate: true,
+        resource_type: resourceType
+      });
+      
+      console.log(`Successfully deleted file: ${fileName}`);
+    } catch (error) {
+      console.error(`Failed to delete media file ${url}:`, error);
+    }
+  });
+  
+  // Wait for all deletion operations to complete
+  await Promise.all(deletePromises);
+}
+
+
+/**
+ * Calculates second-degree connections for a user
+ * 
+ * Second-degree connections are people connected to the user's direct connections,
+ * but not directly connected to the user themselves.
+ * 
+ * @param viewerConnections - Array of connection IDs for the current user
+ * @param viewerUserId - ID of the current user
+ * @returns Set of second-degree connection IDs
+ */
+export async function calculateSecondDegreeConnections(
+  viewerConnections: string[],
+  viewerUserId: string
+): Promise<Set<string>> {
+  const secondDegreeConnections = new Set<string>();
+  
+  if (viewerConnections.length === 0) {
+    return secondDegreeConnections;
+  }
+  
+  // Find all first-degree connections to extract their connections
+  const firstDegreeConnectionUsers = await Users.find(
+    { _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) } },
+    { connections: 1 }
+  ).lean();
+  
+  // Process each user's connections
+  firstDegreeConnectionUsers.forEach(connUser => {
+    if (Array.isArray(connUser.connections)) {
+      connUser.connections.forEach(secondConn => {
+        const secondConnId = extractConnectionId(secondConn);
+        
+        // Only add if not already a 1st degree connection and not the viewer
+        if (!viewerConnections.includes(secondConnId) && secondConnId !== viewerUserId) {
+          secondDegreeConnections.add(secondConnId);
+        }
+      });
+    }
+  });
+  
+  return secondDegreeConnections;
+}
+
+/**
+ * Extracts a standardized ID from a connection object or string
+ * 
+ * @param connection - Connection that might be an object with _id or a string ID
+ * @returns Standardized string ID
+ */
+function extractConnectionId(connection: any): string {
+  if (typeof connection === 'object' && connection !== null && '_id' in connection) {
+    return connection._id.toString();
+  }
+  return typeof connection === 'string' ? connection : String(connection);
 }

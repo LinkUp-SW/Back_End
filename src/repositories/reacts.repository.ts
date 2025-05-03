@@ -99,6 +99,7 @@ export const getPaginatedReactions = async (
   targetType: targetTypeEnum,
   cursor: number | null = 0,
   limit: number = 10,
+  viewerId: string,
   specificReaction?: string
 ): Promise<{
   reactions: any[],
@@ -165,7 +166,7 @@ export const getPaginatedReactions = async (
     const userIds = results.map((reaction: any) => reaction.user_id);
     const authorMap = new Map();
        for (const userId of userIds) {
-         const authorInfo = await getFormattedAuthor(userId);
+         const authorInfo = await getFormattedAuthor(userId,viewerId);
          if (authorInfo) {
            authorMap.set(userId, authorInfo);
          }

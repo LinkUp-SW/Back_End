@@ -38,10 +38,13 @@ const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<R
     throw new CustomError('Password not matched', 401, 'PASSWORD_NOT_MATCHED');
   }
 
-  await userRepository.updateEmail(userId, email);
+  //creating a temp object in the database to store the new email
+  const tempEmail = await userRepository.createTempEmail(decodedToken.userId, email);
+  if (!tempEmail) {
+    throw new CustomError('Failed to create temp email', 500, 'TEMP_EMAIL_CREATION_FAILED');
+  }
 
-  let user_updated = await userRepository.findByUserId(userId)
-  return res.status(200).json({ message: 'Email updated successfully', user_updated_email: user_updated?.email  });
+  return res.status(200)
 }); 
 
 

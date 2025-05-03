@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import users from '../models/users.model.ts';
 import organizations from '../models/organizations.model.ts';
 import jobs from '../models/jobs.model.ts';
+import { calculateSecondDegreeConnections } from '../repositories/user.repository.ts'; 
 import { Response } from 'express';
 
 interface SuggestionParams {
@@ -73,29 +74,8 @@ export const getSearchSuggestions = async (
         ) 
       : [];
     
-    // Get 2nd degree connections
-    let secondDegreeConnections = new Set<string>();
-    
-    if (viewerConnections.length > 0) {
-      const firstDegreeConnectionUsers = await users.find(
-        { _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) } },
-        { connections: 1 }
-      ).lean();
-      
-      firstDegreeConnectionUsers.forEach(connUser => {
-        if (Array.isArray(connUser.connections)) {
-          connUser.connections.forEach(secondConn => {
-            const secondConnId = typeof secondConn === 'object' && secondConn._id 
-              ? secondConn._id.toString() 
-              : typeof secondConn === 'string' ? secondConn : String(secondConn);
-            
-            if (!viewerConnections.includes(secondConnId) && secondConnId !== viewerUserId) {
-              secondDegreeConnections.add(secondConnId);
-            }
-          });
-        }
-      });
-    }
+    // Get 2nd degree connections 
+    const secondDegreeConnections = await calculateSecondDegreeConnections(viewerConnections, viewerUserId);
     
     // Update the base exclusion conditions to properly exclude users who have blocked the viewer
     const baseExclusionConditions = [

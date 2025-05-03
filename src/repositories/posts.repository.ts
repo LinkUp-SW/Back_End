@@ -6,6 +6,7 @@ import { targetTypeEnum } from "../models/reactions.model.ts";
 import { convert_idIntoUser_id, getFormattedAuthor } from "./user.repository.ts";
 import { CommentRepository, deleteAllComments } from "./comment.repository.ts";
 import { mediaTypeEnum } from "../models/posts.model.ts";
+import { formatCompanyPost } from "../utils/helper.ts";
 
 export class PostRepository {
   async create(
@@ -128,7 +129,10 @@ export const enhancePost = async (
   }
   
   // Get author information
-  const authorInfo = await getFormattedAuthor(post.user_id);
+  let authorInfo;
+  if(post.is_company){
+    authorInfo=await formatCompanyPost(post,userId);
+  }else authorInfo = await getFormattedAuthor(post.user_id,userId);
   
   // Check if post is saved by user
   const isSaved = userSavedPosts ? 
@@ -156,7 +160,7 @@ export const enhancePost = async (
         }
     }
       if (originalPost) {
-          originalAuthorInfo = await getFormattedAuthor(originalPost.user_id);
+          originalAuthorInfo = await getFormattedAuthor(originalPost.user_id,userId);
           
           // For instant reposts, get reactions and user reaction from the original post
           if (post.post_type === postTypeEnum.repost_instant) {
@@ -237,12 +241,14 @@ export const enhancePosts = async (
  * @param savedPosts - Array of post IDs to fetch
  * @param cursor - The position to start fetching from (null for beginning)
  * @param limit - Maximum number of posts to fetch
+ * @param viewerId - user Id of the viewer 
  * @returns Promise containing the posts, count, and pagination info
  */
 export const getSavedPostsCursorBased = async (
   savedPosts: string[],
   cursor: number | null, 
-  limit: number
+  limit: number,
+  viewerId:string
 ): Promise<{ posts: any[]; next_cursor: number | null }> => {
   try {
     if (!savedPosts || savedPosts.length === 0) {
@@ -271,7 +277,7 @@ export const getSavedPostsCursorBased = async (
     // Create author info map for quick lookups
     const authorMap = new Map();
     for (const userId of userIds) {
-      const authorInfo = await getFormattedAuthor(userId);
+      const authorInfo = await getFormattedAuthor(userId,viewerId);
       if (authorInfo) {
         authorMap.set(userId, authorInfo);
       }
@@ -513,7 +519,7 @@ export const getPostsCursorBased = async (
               if (comment) {
                 const plainComment = comment.toObject ? comment.toObject() : comment;
                 const {finalArray, totalCount} = await getTopReactions(post.commentId, targetTypeEnum.comment);
-                const author = await getFormattedAuthor(comment.user_id.toString());
+                const author = await getFormattedAuthor(comment.user_id.toString(),userId as string);
                 post.activity_context.comment = {
                   ...plainComment, 
                   top_reactions: finalArray,
