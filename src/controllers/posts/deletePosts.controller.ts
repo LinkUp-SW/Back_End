@@ -48,11 +48,8 @@ const deletePost = async (req: Request, res: Response): Promise<Response | void>
             }
         }
         // remove post from the user
-        if (post.post_type === postTypeEnum.standard){
-            user.activity.posts = user.activity.posts.filter((userPost) => userPost.toString() !== postId);
-
-        } else{
-            user.activity.reposted_posts = user.activity.reposted_posts.filter((userPost) => userPost.toString() !== postId);
+        user.activity.posts = user.activity.posts.filter((userPost) => userPost.toString() !== postId);
+        if (post.post_type !== postTypeEnum.standard){
             const originalPost = await postRepository.findByPostId(post.media.link[0]);
             if (originalPost){
                 originalPost.reposts = originalPost.reposts!.filter((userPost) => userPost.toString() !== postId);
