@@ -231,7 +231,7 @@ export class UserRepository {
       return null;
     }
     
-    return user;
+    return user;  
   }
 
   async cleanupExpiredTempEmails() {
