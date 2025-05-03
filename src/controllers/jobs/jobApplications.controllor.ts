@@ -64,7 +64,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
 
         let resumeUrl;
         // Handle resume upload if is_uploaded is true
-        if (true) {
+        if (false) {
             try {
                 // Use the helper function to upload the resume to Cloudinary
                 resumeUrl = await handleResumeUpload(resume);
