@@ -186,7 +186,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     };
-    savedPosts: postsInterface[];
+    saved_posts: postsInterface[];
     status: statusEnum; 
     blocked: ConnectionRequest[];
     unblocked_users: ConnectionRequest[];
@@ -221,6 +221,7 @@ export interface usersInterface extends mongoose.Document{
     is_16_or_above: boolean;
     online_status: boolean;
     is_admin: boolean;
+    created_at: number;
     about?: aboutInterface;
 }
 
@@ -446,7 +447,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     },
-    savedPosts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
+    saved_posts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [
         {
@@ -493,6 +494,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         about: { type: String },
         skills: [{ type: String }],
     },
+    created_at:{ 
+        type: Number, 
+        default: () => Math.floor(Date.now() / 1000)
+    },    
     is_admin: { type: Boolean, default: false },
 });
 

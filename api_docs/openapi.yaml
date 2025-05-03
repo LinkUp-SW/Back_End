@@ -6773,8 +6773,6 @@ paths:
                   message:
                     type: string
                     example: "Error retrieving subscription status"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/checkout:
     post:
@@ -6863,8 +6861,6 @@ paths:
                   message:
                     type: string
                     example: "Error creating checkout session"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/cancel:
     post:
@@ -6924,8 +6920,6 @@ paths:
                   message:
                     type: string
                     example: "Error canceling subscription"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/resume:
     post:
@@ -6985,8 +6979,6 @@ paths:
                   message:
                     type: string
                     example: "Error resuming subscription"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/invoices:
     get:
@@ -7066,8 +7058,7 @@ paths:
                   message:
                     type: string
                     example: "Error getting invoice history"
-      security:
-        - bearerAuth: []     
+ 
   /api/v1/user/people-you-may-know:
     get:
       tags:
@@ -7614,6 +7605,255 @@ paths:
                     type: string
                     example: "Error searching jobs"
   
+  /api/v1/search/company/{query}:
+    get:
+      tags:
+        - Search
+      summary: Search for companies
+      description: >
+        Searches for organizations with category_type "company" that match the provided query.
+        Returns basic company information including ID, name, and logo.
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Search term to match against company names
+          example: "tech"
+      responses:
+        '200':
+          description: Companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Companies retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "Tech Solutions Inc"
+                        logo:
+                          type: string
+                          example: "https://example.com/logo.png"
+        '400':
+          description: Invalid request - Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/search/education/{query}:
+    get:
+      tags:
+        - Search
+      summary: Search for educational institutions
+      description: >
+        Searches for organizations with category_type "education" that match the provided query.
+        Returns basic institution information including ID, name, and logo.
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Search term to match against educational institution names
+          example: "university"
+      responses:
+        '200':
+          description: Educational institutions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Educational institutions retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "State University"
+                        logo:
+                          type: string
+                          example: "https://example.com/university-logo.png"
+        '400':
+          description: Invalid request - Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/search/{query}:
+    get:
+      tags:
+        - Search
+      summary: Search for all organizations
+      description: >
+        Searches for all organizations regardless of category_type that match the provided query.
+        Returns basic organization information including ID, name, logo, and category type.
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Search term to match against organization names
+          example: "global"
+      responses:
+        '200':
+          description: Organizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organizations retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "Global Enterprises"
+                        logo:
+                          type: string
+                          example: "https://example.com/logo.png"
+                        category_type:
+                          type: string
+                          example: "company"
+                          enum: ["company", "education"]
+        '400':
+          description: Invalid request - Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/search/is-follower/{organization_id}:
+    get:
+      tags:
+        - Search
+      summary: Check if user follows an organization
+      description: >
+        Checks if the authenticated user is a follower of the specified organization.
+        Requires authentication via bearer token.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to check follower status for
+          example: "60d21b4667d0d8992e610c85"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Follower status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isFollower:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request - Invalid organization ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Valid organization ID is required"
+        '401':
+          description: Unauthorized - Invalid or missing token
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization not found"
+        '500':
+          description: Server error
+
   /api/v1/jobs/get-top-jobs:
     get:
       tags:
@@ -7720,8 +7960,7 @@ paths:
                   message:
                     type: string
                     example: "Failed to retrieve job recommendations"
-      security:
-        - bearerAuth: []
+
 
   /api/v1/jobs/get-jobs:
     get:
@@ -10015,7 +10254,7 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-
+  
     get:
       tags:
         - Reports
@@ -10814,7 +11053,7 @@ paths:
                   error:
                     type: string
                     example: "Error processing search query"
-/api/v2/post/posts/reposts/{postId}:
+  /api/v2/post/posts/reposts/{postId}:
     get:
       tags:
         - Posts
@@ -10915,9 +11154,1318 @@ paths:
                   error:
                     type: object
                     description: Error details
-security:
-  - bearerAuth: []
 
+  /api/v1/company/create-job-from-company/{organization_id}:
+    post:
+      tags:
+        - Company Jobs
+      summary: Create a new job posting
+      description: >
+        Creates a new job posting for a specific organization.
+        Only users who are admins of the organization can create job postings.
+        The job will be associated with the specified organization.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to create a job for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_title:
+                  type: string
+                  example: "Senior Software Engineer"
+                location:
+                  type: string
+                  example: "New York, NY"
+                job_type:
+                  type: string
+                  enum: ["Full-time", "Part-time", "Contract", "Temporary", "Other", "Volunteer", "Internship"]
+                  example: "Full-time"
+                workplace_type:
+                  type: string
+                  enum: ["On-site", "Hybrid", "Remote"]
+                  example: "Hybrid"
+                experience_level:
+                  type: string
+                  enum: ["Internship", "Entry Level", "Associate", "Mid-Senior", "Director", "Executive"]
+                  example: "Mid-Senior"
+                description:
+                  type: string
+                  example: "We are looking for a skilled software engineer to join our team..."
+                qualifications:
+                  type: array
+                  items:
+                    type: string
+                  example: ["5+ years experience in software development", "Bachelor's degree in Computer Science"]
+                responsibilities:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Design and implement new features", "Collaborate with cross-functional teams"]
+                benefits:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Health insurance", "Flexible working hours", "Remote work options"]
+                targetted_skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["JavaScript", "React", "Node.js"]
+                receive_applicants_by:
+                  type: string
+                  enum: ["Email", "At an external website"]
+                  example: "Email"
+                receiving_method:
+                  type: string
+                  example: "jobs@company.com"
+                salary:
+                  type: number
+                  example: 120000
+                job_status:
+                  type: string
+                  enum: ["Open", "Closed"]
+                  example: "Open"
+              required:
+                - job_title
+                - location
+                - job_type
+                - workplace_type
+                - experience_level
+                - description
+                - receive_applicants_by
+                - receiving_method
+      responses:
+        '201':
+          description: Job posted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job posted successfully"
+                  job:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      job_title:
+                        type: string
+                        example: "Senior Software Engineer"
+        '401':
+          description: Unauthorized - invalid or expired token
+        '403':
+          description: Forbidden - user is not an admin of the organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-jobs-from-company/{organization_id}:
+    get:
+      tags:
+        - Company Jobs
+      summary: Get all jobs for an organization
+      description: >
+        Retrieves all jobs posted by a specific organization.
+        Jobs are returned sorted by the most recent first.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to get jobs for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Successfully retrieved company jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Senior Software Engineer"
+                        location:
+                          type: string
+                          example: "New York, NY"
+                        job_type:
+                          type: string
+                          example: "Full-time"
+                        posted_time:
+                          type: string
+                          format: date-time
+                          example: "2023-04-15T10:30:00Z"
+                        job_status:
+                          type: string
+                          example: "Open"
+                  count:
+                    type: integer
+                    example: 5
+        '401':
+          description: Unauthorized - invalid or expired token
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/change-job-status/{job_id}/{organization_id}:
+    put:
+      tags:
+        - Company Jobs
+      summary: Update job status
+      description: >
+        Updates the status of a specific job (open or closed).
+        Only admins of the organization can change job status.
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to update
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization that owns the job
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_status:
+                  type: string
+                  enum: ["Open", "Closed"]
+                  example: "Closed"
+              required:
+                - job_status
+      responses:
+        '200':
+          description: Job status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job status updated successfully"
+                  job:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      job_title:
+                        type: string
+                        example: "Senior Software Engineer"
+                      job_status:
+                        type: string
+                        example: "Closed"
+        '401':
+          description: Unauthorized - invalid or expired token
+        '403':
+          description: Forbidden - user is not an admin of the organization
+        '404':
+          description: Job or organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-company-jobs-analytics/{organization_id}:
+    get:
+      tags:
+        - Company Jobs
+      summary: Get job analytics for an organization
+      description: >
+        Retrieves analytics data for all jobs posted by a specific organization.
+        Includes statistics on total jobs, open vs. closed jobs, application counts,
+        and distribution of applications by status. Only admins of the organization 
+        can access this data.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to get job analytics for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Successfully retrieved job analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company jobs analytics retrieved successfully"
+                  analytics:
+                    type: object
+                    properties:
+                      totalJobs:
+                        type: integer
+                        example: 10
+                      openJobs:
+                        type: integer
+                        example: 7
+                      closedJobs:
+                        type: integer
+                        example: 3
+                      totalApplications:
+                        type: integer
+                        example: 45
+                      applicationStatusDistribution:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          Pending: 20
+                          Viewed: 15
+                          Accepted: 5
+                          Rejected: 5
+                      jobStatusDistribution:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          Open: 7
+                          Closed: 3
+                      topJobs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            job_id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            job_title:
+                              type: string
+                              example: "Senior Software Engineer"
+                            applications_count:
+                              type: integer
+                              example: 12
+        '401':
+          description: Unauthorized - invalid or expired token
+        '403':
+          description: Forbidden - user is not an admin of the organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+    /api/v1/company/create-post-from-company/{organization_id}:
+    post:
+      tags:
+        - Company Posts
+      summary: Create a new post for an organization
+      description: >
+        Creates a new post associated with an organization.
+        Only users who are admins of the organization can create posts.
+        The post will be marked with is_company=true and associated with the organization.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to create a post for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: The text content of the post
+                  example: "We're excited to announce our new product launch!"
+                mediaType:
+                  type: string
+                  enum: [image, images, video, pdf, post, link, none]
+                  description: The type of media attached to the post
+                  example: "image"
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs or base64 encoded media
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                commentsDisabled:
+                  type: string
+                  enum: [Anyone, Connections only, No one]
+                  description: Who can comment on the post
+                  example: "Anyone"
+                publicPost:
+                  type: boolean
+                  description: Whether the post is public or private
+                  example: true
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs to tag in the post
+                  example: ["user123", "user456"]
+              required:
+                - content
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company post successfully created"
+                  postId:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '400':
+          description: Invalid request - Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Content or media is required"
+        '401':
+          description: Unauthorized - Invalid or expired token
+        '403':
+          description: Forbidden - User is not an admin of the organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/update-post-from-company/{organization_id}/{post_id}:
+    put:
+      tags:
+        - Company Posts
+      summary: Update an organization post
+      description: >
+        Updates an existing post associated with an organization.
+        Only organization admins can update posts.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization that owns the post
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to update
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: The text content of the post
+                  example: "Updated announcement about our new product launch!"
+                mediaType:
+                  type: string
+                  enum: [image, images, video, pdf, post, link, none]
+                  description: The type of media attached to the post
+                  example: "image"
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs or base64 encoded media
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                commentsDisabled:
+                  type: string
+                  enum: [Anyone, Connections only, No one]
+                  description: Who can comment on the post
+                  example: "Anyone"
+                publicPost:
+                  type: boolean
+                  description: Whether the post is public or private
+                  example: true
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs to tag in the post
+                  example: ["user123", "user456"]
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company post successfully updated"
+        '400':
+          description: Invalid request - Missing post ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post ID is required"
+        '401':
+          description: Unauthorized - Invalid or expired token
+        '403':
+          description: Forbidden - User is not an admin or post doesn't belong to the organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This post does not belong to the specified organization"
+        '404':
+          description: Post or organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+
+  /api/v1/company/delete-post-from-company/{organization_id}/{post_id}:
+    delete:
+      tags:
+        - Company Posts
+      summary: Delete an organization post
+      description: >
+        Deletes a post associated with an organization.
+        Only organization admins can delete posts.
+        Also removes related comments, reactions, and reposts.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization that owns the post
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to delete
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company post successfully deleted"
+        '400':
+          description: Invalid request - Missing post ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post ID is required"
+        '401':
+          description: Unauthorized - Invalid or expired token
+        '403':
+          description: Forbidden - User is not an admin or post doesn't belong to the organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This post does not belong to the specified organization"
+        '404':
+          description: Post or organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+
+  /api/v1/company/get-posts-from-company/{organization_id}:
+    get:
+      tags:
+        - Company Posts
+      summary: Get all posts from an organization
+      description: >
+        Retrieves all posts associated with an organization.
+        Posts are sorted by creation date (newest first).
+        Includes comment and reaction details for each post.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to get posts from
+      responses:
+        '200':
+          description: Successfully retrieved company posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company posts retrieved successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        content:
+                          type: string
+                          example: "We're excited to announce our new product launch!"
+                        date:
+                          type: number
+                          example: 1624312166
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: array
+                              items:
+                                type: string
+                            media_type:
+                              type: string
+                        comments_disabled:
+                          type: string
+                          example: "Anyone"
+                        public_post:
+                          type: boolean
+                          example: true
+                        is_edited:
+                          type: boolean
+                          example: false
+                        is_company:
+                          type: boolean
+                          example: true
+                        author:
+                          type: object
+                          properties:
+                            first_name:
+                              type: string
+                              example: "Acme Corporation"
+                            last_name:
+                              type: string
+                              example: " "
+                            headline:
+                              type: string
+                              example: " "
+                            username:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            profile_picture:
+                              type: string
+                              example: "https://example.com/logos/acme.jpg"
+        '400':
+          description: Invalid request - Missing organization ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization ID is required"
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization not found"
+        '500':
+          description: Server error
+
+  /api/v1/user/{user_id}/is-me:
+    get:
+      tags:
+        - User Profile
+      summary: Check if authenticated user matches specified user
+      description: >
+        Determines if the currently authenticated user is the same as the specified user.
+        This is a lightweight endpoint for quick identity verification in frontend permission handling.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to check against the authenticated user
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: JWT Bearer token for authentication
+      responses:
+        '200':
+          description: Successfully checked user identity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Whether the authenticated user is the same as the specified user
+                    example: true
+                  status:
+                    type: string
+                    enum: [self, other]
+                    description: Status indicator of the relationship
+                    example: "self"
+        '400':
+          description: Missing required parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User ID parameter is required"
+        '401':
+          description: Invalid or expired authentication token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error checking user identity"
+                  error:
+                    type: string
+                    example: "Internal server error"
+  /api/v1/admin/analytics:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get platform analytics data
+      description: >
+        Retrieves detailed analytics data for visualizing platform metrics over time.
+        Supports filtering by metric type and time period with different time intervals
+        (daily, weekly, monthly) automatically selected based on the period length.
+        The data returned is structured for direct use with frontend charting libraries.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: periodParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["7days", "30days", "90days", "1year"]
+            default: "30days"
+          description: Time period for data analysis
+          example: "30days"
+        - name: metricParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["all", "users", "content", "engagement", "moderation", "jobs"]
+            default: "all"
+          description: Type of metrics to retrieve
+          example: "all"
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Platform analytics data retrieved successfully"
+                  period:
+                    type: string
+                    example: "30days"
+                  interval:
+                    type: string
+                    enum: ["day", "week", "month"]
+                    example: "day"
+                  data:
+                    type: object
+                    properties:
+                      userGrowth:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                              example: "2025-04-15"
+                            count:
+                              type: integer
+                              example: 42
+                      contentCreation:
+                        type: object
+                        properties:
+                          posts:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 67
+                      engagementMetrics:
+                        type: object
+                        properties:
+                          reactions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                type:
+                                  type: string
+                                  example: "like"
+                                count:
+                                  type: integer
+                                  example: 128
+                          connections:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 35
+                          comments:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 56
+                      moderationMetrics:
+                        type: object
+                        properties:
+                          reportsCreated:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 12
+                          reportsResolved:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 9
+                                avgResolutionHours:
+                                  type: number
+                                  example: 3.5
+                      jobMetrics:
+                        type: object
+                        properties:
+                          jobsPosted:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 15
+                          applicationOutcomes:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                status:
+                                  type: string
+                                  example: "Accepted"
+                                count:
+                                  type: integer
+                                  example: 7
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid metric parameter. Must be one of: all, users, content, engagement, moderation, jobs"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error getting platform analytics data"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
+  /api/v1/admin/users:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get paginated list of users
+      description: >
+        Retrieves a paginated list of all users with basic profile information.
+        Users are sorted by creation date (newest first). This endpoint is restricted
+        to administrators and includes short IDs for reference.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor (number of users to skip)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Number of users to return per page (maximum 50)
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Users retrieved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            user_id:
+                              type: string
+                              example: "john-doe123"
+                            short_id:
+                              type: string
+                              example: "USER0c85"
+                            first_name:
+                              type: string
+                              example: "John"
+                            last_name:
+                              type: string
+                              example: "Doe"
+                            email:
+                              type: string
+                              example: "john.doe@example.com"
+                            profile_picture:
+                              type: string
+                              example: "https://example.com/profile_photos/user123.jpg"
+                            is_admin:
+                              type: boolean
+                              example: false
+                            created_at:
+                              type: string
+                              format: date-time
+                              example: "2023-04-15T09:30:00Z"
+                      total_count:
+                        type: integer
+                        example: 153
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        example: 10
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Limit cannot exceed 50 users per request"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error fetching users"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
+  /api/v1/admin/users/{userId}:
+    delete:
+      tags:
+        - Admin Dashboard
+      summary: Delete a user
+      description: >
+        Permanently deletes a user and all associated data including posts, comments,
+        reactions, and connections. This action cannot be undone. Only administrators
+        can delete users, and admins cannot delete themselves or other admins.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to delete
+          example: "60d21b4667d0d8992e610c85"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        example: "john-doe123"
+                      email:
+                        type: string
+                        example: "john.doe@example.com"
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User ID is required"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges or attempting to delete an admin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot delete yourself"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error deleting user"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
 components:
   securitySchemes:
     bearerAuth:

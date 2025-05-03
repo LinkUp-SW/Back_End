@@ -1,10 +1,6 @@
 import { Schema, model, Types, Document } from 'mongoose';
 import { usersInterface } from './users.model.ts';
 
-/** ──────────────────────────────────────────────────────────
- *  Enumerations                                             
- *  (Put them in a shared `types` folder if you like)        
- *  ────────────────────────────────────────────────────────── */
 export enum reportReasonEnum{
     spam = "spam",
     harassment= "harassment",
@@ -25,7 +21,6 @@ export enum adminActionEnum {
     user_banned='user banned'
 }
 
-/* use a dynamic refPath (see `contentRef` + `contentType`) */
 export enum contentTypeEnum{
     Post='Post',
     Comment='Comment',

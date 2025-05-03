@@ -1,10 +1,14 @@
 import { Router } from 'express';
-import { getDashboardMetrics } from '../../controllers/admin/dashboard.controller.ts';
+import { getDashboardMetrics, getPlatformAnalyticsData } from '../../controllers/admin/dashboard.controller.ts';
 
 
 const router = Router();
 
-// Route to create a new admin
-router.get('/dashboard', getDashboardMetrics);
-
+// Routes for admin dashboard
+router.get('/dashboard', (req,res) =>{
+    getDashboardMetrics(req ,res);
+});
+router.get('/analytics', (req,res) =>{
+    getPlatformAnalyticsData(req ,res);
+});
 export default router;

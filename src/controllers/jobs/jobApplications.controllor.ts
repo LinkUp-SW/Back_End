@@ -64,7 +64,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
 
         let resumeUrl;
         // Handle resume upload if is_uploaded is true
-        if (true) {
+        if (is_uploaded) {
             try {
                 // Use the helper function to upload the resume to Cloudinary
                 resumeUrl = await handleResumeUpload(resume);
@@ -267,7 +267,9 @@ export const changeJobApplicationStatus = async (req: Request, res: Response, ne
             res.status(404).json({ message: "Job not found" });
             return;
         }
-
+        if (status == "Accepted" || status == "Rejected") {
+            jobApplication.resolved_at = Math.floor(Date.now() / 1000);
+        }
         // Update the application status
         jobApplication.application_status = status;
         await jobApplication.save();
