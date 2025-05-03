@@ -1,6 +1,6 @@
 // src/index.ts
 import express, { Request, Response } from 'express';
-import { connectToDatabase } from './config/database.ts';
+import { connectToTestDatabase,connectToDatabase } from './config/database.ts';
 import YAML from 'yamljs';
 import path from 'path';
 import cors from 'cors';
@@ -8,8 +8,10 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import passport, {googleAuth} from './src/middleware/passportStrategy.ts';
 import tokenUtils from './src/utils/token.utils.ts';
+import { WebSocketService } from './src/services/webSockets.service.ts';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
+import http from 'http';
 import { fileURLToPath } from 'url';
 import errorHandler from './src/middleware/errorHandler.ts'; 
 
@@ -33,6 +35,7 @@ import educationRoutes from './src/routes/user_profile/education.routes.ts'
 import licenseRoutes from './src/routes/user_profile/license.routes.ts'
 import updateUserRoutes from './src/routes/user_profile/updateUserProfile.routes.ts';
 import skillsRoutes from './src/routes/user_profile/skills.routes.ts';
+import messageRoutes from './src/routes/messaging/messaging.routes.ts';
 import myNetwork from './src/routes/my_network/myNetwork.routes.ts';
 import postRoutes from './src/routes/posts/posts.routes.ts';
 import savePostRoutes from './src/routes/posts/savePosts.routes.ts';
@@ -56,8 +59,11 @@ import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts
 import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 import reportRoutes from './src/routes/admin/report.routes.ts'
+import dashboard from './src/routes/admin/dashboard.routes.ts'
+import notificationRoutes from './src/routes/notification/notification.routes.ts';
 import dashboardRoutes from './src/routes/admin/dashboard.routes.ts'
 import adminUsersRoutes from './src/routes/admin/users.routes.ts'
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -80,7 +86,7 @@ const generateStartupToken = () => {
 
 connectToDatabase()
   .then(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
       generateStartupToken();
     });
@@ -111,6 +117,12 @@ app.use(
     },
   })
 );
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize WebSocket service
+export const webSocketService = new WebSocketService(server);
 
 // Passport Initialization
 app.use(passport.initialize());
@@ -193,8 +205,18 @@ app.use('/api/v1/admin',
    adminUsersRoutes
   );
 
-app.get('/', (req: Request, res: Response) => {
+
+// Messaging Routes
+app.use('/api/v1', messageRoutes);
+
+app.use('/api/v1/notifications', notificationRoutes);
+
+app.get('/google-auth', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
+});
+
+app.get('/', (req: Request, res: Response) => {
+  res.send('Welcome to the API!');
 });
 
 // Error Handler Middleware should be the last middleware added

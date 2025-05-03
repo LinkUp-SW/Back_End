@@ -676,14 +676,6 @@ export const formatConnectionData = async (
 /**
  * Interface for user connection documents
  */
-interface UserConnectionsDocument {
-  _id: mongoose.Types.ObjectId;
-  connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  sent_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  received_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  followers?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  following?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-}
 
 /**
  * Fetches paginated connections using cursor-based pagination.
@@ -701,7 +693,7 @@ export const getPaginatedConnectionsFollowers = async (
 ): Promise<{ connections: any[]; nextCursor: string | null }> => {
   try {
     // Find the user by ID and retrieve the specified connection type
-    const user = await Users.findById(userId, { [connectionType]: 1 }).lean() ;
+    const user = await Users.findById(userId, { [connectionType]: 1 }).lean();
     if (!user || !user[connectionType]) {
       return { connections: [], nextCursor: null };
     }
