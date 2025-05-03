@@ -9250,7 +9250,150 @@ paths:
                   error:
                     type: string
                     example: "Error details"
-
+  /api/v1/admin/dashboard:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get admin dashboard metrics
+      description: >
+        Retrieves comprehensive metrics for the admin dashboard including:
+        - Summary counts (total reports, jobs, users)
+        - Day-over-day delta comparisons
+        - Content moderation metrics with average resolution time
+        - Job management statistics
+        - Platform activity analytics
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Dashboard metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      reported_content:
+                        type: integer
+                        example: 128
+                        description: Total number of content reports in the system
+                      total_jobs:
+                        type: integer
+                        example: 451
+                        description: Total number of jobs posted
+                      total_users:
+                        type: integer
+                        example: 2508
+                        description: Total number of registered users
+                      delta:
+                        type: object
+                        description: Day-over-day changes
+                        properties:
+                          reports:
+                            type: integer
+                            example: 5
+                            description: Change in reports from yesterday to today
+                          jobs:
+                            type: integer
+                            example: 12
+                            description: Change in jobs posted from yesterday to today
+                          users:
+                            type: integer
+                            example: 35
+                            description: Change in user registrations from yesterday to today
+                  content_moderation:
+                    type: object
+                    properties:
+                      pending_reviews:
+                        type: integer
+                        example: 23
+                        description: Number of reports awaiting admin review
+                      resolved_today:
+                        type: integer
+                        example: 45
+                        description: Number of reports resolved today
+                      avg_response_time_hours:
+                        type: number
+                        example: 8.5
+                        description: Average time to resolve reports in hours
+                  job_management:
+                    type: object
+                    properties:
+                      pending_approval:
+                        type: integer
+                        example: 18
+                        description: Number of job applications awaiting approval
+                      approved_today:
+                        type: integer
+                        example: 12
+                        description: Number of job applications approved today
+                      rejected_today:
+                        type: integer
+                        example: 5
+                        description: Number of job applications rejected today
+                  platform_analytics:
+                    type: object
+                    properties:
+                      new_users_today:
+                        type: integer
+                        example: 42
+                        description: Number of new user registrations today
+                      content_posted_today:
+                        type: integer
+                        example: 78
+                        description: Number of new posts created today
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error getting dashboard metrics"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error details"
+      security:
+        - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
