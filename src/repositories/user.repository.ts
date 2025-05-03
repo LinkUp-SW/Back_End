@@ -198,7 +198,7 @@ export class UserRepository {
         { user_id: userId },
         { 
           $set: { 
-            temp_email: email,
+            temp_email: email.toLowerCase(),
             temp_email_expiry: expiryTime 
           }
         },
