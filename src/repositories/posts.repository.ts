@@ -348,7 +348,7 @@ export const getPostsCursorBased = async (
       // start with direct posts
       { 
         $match: { 
-          user_id: { $in: userObjectIds }, 
+          user_id: { $in: userIdsToFetch }, 
           ...(cursor ? { date: { $lt: cursor } } : {}) 
         } 
       },
