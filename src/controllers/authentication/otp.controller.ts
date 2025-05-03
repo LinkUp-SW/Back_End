@@ -68,18 +68,25 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
 
   req.session.otp = undefined;
   
-  const user = await userRepository.findByEmail(email);
-  if (!user) {
-      throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
-  }
+  let user: any;
+  
 
   if (update) {
+    user = await userRepository.findByEmail(email);
+    if (!user) {
+      throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
+    }
     const tempEmail = await userRepository.findByTempEmail(user.user_id);
     if (!tempEmail) {
       throw new CustomError('Temporary email not found', 404, 'TEMP_EMAIL_NOT_FOUND');
     }
     await userRepository.updateEmail(user.user_id, tempEmail.email);
     await userRepository.deleteTempEmail(user.user_id);
+  }
+
+  user = await userRepository.findByEmail(email);
+  if (!user) {
+      throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
   }
   
   user.is_verified = true;
