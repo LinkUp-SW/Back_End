@@ -10818,7 +10818,107 @@ paths:
                   error:
                     type: string
                     example: "Error processing search query"
-
+/api/v2/post/posts/reposts/{postId}:
+    get:
+      tags:
+        - Posts
+      summary: Get reposts of a post
+      description: >
+        Retrieves all reposts (both instant reposts and reposts with thoughts) of a specific post.
+        Results are paginated and can be limited. Includes enhanced post data with information
+        about whether the authenticated user has reacted to or saved each repost.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to get reposts for
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor (position to start from)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of reposts to return per page
+      responses:
+        '200':
+          description: Reposts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully"
+                  posts:
+                    type: array
+                    description: Array of reposts with enhanced information
+                  next_cursor:
+                    type: integer
+                    description: Cursor for the next batch of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+                    description: Error details
 security:
   - bearerAuth: []
 
