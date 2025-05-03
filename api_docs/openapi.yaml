@@ -12345,7 +12345,7 @@ paths:
                   error:
                     type: string
                     example: "Error message details"
-  /api/v1/admin/users/{userId}:
+  /api/v1/admin/delete/{userId}:
     delete:
       tags:
         - Admin Dashboard
