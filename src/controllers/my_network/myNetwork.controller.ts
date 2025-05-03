@@ -358,17 +358,6 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         }
       }
 
-      let msgNotificationData = {
-        senderId: viewerUser.user_id,
-        recipientId: targetUser.user_id,
-        type: NotificationType.CONNECTION_REQUEST,
-        referenceId: targetUser._id,  
-      }
-  
-      await webSocketService.sendNotification(
-        msgNotificationData
-      );
-
       res.status(200).json({ message: "Connection request sent successfully." });
     } catch (error) {
       if (error instanceof Error && error.message === 'Invalid or expired token') {
