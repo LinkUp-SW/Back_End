@@ -10,9 +10,8 @@ import {
   findUserByIdSilent
   
 } from "../../utils/database.helper.ts";
-import tokenUtils from "../../utils/token.utils.ts";
 import { findMutualConnections , handleProfileAccess} from "../../repositories/user.repository.ts";
-import { validateTokenAndUser } from "../../utils/helperFunctions.utils.ts";
+import { validateTokenAndUser,getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
 import Organization from "../../models/organizations.model.ts"; // Import the organization model
 import User from "../../models/users.model.ts"; // Import the user model
 import mongoose from "mongoose"; // Import mongoose
@@ -21,20 +20,10 @@ const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v17
 export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate token and extract user ID from the token
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
-
-    if (!decodedToken || !decodedToken.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    const viewerId = decodedToken.userId;
-
-    // Validate the user_id parameter from the request
-    const userId = await validateUserIdFromRequest(req, res);
+    let userId = await getUserIdFromToken(req, res);
     if (!userId) return;
+
+    let viewerId = userId;
 
     // Retrieve the target user document
     const user = await findUserByUserId(userId, res);
