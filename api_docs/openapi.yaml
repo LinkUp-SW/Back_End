@@ -10,15 +10,11 @@ servers:
     description: Development server
 paths:
   /auth/login:
-  /auth/login:
     post:
       tags:
         - Auth
       summary: Logs in a user (Local)
-      summary: Logs in a user (Local)
       description: >
-        Authenticates a user using email and password. On successful authentication, a JWT token is generated,
-        set as an HTTP-only cookie, and user details are returned.
         Authenticates a user using email and password. On successful authentication, a JWT token is generated,
         set as an HTTP-only cookie, and user details are returned.
       requestBody:
@@ -12355,7 +12351,7 @@ paths:
                   error:
                     type: string
                     example: "Error message details"
-  /api/v1/admin/users/{userId}:
+  /api/v1/admin/delete/{userId}:
     delete:
       tags:
         - Admin Dashboard

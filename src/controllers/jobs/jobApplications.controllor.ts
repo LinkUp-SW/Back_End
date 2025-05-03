@@ -131,13 +131,32 @@ export const GetJobApplications = async (req: Request, res: Response, next: Next
             return;
         }
         
+        // Get all job applications for this job with user details
         const jobApplicationsList = await jobApplications.find({ job_id: job._id })
         .populate({
             path: "user_id",
             select: "_id bio.first_name bio.last_name bio.headline bio.contact_info.phone_number bio.contact_info.country_code profile_photo location resume",
         });
 
-        res.status(200).json({ data: jobApplicationsList, count: jobApplicationsList.length, message: "Job applications retrieved successfully" });
+        // Process the applications to normalize the resume field
+        const processedApplications = jobApplicationsList.map(application => {
+            // Convert to plain object so we can modify it
+            const applicationObj = application.toObject();
+            
+            // Check if application has its own resume or use the user's resume as fallback
+            // Keep the resume at the top level of the application object
+            if (!applicationObj.resume && applicationObj.user_id && applicationObj.user_id.resume) {
+                applicationObj.resume = applicationObj.user_id.resume;
+            }
+            
+            return applicationObj;
+        });
+
+        res.status(200).json({ 
+            data: processedApplications, 
+            count: processedApplications.length, 
+            message: "Job applications retrieved successfully" 
+        });
     } catch (error) {
         next(error);
     }

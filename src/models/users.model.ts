@@ -2,7 +2,6 @@ import mongoose, { Schema, ObjectId, Types } from "mongoose";
 import validator from "validator";
 import { conversationsInterface } from "./conversations.model.ts";
 import { postsInterface } from "./posts.model.ts";
-import { repostsInterface } from "./reposts.model.ts";
 import { commentsInterface } from "./comments.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
@@ -177,7 +176,6 @@ export interface usersInterface extends mongoose.Document{
     };
     activity: {
         posts: postsInterface[];
-        reposted_posts: postsInterface[];
         reacts:reactsInterface[];
         comments: commentsInterface[];
         media: {
@@ -219,6 +217,7 @@ export interface usersInterface extends mongoose.Document{
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
+    online_status: boolean;
     is_admin: boolean;
     created_at: number;
     about?: aboutInterface;
@@ -437,7 +436,6 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
-        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
         reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
         comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
         media: [{
@@ -488,6 +486,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
     is_16_or_above: { type: Boolean },
+    online_status: { type: Boolean },
     about: {
         about: { type: String },
         skills: [{ type: String }],

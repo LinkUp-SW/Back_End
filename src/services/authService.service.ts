@@ -3,7 +3,10 @@ import { UserRepository } from "../repositories/user.repository.ts";
 import tokenFunctionalities from "../utils/token.utils.ts";
 import { JWT_CONFIG } from "../../config/jwt.config.ts";
 import { Request, Response, NextFunction } from "express";
-import { oauth2Client, getGoogleUserInfo } from "../services/googleAuth.service.ts";
+import {
+  oauth2Client,
+  getGoogleUserInfo,
+} from "../services/googleAuth.service.ts";
 import { generateHashedPassword } from "../utils/helperFunctions.utils.ts";
 import { generateUniqueId } from "../utils/helperFunctions.utils.ts";
 
@@ -26,18 +29,30 @@ export class AuthService {
   // Google login: processes the passportUser from Passport's Google strategy.
   async googleLogin(passportUser: any) {
     if (!passportUser) {
-      throw new CustomError("Google authentication failed", 401, "GOOGLE_AUTH_FAILED");
+      throw new CustomError(
+        "Google authentication failed",
+        401,
+        "GOOGLE_AUTH_FAILED"
+      );
     }
 
     const googleProfile = passportUser.profile;
     const accessToken = passportUser.tokens?.accessToken;
     if (!accessToken || !googleProfile) {
-      throw new CustomError("Incomplete Google user data", 400, "INCOMPLETE_GOOGLE_DATA");
+      throw new CustomError(
+        "Incomplete Google user data",
+        400,
+        "INCOMPLETE_GOOGLE_DATA"
+      );
     }
 
     const googleUserInfo = await getGoogleUserInfo(accessToken);
     if (!googleUserInfo) {
-      throw new CustomError("Failed to fetch Google user info", 500, "GOOGLE_INFO_FETCH_FAILED");
+      throw new CustomError(
+        "Failed to fetch Google user info",
+        500,
+        "GOOGLE_INFO_FETCH_FAILED"
+      );
     }
     console.log("Google user info:", googleUserInfo);
     // Check if a user with the Google email exists in the DB.
@@ -52,7 +67,10 @@ export class AuthService {
       return { token, user };
     } else {
       // If user doesn't exist, create a new record.
-      let user_id = await generateUniqueId(googleUserInfo.given_name, googleUserInfo.family_name);
+      let user_id = await generateUniqueId(
+        googleUserInfo.given_name,
+        googleUserInfo.family_name
+      );
       user = await this.userRepo.createGoogleUser(
         user_id as unknown as string,
         googleUserInfo.email.toLowerCase(),
@@ -78,19 +96,40 @@ export class AuthService {
 
     req.session?.destroy((err: Error) => {
       if (err) {
-        return next(new CustomError('Session destruction error', 500, 'SESSION_DESTROY_ERROR'));
+        return next(
+          new CustomError(
+            "Session destruction error",
+            500,
+            "SESSION_DESTROY_ERROR"
+          )
+        );
       }
     });
 
     res.clearCookie(JWT_CONFIG.COOKIE_NAME);
-    res.clearCookie('linkup_user_id');
-    return res.status(200).json({ message: 'Google logout successful' });
+    res.clearCookie("linkup_user_id");
+    return res.status(200).json({ message: "Google logout successful" });
   }
 
   // Regular logout: simply clears the authentication cookie.
   async logout(req: Request, res: Response) {
-    res.clearCookie(JWT_CONFIG.COOKIE_NAME);
-    res.clearCookie('linkup_user_id');
-    return res.status(200).json({ message: 'Logout successful' });
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // Clear JWT cookie
+    res.clearCookie(JWT_CONFIG.COOKIE_NAME, {
+      httpOnly: JWT_CONFIG.HTTP_ONLY,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? process.env.DOMAIN : undefined,
+    });
+
+    // Clear user ID cookie
+    res.clearCookie("linkup_user_id", {
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? process.env.DOMAIN : undefined,
+    });
+
+    return res.status(200).json({ message: "Logout successful" });
   }
 }
