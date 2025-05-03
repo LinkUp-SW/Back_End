@@ -11057,7 +11057,7 @@ paths:
                   error:
                     type: string
                     example: "Error processing search query"
-/api/v2/post/posts/reposts/{postId}:
+  /api/v2/post/posts/reposts/{postId}:
     get:
       tags:
         - Posts
@@ -11158,6 +11158,7 @@ paths:
                   error:
                     type: object
                     description: Error details
+
   /api/v1/company/create-job-from-company/{organization_id}:
     post:
       tags:
