@@ -55,6 +55,9 @@ import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
 import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts';
 import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
+import reportRoutes from './src/routes/admin/report.routes.ts'
+import dashboard from './src/routes/admin/dashboard.routes.ts'
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,7 +73,7 @@ app.use(express.json({limit:"50mb"}));
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Amr-Doma81' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'hamza-ayman-1745264575839' });
   console.log('Generated Token:', token);
 };
 
@@ -161,7 +164,7 @@ app.use('/api/v1/job-application',
     jobApplicationsRoutes
 );
 
-app.use('/api/v1/post',
+app.use('/api/v2/post',
     postRoutes,
     savePostRoutes,
     comments,
@@ -183,7 +186,11 @@ app.use('/api/v1/search',
   userSearchRoutes,
   searchRoutes );
 
-app.use('/api/v1/admin', createAdminRoutes);
+app.use('/api/v1/admin',
+   createAdminRoutes,
+   reportRoutes,
+   dashboard
+  );
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');

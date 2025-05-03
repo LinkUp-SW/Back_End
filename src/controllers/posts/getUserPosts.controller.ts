@@ -1,12 +1,10 @@
 import { Request, Response } from 'express';
-import { findUserByUserId, validateUserIdFromRequest } from '../../utils/database.helper.ts';
-import { getSavedPostsCursorBased, PostRepository } from '../../repositories/posts.repository.ts';
+import { findUserByUserId} from '../../utils/database.helper.ts';
+import { enhancePosts, getPostsFromPostIdsCursorBased} from '../../repositories/posts.repository.ts';
 import { postsInterface } from '../../models/posts.model.ts';
 import { validateTokenAndUser } from '../../utils/helperFunctions.utils.ts';
 import { handleProfileAccess } from '../../repositories/user.repository.ts';
 import { ConnectionRequest } from '../../models/users.model.ts';
-import { getTopReactions, ReactionRepository } from '../../repositories/reacts.repository.ts';
-import { targetTypeEnum } from '../../models/reactions.model.ts';
 
 const displayUserPosts = async (req: Request, res: Response): Promise<Response | void> => {
     try {
@@ -38,9 +36,12 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         const fetchLimit = willNeedFiltering ? limit * 2 : limit; // Fetch more if we'll filter
         
         // Fetch posts with the potentially increased limit
-        const displayedUserPosts = [...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id);
-        const { posts: initialPostsData, nextCursor: initialNextCursor } = 
-            await getSavedPostsCursorBased(displayedUserPosts as string[], cursor, fetchLimit);
+        const displayedUserPosts = [
+            ...[...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id),
+            ...[...targetUser.activity.reposted_posts || []].reverse().map((repost: postsInterface) => repost._id)
+        ].filter(Boolean);
+        const { posts: initialPostsData, next_cursor: initialnext_cursor } = 
+            await getPostsFromPostIdsCursorBased(displayedUserPosts as string[], cursor, fetchLimit,viewerUser._id as string);
         
         // Apply filtering if needed
         let filteredPosts = initialPostsData;
@@ -50,15 +51,15 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         
         // If we have fewer posts than requested after filtering, fetch more
         let finalPosts = filteredPosts;
-        let nextCursor = initialNextCursor;
+        let next_cursor = initialnext_cursor;
         
         // Only fetch more if we filtered out posts and have fewer than requested
-        if (filteredPosts.length < limit && filteredPosts.length < initialPostsData.length && initialNextCursor) {
+        if (filteredPosts.length < limit && filteredPosts.length < initialPostsData.length && initialnext_cursor) {
             // Continue fetching additional batches until we have enough or run out of posts
-            let currentCursor: number | null = initialNextCursor;
+            let currentCursor: number | null = initialnext_cursor;
             while (finalPosts.length < limit && currentCursor) {
-                const { posts: additionalPosts, nextCursor: newCursor } = 
-                    await getSavedPostsCursorBased(displayedUserPosts as string[], currentCursor, limit);
+                const { posts: additionalPosts, next_cursor: newCursor } = 
+                    await getPostsFromPostIdsCursorBased(displayedUserPosts as string[], currentCursor, limit,viewerUser._id as string);
                 
                 // Filter the additional posts
                 const filteredAdditionalPosts = !isFromConnection && !is_me ? 
@@ -69,7 +70,7 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
                 
                 // Update the cursor for next iteration
                 currentCursor = newCursor;
-                nextCursor = newCursor;
+                next_cursor = newCursor;
                 
                 // Break if no more posts are available
                 if (!additionalPosts.length || !newCursor) break;
@@ -79,47 +80,19 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
             finalPosts = finalPosts.slice(0, limit);
         }
 
-        // Enhance posts with reactions data before returning
-        const reactionRepository = new ReactionRepository();
-        const enhancedPosts = await Promise.all(
-            finalPosts.map(async (post) => {
-                // Get top reactions
-                const { finalArray, totalCount } = await getTopReactions(
-                    post._id.toString(),
-                    targetTypeEnum.post
-                );
-                
-                // Get user's reaction if available
-                let userReaction = null;
-                if (viewerUser._id) {
-                    const reaction = await reactionRepository.getUserReaction(
-                        viewerUser._id.toString(),
-                        post._id.toString()
-                    );
-                    userReaction = reaction ? reaction.reaction : null;
-                }
-                
-                // Check if post is saved by user
-                const isSaved = viewerUser.savedPosts?.some(savedPostId => 
-                    savedPostId.toString() === post._id.toString()
-                ) || false;
-                
-                return {
-                    ...post,
-                    topReactions: finalArray,
-                    reactionsCount: totalCount,
-                    commentsCount: post.comments?.length || 0,
-                    userReaction,
-                    isSaved
-                };
-            })
-        );
+        const sortedPosts = [...finalPosts].sort((a, b) => b.date - a.date);
 
+        // Enhance posts with reactions data before returning
+        const enhancedPosts = await enhancePosts(
+            sortedPosts,
+            viewerUser._id!.toString(), 
+            viewerUser.saved_posts
+        );
         return res.status(200).json({
             message: 'Posts returned successfully',
             is_me,
             posts: enhancedPosts,
-            nextCursor: nextCursor
+            next_cursor: next_cursor
         });
     } catch (error) {
         // Error handling unchanged

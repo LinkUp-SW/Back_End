@@ -3,7 +3,8 @@ import users from '../../models/users.model.ts';
 import jobApplications from '../../models/job_applications.model.ts';
 import jobs from '../../models/jobs.model.ts';
 import mongoose from 'mongoose';
-import { validateTokenAndGetUser } from "../../utils/helper.ts";
+import { validateTokenAndGetUser, handleResumeUpload } from "../../utils/helper.ts";
+
 
 export const ApplyForJob = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -12,7 +13,7 @@ export const ApplyForJob = async (req: Request, res: Response, next: NextFunctio
 
         // Get user data with selected fields only
         const userData = await users.findById(user._id)
-            .select('_id bio.first_name bio.last_name bio.headline bio.contact_info.phone_number bio.contact_info.country_code profile_photo location resume');
+            .select('_id bio.first_name bio.last_name bio.headline email bio.contact_info.phone_number bio.contact_info.country_code profile_photo location resume');
         
         if (!userData) {
             res.status(404).json({ message: "User not found" });
@@ -35,7 +36,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
         if (!user) return;
 
         const { job_id } = req.params;
-        const { first_name, last_name, email_address, phone_number, country_code, resume } = req.body;
+        const { first_name, last_name, email, phone_number, country_code, resume, is_uploaded } = req.body;
 
         // Validate job_id
         if (!job_id || !mongoose.Types.ObjectId.isValid(job_id)) {
@@ -61,16 +62,28 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
             return;
         }
 
+        let resumeUrl;
+        // Handle resume upload if is_uploaded is true
+        if (true) {
+            try {
+                // Use the helper function to upload the resume to Cloudinary
+                resumeUrl = await handleResumeUpload(resume);
+            } catch (uploadError) {
+                res.status(500).json({ message: "Failed to upload resume" });
+                return;
+            }
+        }
+
         // Create new job application
         const newJobApplication = new jobApplications({
             job_id,
             user_id: user._id,
             first_name,
             last_name,
-            email_address,
+            email,
             phone_number,
             country_code,
-            resume,
+            resume: resumeUrl, // Use the Cloudinary URL if uploaded, otherwise use original value
             application_status: "Pending"
         });
 
@@ -81,7 +94,7 @@ export const CreateJobApplication = async (req: Request, res: Response, next: Ne
             $push: { applied_applications: newJobApplication._id }
         });
 
-        // Add job to user's applied_jobs array (assuming this field exists in your user model)
+        // Add job to user's applied_jobs array
         await users.findByIdAndUpdate(user._id, {
             $push: { applied_jobs: job_id }
         });
@@ -117,25 +130,123 @@ export const GetJobApplications = async (req: Request, res: Response, next: Next
             res.status(404).json({ message: "Job not found" });
             return;
         }
-
+        
         const jobApplicationsList = await jobApplications.find({ job_id: job._id })
         .populate({
             path: "user_id",
             select: "_id bio.first_name bio.last_name bio.headline bio.contact_info.phone_number bio.contact_info.country_code profile_photo location resume",
         });
 
-        res.status(200).json({ data: jobApplicationsList });
+        res.status(200).json({ data: jobApplicationsList, count: jobApplicationsList.length, message: "Job applications retrieved successfully" });
     } catch (error) {
         next(error);
     }
 }
 
-export const GetJobApplicationDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getAppliedJobs = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const user = await validateTokenAndGetUser(req, res) as { _id: string };
         if (!user) return;
 
+        // Find all job applications for this user
+        const applications = await jobApplications.find({ user_id: user._id });
+        
+        // Extract job IDs from applications
+        const appliedJobIds = applications.map(application => 
+            new mongoose.Types.ObjectId(application.job_id.toString())
+        );
+        
+        if (appliedJobIds.length === 0) {
+            res.status(200).json({
+                message: "No applied jobs found",
+                data: []
+            });
+            return;
+        }
+        
+        // Get all applied jobs with organization info and application status
+        const appliedJobs = await jobs.aggregate([
+            { 
+                $match: { _id: { $in: appliedJobIds } }
+            },
+            {
+                $lookup: {
+                    from: 'organizations',
+                    localField: 'organization_id',
+                    foreignField: '_id',
+                    as: 'org'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$org',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            // Add application status to each job
+            {
+                $lookup: {
+                    from: 'jobapplications',
+                    let: { jobId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$job_id', '$$jobId'] },
+                                        { $eq: ['$user_id', new mongoose.Types.ObjectId(user._id)] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'application'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$application',
+                    preserveNullAndEmptyArrays: false
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    job_title: 1,
+                    location: 1,
+                    workplace_type: 1,
+                    experience_level: 1, 
+                    salary: 1,
+                    posted_time: 1,
+                    application_status: '$application.application_status',
+                    application_id: '$application._id',
+                    organization: {
+                        _id: '$org._id',
+                        name: '$org.name',
+                        logo: '$org.logo'
+                    }
+                }
+            },
+            { $sort: { _id: -1 } }
+        ]);
+        
+        res.status(200).json({
+            message: "Applied jobs retrieved successfully",
+            count: appliedJobs.length,
+            data: appliedJobs
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const changeJobApplicationStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res);
+        if (!user) return;
+
         const { application_id } = req.params;
+        const { status } = req.body; 
 
         // Validate application_id
         if (!application_id || !mongoose.Types.ObjectId.isValid(application_id)) {
@@ -144,16 +255,29 @@ export const GetJobApplicationDetails = async (req: Request, res: Response, next
         }
 
         // Check if job application exists
-        const jobApplication = await jobApplications.findById(application_id)
-            .populate("job_id")
-            .populate("user_id");
-
+        const jobApplication = await jobApplications.findById(application_id);
         if (!jobApplication) {
             res.status(404).json({ message: "Job application not found" });
             return;
         }
 
-        res.status(200).json({ data: jobApplication });
+        // Get the job that this application is for
+        const job = await jobs.findById(jobApplication.job_id);
+        if (!job) {
+            res.status(404).json({ message: "Job not found" });
+            return;
+        }
+        if (status == "Accepted" || status == "Rejected") {
+            jobApplication.resolved_at = Math.floor(Date.now() / 1000);
+        }
+        // Update the application status
+        jobApplication.application_status = status;
+        await jobApplication.save();
+
+        res.status(200).json({
+            message: "Job application status updated successfully",
+            data: jobApplication
+        });
     } catch (error) {
         next(error);
     }

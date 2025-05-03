@@ -60,7 +60,10 @@ export const getPersonalizedJobRecommendations = async (req: Request, res: Respo
         );
 
         // Build base query
-        const baseQuery: any = {};
+        const baseQuery: any = {
+            // Only show open jobs
+            job_status: "Open"
+        };
 
         // Exclude jobs from user's current organization and from organizations that blocked the user
         const excludedOrgIds = [...userOrgIds, ...blockedOrgIds];
@@ -136,8 +139,10 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
         const cursor = req.query.cursor as string || null;
         const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
         
-        // Base query - will exclude organizations that blocked the user if user is authenticated
-        let baseQuery = {};
+        // Base query - only show open jobs and exclude organizations that blocked the user if authenticated
+        let baseQuery: any = {
+            job_status: "Open"
+        };
         
         // Try to get the authenticated user (if available)
         const user = await validateTokenAndGetUser(req, res);
@@ -152,7 +157,7 @@ export const getAllJobs = async (req: Request, res: Response, next: NextFunction
             const blockedOrgIds = organizationsBlockedBy.map(org => org._id);
             
             if (blockedOrgIds.length > 0) {
-                baseQuery = { organization_id: { $nin: blockedOrgIds } };
+                baseQuery.organization_id = { $nin: blockedOrgIds };
             }
         }
 

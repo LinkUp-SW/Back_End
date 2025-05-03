@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import users from '../models/users.model.ts';
 import organizations from '../models/organizations.model.ts';
 import jobs from '../models/jobs.model.ts';
+import { calculateSecondDegreeConnections } from '../repositories/user.repository.ts'; 
 import { Response } from 'express';
 
 interface SuggestionParams {
@@ -73,29 +74,8 @@ export const getSearchSuggestions = async (
         ) 
       : [];
     
-    // Get 2nd degree connections
-    let secondDegreeConnections = new Set<string>();
-    
-    if (viewerConnections.length > 0) {
-      const firstDegreeConnectionUsers = await users.find(
-        { _id: { $in: viewerConnections.map(id => new mongoose.Types.ObjectId(id)) } },
-        { connections: 1 }
-      ).lean();
-      
-      firstDegreeConnectionUsers.forEach(connUser => {
-        if (Array.isArray(connUser.connections)) {
-          connUser.connections.forEach(secondConn => {
-            const secondConnId = typeof secondConn === 'object' && secondConn._id 
-              ? secondConn._id.toString() 
-              : typeof secondConn === 'string' ? secondConn : String(secondConn);
-            
-            if (!viewerConnections.includes(secondConnId) && secondConnId !== viewerUserId) {
-              secondDegreeConnections.add(secondConnId);
-            }
-          });
-        }
-      });
-    }
+    // Get 2nd degree connections 
+    const secondDegreeConnections = await calculateSecondDegreeConnections(viewerConnections, viewerUserId);
     
     // Update the base exclusion conditions to properly exclude users who have blocked the viewer
     const baseExclusionConditions = [
@@ -197,27 +177,49 @@ const userSuggestions = await users.aggregate([
     };
   });
     
-    // 2. Get organization suggestions
-    const organizationSuggestions = await organizations.aggregate([
-      {
-        $match: {
-          $or: [
-            { name: { $regex: escapedQuery, $options: 'i' } },
-            { industry: { $regex: escapedQuery, $options: 'i' } }
-          ]
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          category_type: 1,
-          logo: 1,
-          industry: 1
-        }
-      },
-      { $limit: limit }
-    ]);
+  const organizationSuggestions = await organizations.aggregate([
+    {
+      $match: {
+        $and: [
+          // Alternative approach to exclude organizations that have blocked the viewer
+          {
+            $or: [
+              { blocked: { $exists: false } },   // No blocked array exists
+              { blocked: { $size: 0 } },         // Empty blocked array
+              // None of the blocked items match viewer's ID
+              { 
+                $nor: [
+                  { blocked: viewerObjectId },     // Direct ObjectId match
+                  { blocked: viewerUserId },       // Direct string match
+                  { "blocked._id": viewerObjectId }, // Match in embedded object
+                  { "blocked._id": viewerUserId }  // Match in embedded object
+                ]
+              }
+            ]
+          },
+          // Original search criteria remains the same
+          {
+            $or: [
+              { name: { $regex: escapedQuery, $options: 'i' } },
+              { industry: { $regex: escapedQuery, $options: 'i' } }
+            ]
+          }
+        ]
+      }
+    },
+    // Project statement remains the same
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        category_type: 1,
+        logo: 1,
+        industry: 1,
+        blocked: 1
+      }
+    },
+    { $limit: limit * 2 }
+  ]);
     
     const processedOrgSuggestions = organizationSuggestions.map(org => ({
       type: 'organization',

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { stripe, STRIPE_PREMIUM_PRICE_ID } from '../../../config/stripe.ts';
 import users from '../../models/users.model.ts';
-import { validateTokenAndGetUser } from '../../utils/helper.ts';
+import { validateTokenAndGetUser } from '../../utils/helperFunctions.utils.ts';
 
 // Get current subscription status
 export const getSubscriptionStatus = async (req: Request, res: Response, next: NextFunction) => {
@@ -9,14 +9,66 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     const user = await validateTokenAndGetUser(req, res);
     if (!user) return;
 
-    return res.status(200).json({
-      subscription: user.subscription || { plan: 'free', status: 'active' }
-    });
+    // Create a default subscription object without period dates for free users
+    const defaultSubscription = {
+      status: 'active',
+      plan: 'free',
+      subscription_id: null,
+      customer_id: null,
+      cancel_at_period_end: false,
+      subscribed: false,
+      canceled_at: null,
+      subscription_started_at: null,
+      subscription_ends_at: null,
+      // Removed: current_period_start and current_period_end
+    };
+
+    // If user has a subscription, convert it to a plain object first
+    let subscription;
+    if (user.subscription) {
+      // Convert Mongoose document to plain object 
+      const subscriptionObj = typeof (user.subscription as any).toObject === 'function' 
+        ? (user.subscription as any).toObject() 
+        : user.subscription;
+      
+      // Create subscription object with only non-null period dates
+      subscription = { 
+        ...defaultSubscription,
+        ...subscriptionObj,
+      };
+
+      if (subscription.subscription_started_at) {
+        const startDate = new Date(subscription.subscription_started_at);
+        if (startDate instanceof Date && !isNaN(startDate.getTime())) {
+          const trialEndDate = new Date(startDate);
+          trialEndDate.setDate(startDate.getDate() + 30); 
+          subscription.subscription_ends_at = trialEndDate;
+        }
+      }
+      
+      // Remove null date fields completely rather than keeping them as null
+      if (subscription.current_period_start === null) {
+        delete subscription.current_period_start;
+      }
+      
+      if (subscription.current_period_end === null) {
+        delete subscription.current_period_end;
+      }
+    } else {
+      subscription = defaultSubscription;
+      // No need to delete fields as they're not included in defaultSubscription
+    }
+    
+    return res.status(200).json({ subscription });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+    console.error('Error in getSubscriptionStatus:', error);
     next(error);
   }
+}
 };
-
 // Create checkout session for premium subscription
 export const createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -25,7 +77,7 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
 
       const manageUrl = platform === 'web' 
       ? `${process.env.FRONTEND_URL}/payment?status={cancel}`
-      : `${process.env.APP_URL}/subscription/manage`;
+      : `${process.env.APP_URL}/?status={cancel}`;
 
       const user = await validateTokenAndGetUser(req, res);
       if (!user) return;
@@ -134,8 +186,8 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
         successUrl = `${process.env.FRONTEND_URL}/payment?status=success`
         cancelUrl = `${process.env.FRONTEND_URL}/payment?status=cancel`;
       } else if (platform === 'ios' || platform === 'android') {
-        successUrl = `${process.env.APP_URL}/subscription/success`;
-        cancelUrl = `${process.env.APP_URL}/subscription/cancel`;
+        successUrl = `${process.env.APP_URL}/?status=success`;
+        cancelUrl = `${process.env.APP_URL}/?status=cancel`;
       }
   
       // Create checkout session
@@ -158,9 +210,13 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
   
       res.status(200).json({ url: session.url });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
       console.error('Error creating checkout session:', error);
       next(error);
     }
+  }
   };
   
   // Helper function to update user subscription from Stripe data
@@ -223,9 +279,13 @@ export const cancelSubscription = async (req: Request, res: Response, next: Next
 
     res.status(200).json({ message: 'Subscription will be canceled at the end of the billing period' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error canceling subscription:', error);
     next(error);
   }
+}
 };
 
 // Resume canceled subscription
@@ -250,9 +310,13 @@ export const resumeSubscription = async (req: Request, res: Response, next: Next
 
     res.status(200).json({ message: 'Subscription resumed successfully' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error resuming subscription:', error);
     next(error);
   }
+}
 };
 
 // Get user's invoice history
@@ -280,7 +344,11 @@ export const getInvoiceHistory = async (req: Request, res: Response, next: NextF
       }))
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error getting invoice history:', error);
     next(error);
   }
+}
 };

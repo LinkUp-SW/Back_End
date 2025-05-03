@@ -4,21 +4,16 @@ import { CustomError } from '../../utils/customError.utils.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import { generateUniqueId } from '../../utils/helperFunctions.utils.ts';
 import tokenUtils from '../../utils/token.utils.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 
 const userRepo = new UserRepository();
 
 export const createAdmin = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
-
-    if (!decodedToken || !decodedToken.userId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-    }
+    let userId = await getUserIdFromToken(req, res);
+    if (!userId) return;
 
     // Check if the user is an admin
-    const currentUser = await userRepo.findByUserId(decodedToken.userId);   
+    const currentUser = await userRepo.findByUserId(userId);   
     if (!currentUser || currentUser.is_admin !== true) {
         throw new CustomError('Unauthorized: Only admins can create new admins', 403, 'UNAUTHORIZED');
     }

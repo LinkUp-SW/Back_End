@@ -72,6 +72,8 @@ export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
     email: string;
+    temp_email: string;
+    temp_email_expiry: Date;
     password: string;
     phone_number: number;
     country_code: string;
@@ -175,7 +177,7 @@ export interface usersInterface extends mongoose.Document{
     };
     activity: {
         posts: postsInterface[];
-        reposted_posts: repostsInterface[];
+        reposted_posts: postsInterface[];
         reacts:reactsInterface[];
         comments: commentsInterface[];
         media: {
@@ -184,7 +186,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     };
-    savedPosts: postsInterface[];
+    saved_posts: postsInterface[];
     status: statusEnum; 
     blocked: ConnectionRequest[];
     unblocked_users: ConnectionRequest[];
@@ -206,17 +208,19 @@ export interface usersInterface extends mongoose.Document{
         plan: string;    // 'free', 'premium'
         subscription_id: string;  // Stripe subscription ID
         customer_id: string;      // Stripe customer ID
-        current_period_start: Date;
-        current_period_end: Date;
+        current_period_start: Date | null;
+        current_period_end: Date | null;
         canceled_at?: Date;
         cancel_at_period_end: boolean;
-        subscription_started_at?: Date;
+        subscription_started_at?: Date | null; // Date when the subscription started
+        subscription_ends_at?: Date | null;
         subscribed: boolean;
     };
     is_student: boolean;
     is_verified: boolean;
     is_16_or_above: boolean;
     is_admin: boolean;
+    created_at: number;
     about?: aboutInterface;
 }
 
@@ -237,6 +241,18 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             message: (props) => `${props.value} is not a valid email!`,
         },
     },
+    temp_email: {
+        type: String,
+        required: false,
+        unique: true,
+        validate: {
+            validator: function (v: string) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid email!`,
+        },
+    },
+    temp_email_expiry: { type: Date },
     password: { type: String, required: true },
     phone_number: { type: Number },
     country_code: { type: String },
@@ -421,7 +437,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
-        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "reposts" }],
+        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
         reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
         comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
         media: [{
@@ -430,7 +446,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     },
-    savedPosts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
+    saved_posts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [
         {
@@ -476,6 +492,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         about: { type: String },
         skills: [{ type: String }],
     },
+    created_at:{ 
+        type: Number, 
+        default: () => Math.floor(Date.now() / 1000)
+    },    
     is_admin: { type: Boolean, default: false },
 });
 

@@ -15,23 +15,16 @@ export const validateTokenAndGetUser = async (req: Request, res: Response) => {
         res.status(401).json({ message: "Unauthorized" });
         return null;
     }
-
+    
     const user = await findUserByUserId(decodedToken.userId, res);
     return user;
 };
+
 export const validateTokenAndUser = async (req: Request, res: Response): Promise<{ viewerId: string,  targetUser: any } | null> => {
   try{
   // Validate token and extract user ID from the token
-  const authHeader = req.headers.authorization || "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-  const decodedToken = tokenUtils.validateToken(token) as { userId: string };
-
-  if (!decodedToken || !decodedToken.userId) {
-    res.status(401).json({ message: "Unauthorized" });
-    return null;
-  }
-
-  const viewerId = decodedToken.userId;
+  let viewerId = await getUserIdFromToken(req, res);
+  if (!viewerId) return null;
 
   // Validate the user_id parameter from the request
   const userId = await validateUserIdFromRequest(req, res);
@@ -174,4 +167,95 @@ export const handleLogoUpload = async (logo: string, existingLogoUrl?: string): 
     console.error("Error handling logo upload:", error);
     throw new Error("Failed to process logo image");
   }
+};
+
+
+export const handleResumeUpload = async (resume: string): Promise<string> => {
+  
+  try {
+    // Upload new resume to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(resume, {
+      folder: "resumes",
+      resource_type: "raw",
+      format: resume.startsWith('data:application/pdf') ? 'pdf' : 'docx',
+      public_id: `resume_${Date.now()}`,
+      overwrite: true
+    });
+    
+    return uploadResponse.secure_url;
+  } catch (error) {
+    console.error("Error handling resume upload:", error);
+    throw new Error("Failed to process resume document");
+  }
+};
+
+/**
+ * Formats company posts to include organization information in the author field
+ * @param posts Array of posts from an organization
+ * @param organization The organization data
+ * @returns Formatted posts with author field
+ */
+export const formatCompanyPosts = (posts: any[], organization: any,viewerId:string): any[] => {
+    // Get followers count
+    const followersCount = organization.followers ? organization.followers.length : 0;
+    let isFollowing = false;
+    if (organization.followers && Array.isArray(organization.followers)) {
+      // Check if viewerId exists in the followers array
+      isFollowing = organization.followers.some((follower: any) => {
+        // Handle both object with _id and direct string ID format
+        const followerId = typeof follower === 'object' && follower !== null && '_id' in follower
+          ? follower._id.toString()
+          : typeof follower === 'string' ? follower : String(follower);
+        
+        return followerId === viewerId;
+      });
+    }
+    // Transform posts to include the author field in the required format
+    return posts.map(post => {
+        // Convert to plain object to avoid mongoose document limitations
+        const postObj = typeof post.toObject === 'function' ? post.toObject() : post;
+        
+        // Add author field with organization info
+        postObj.author = {
+            first_name: organization.name,
+            last_name: " ",
+            headline: " ",
+            username: organization._id,
+            profile_picture: organization.logo,
+            followers_count: followersCount,
+            isFollowing
+        };
+        
+        return postObj;
+    });
+};
+
+export async function formatCompanyPost(posts: any,viewerId:string){
+ const organization= await organizations.findById(posts.company);
+ if (!organization){
+  return null;
+ } 
+ let isFollowing = false;
+    if (organization.followers && Array.isArray(organization.followers)) {
+      // Check if viewerId exists in the followers array
+      isFollowing = organization.followers.some((follower: any) => {
+        // Handle both object with _id and direct string ID format
+        const followerId = typeof follower === 'object' && follower !== null && '_id' in follower
+          ? follower._id.toString()
+          : typeof follower === 'string' ? follower : String(follower);
+        
+        return followerId === viewerId;
+      });
+    }
+  // Transform post to include the author field in the required format
+  return {
+          first_name: organization.name,
+          last_name: " ",
+          headline: " ",
+          username: organization._id,
+          profile_picture: organization.logo,
+          followers_count: organization.followers ? organization.followers.length : 0,
+          isFollowing
+      };
+      
 };

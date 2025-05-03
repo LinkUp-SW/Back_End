@@ -99,12 +99,13 @@ export const getPaginatedReactions = async (
   targetType: targetTypeEnum,
   cursor: number | null = 0,
   limit: number = 10,
+  viewerId: string,
   specificReaction?: string
 ): Promise<{
   reactions: any[],
-  totalCount: number,
-  reactionCounts: Record<string, number>,
-  nextCursor: number | null
+  reactions_count: number,
+  reaction_counts: Record<string, number>,
+  next_cursor: number | null
 }> => {
   try {
     // Build the match condition
@@ -142,9 +143,9 @@ export const getPaginatedReactions = async (
     if (totalCount === 0) {
       return {
         reactions: [],
-        totalCount: 0,
-        reactionCounts: {},
-        nextCursor: null
+        reactions_count: 0,
+        reaction_counts: {},
+        next_cursor: null
       };
     }
 
@@ -165,7 +166,7 @@ export const getPaginatedReactions = async (
     const userIds = results.map((reaction: any) => reaction.user_id);
     const authorMap = new Map();
        for (const userId of userIds) {
-         const authorInfo = await getFormattedAuthor(userId);
+         const authorInfo = await getFormattedAuthor(userId,viewerId);
          if (authorInfo) {
            authorMap.set(userId, authorInfo);
          }
@@ -173,7 +174,7 @@ export const getPaginatedReactions = async (
 
     // Map user details to reactions
     const reactionsWithUserDetails = results.map((reaction: any) => {
-      const author = authorMap.get(reaction.user_id.toString());
+      const author = authorMap.get(reaction.user_id);
       return {
         ...reaction,
         author
@@ -185,9 +186,9 @@ export const getPaginatedReactions = async (
 
     return {
       reactions: reactionsWithUserDetails,
-      totalCount,
-      reactionCounts,
-      nextCursor
+      reactions_count:totalCount,
+      reaction_counts:reactionCounts,
+      next_cursor:nextCursor
     };
   } catch (err) {
     if (err instanceof Error)
