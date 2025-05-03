@@ -204,7 +204,7 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
                 case contentTypeEnum.Comment:
                     const comment = await commentRepository.findById(contentRef);
                     if (comment) {
-                        const author = await getFormattedAuthor(comment.user_id.toString());
+                        const author = await getFormattedAuthor(comment.user_id.toString(), user._id!.toString());
                         // Find the post this comment belongs to
                         const parentPost = await postRepository.findByPostId(comment.post_id.toString());
                         

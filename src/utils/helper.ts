@@ -4,7 +4,6 @@ import cloudinary from "../../config/cloudinary.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
 import Organization, { categoryTypeEnum } from "../models/organizations.model.ts";
 import organizations from "../models/organizations.model.ts";
-import cloudinary from "../../config/cloudinary.ts";
 import { extractPublicId } from "../services/cloudinary.service.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
