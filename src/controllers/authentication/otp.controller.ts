@@ -75,7 +75,7 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
   if (update) {
     const userId = await getUserIdFromToken(req, res);
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    user = await userRepository.findByUserId(userId );
+    user = await userRepository.findByUserId(userId);
     if (!user) {
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
     }
@@ -85,18 +85,14 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
     }
     await userRepository.updateEmail(user.user_id, tempEmail.email);
     await userRepository.deleteTempEmail(user.user_id);
+    user.is_verified = true;
+    await user.save();
+    return res.status(200).json({ message: 'OTP verified successfully and email updated', isVerified: true });
   }
 
   user = await userRepository.findByEmail(email);
   if (!user) {
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
-  }
-  
-  user.is_verified = true;
-  await user.save();
-
-  if (update) {
-    return res.status(200).json({ message: 'OTP verified successfully and email updated', isVerified: true });
   }
 
 
