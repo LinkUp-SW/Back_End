@@ -4,9 +4,9 @@ import { organizationsInterface } from "./organizations.model.ts";
 
 export enum jobTypeEnum{
     full_time="Full-time",
-   part_time ="Part-time",
-   contract ="Contract",
-   temporary ="Temporary",
+    part_time ="Part-time",
+    contract ="Contract",
+    temporary ="Temporary",
     other ="Other",
     volunteer="Volunteer",
     internship="Internship"
@@ -31,12 +31,9 @@ export enum experienceLevelEnum{
     Executive = "Executive",
 }
 
-export enum howDidYouHearAboutUsEnum{
-    friend = "From a friend",
-    colleague = "From a colleague",
-    website = "From website",
-    linkup = "From linkup",
-    ad = "From an ad"
+export enum jobStatusEnum{
+    open = "Open",
+    closed = "Closed",
 }
 
 export interface jobsInterface extends mongoose.Document{
@@ -54,18 +51,10 @@ export interface jobsInterface extends mongoose.Document{
     targetted_skills: string[];
     receive_applicants_by: receiveApplicantsByEnum;
     receiving_method: string;
-    screening_questions: {
-        questions: string;
-        answers: string[];
-        ideal_answer: string;
-        is_must_qualification: boolean;
-        rejection_message?: string;
-        is_filtererd: boolean;
-    };
-    how_did_you_hear_about_us: howDidYouHearAboutUsEnum;
     salary: number;
     posted_time: Date;
     applied_applications: jobApplicationsInterface[];
+    job_status: jobStatusEnum;
 }
 
 const jobsSchema = new Schema<jobsInterface>({
@@ -83,18 +72,10 @@ const jobsSchema = new Schema<jobsInterface>({
     targetted_skills: [{ type: String }],
     receive_applicants_by: { type: String, enum: Object.values(receiveApplicantsByEnum) },
     receiving_method: { type: String },
-    screening_questions: {
-        questions: { type: String },
-        answers: [{ type: String }],
-        ideal_answer: { type: String },
-        is_must_qualification: { type: Boolean },
-        rejection_message: { type: String },
-        is_filtererd: { type: Boolean },
-    },
-    how_did_you_hear_about_us: { type: String, enum: Object.values(howDidYouHearAboutUsEnum) },
     salary: { type: Number },
     posted_time: { type: Date, default: Date.now },
     applied_applications: [{ type: Schema.Types.ObjectId, ref: "jobApplications" }],
+    job_status: { type: String, enum: Object.values(jobStatusEnum), default: jobStatusEnum.open },
 });
 
 const jobs = mongoose.model<jobsInterface>('jobs', jobsSchema);

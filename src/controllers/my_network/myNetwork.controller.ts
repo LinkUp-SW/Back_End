@@ -537,7 +537,7 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       );
   
       // Add the target user's `_id` to the viewer's following list if not already present
-      if (!viewerUser.following.some((followingId: mongoose.Types.ObjectId) => followingId === targetUser._id.toString())) {
+      if (!viewerUser.following.some((followingId: mongoose.Types.ObjectId) => followingId.toString() === targetUser._id.toString())) {
         viewerUser.following.push(targetUser._id);
       }
   

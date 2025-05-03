@@ -122,6 +122,11 @@ export const checkProfileAccess = async (
       return { accessGranted: true };
     }
 
+    const isConnectionsOnlyProfile = targetUser.privacy_settings?.flag_account_status === "Connections only"
+    if (isConnectionsOnlyProfile) {
+      return { accessGranted: true, reason: "Cnnections Only" };
+    };
+
     // Deny access if the profile is private
     return { accessGranted: false, reason: "private" };
   } catch (error) {
@@ -144,7 +149,7 @@ export const getUserPostsLimited = async (userId: string): Promise<any[]> => {
           model: 'posts', // Reference the posts collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { posts?: any[] } };
 
   if (!user || !user.activity || !user.activity.posts) return [];
   return user.activity.posts.slice(0, 10); // Return the 10 most recent posts with full data
@@ -164,7 +169,7 @@ export const getUserCommentsLimited = async (userId: string): Promise<any[]> => 
           model: 'comments', // Reference the comments collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { comments?: any[] } };
 
   if (!user || !user.activity || !user.activity.comments) return [];
   return user.activity.comments.slice(0, 10); // Return the 10 most recent comments with full data
@@ -185,7 +190,7 @@ export const getUserReactedPostsLimited = async (userId: string): Promise<any[]>
           model: 'posts', // Reference the posts collection
           options: { sort: { date: -1 } }, // Sort by date in descending order
       })
-      .lean();
+      .lean() as { activity?: { reacted_posts?: any[] } };
 
   if (!user || !user.activity || !user.activity.reacted_posts) return [];
   return user.activity.reacted_posts.slice(0, 10); // Return the 10 most recent reacted posts with full data
@@ -450,4 +455,52 @@ export const transformSkillsToObjects = (user: any, skillNames: string[]): any[]
       name: skillName
     };
   }).filter(Boolean);
+};
+
+/**
+ * Finds a user by MongoDB _id.
+ * Returns the user document if found; otherwise sends a 404 response and returns null.
+ */
+export const findUserById = async (id: string, res: Response) => {
+  try {
+      // Validate that the id is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+          console.log(`Invalid MongoDB ID format: ${id}`);
+          res.status(400).json({ message: "Invalid user ID format" });
+          return null;
+      }
+      
+      // Query the database using the MongoDB `_id` field
+      const user = await Users.findById(id);
+      
+      if (!user) {
+
+          res.status(404).json({ message: "User not found" });
+          return null;
+      }
+      return user;
+  } catch (error) {
+      console.error("Error finding user by MongoDB ID:", error);
+      res.status(500).json({ message: "Error finding user", error });
+      return null;
+  }
+};
+
+/**
+ * Finds a user by MongoDB _id without sending HTTP responses.
+ * Returns the user document if found; otherwise returns null.
+ */
+export const findUserByIdSilent = async (id: string) => {
+  try {
+    // Validate that the id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    // Query the database using the MongoDB `_id` field
+    const user = await Users.findById(id);
+    return user;  // Returns user or null
+  } catch (error) {
+    console.error("Error finding user by MongoDB ID:", error);
+    return null;
+  }
 };

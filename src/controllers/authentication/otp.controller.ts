@@ -4,6 +4,7 @@ import asyncHandler from '../../middleware/asyncHandler.ts';
 import { CustomError } from '../../utils/customError.utils.ts';
 import tokenUtils  from '../../utils/token.utils.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 
 const userRepository = new UserRepository();
 
@@ -41,7 +42,7 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
 });
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
-  let { otp, email } = req.body;
+  let { otp, email, update } = req.body;
   email = email.toLowerCase();
   
   if (!otp) {
@@ -68,13 +69,32 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
 
   req.session.otp = undefined;
   
-  const user = await userRepository.findByEmail(email);
+  let user: any;
+  
+
+  if (update) {
+    const userId = await getUserIdFromToken(req, res);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    user = await userRepository.findByUserId(userId);
+    if (!user) {
+      throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
+    }
+    const tempEmail = await userRepository.findByTempEmail(email);
+    if (!tempEmail) {
+      throw new CustomError('Temporary email not found', 404, 'TEMP_EMAIL_NOT_FOUND');
+    }
+    await userRepository.updateEmail(user.user_id, tempEmail.temp_email);
+    await userRepository.deleteTempEmail(user.user_id);
+    user.is_verified = true;
+    await user.save();
+    return res.status(200).json({ message: 'OTP verified successfully and email updated', isVerified: true });
+  }
+
+  user = await userRepository.findByEmail(email);
   if (!user) {
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
   }
 
-  user.is_verified = true;
-  await user.save();
 
   res.cookie("linkup_user_id", user.user_id, {
       maxAge: 3600000,

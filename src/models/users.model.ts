@@ -7,6 +7,7 @@ import { commentsInterface } from "./comments.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
 import bcrypt from "bcrypt";
+import { reactsInterface } from "./reactions.model.ts";
 
 export enum sexEnum{
     male="Male",
@@ -71,6 +72,8 @@ export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
     email: string;
+    temp_email: string;
+    temp_email_expiry: Date;
     password: string;
     phone_number: number;
     country_code: string;
@@ -130,7 +133,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     }[];
-    organizations: organizationsInterface;
+    organizations: organizationsInterface[];
     skills: {
         _id: string;
         name: string;
@@ -174,8 +177,8 @@ export interface usersInterface extends mongoose.Document{
     };
     activity: {
         posts: postsInterface[];
-        reposted_posts: repostsInterface[];
-        reacted_posts:postsInterface[];
+        reposted_posts: postsInterface[];
+        reacts:reactsInterface[];
         comments: commentsInterface[];
         media: {
             media: string,
@@ -200,9 +203,18 @@ export interface usersInterface extends mongoose.Document{
     applied_jobs: jobsInterface[];
     saved_jobs: jobsInterface[];
     sex: sexEnum;
-    subscription:{
-        subscribed: boolean,
-        subscription_started_at: Date
+    subscription: {
+        status: string;  // 'active', 'canceled', 'trialing', 'past_due'
+        plan: string;    // 'free', 'premium'
+        subscription_id: string;  // Stripe subscription ID
+        customer_id: string;      // Stripe customer ID
+        current_period_start: Date | null;
+        current_period_end: Date | null;
+        canceled_at?: Date;
+        cancel_at_period_end: boolean;
+        subscription_started_at?: Date | null; // Date when the subscription started
+        subscription_ends_at?: Date | null;
+        subscribed: boolean;
     };
     is_student: boolean;
     is_verified: boolean;
@@ -229,6 +241,18 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             message: (props) => `${props.value} is not a valid email!`,
         },
     },
+    temp_email: {
+        type: String,
+        required: false,
+        unique: true,
+        validate: {
+            validator: function (v: string) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid email!`,
+        },
+    },
+    temp_email_expiry: { type: Date },
     password: { type: String, required: true },
     phone_number: { type: Number },
     country_code: { type: String },
@@ -380,8 +404,8 @@ const usersSchema = new mongoose.Schema<usersInterface>({
           date: { type: Date },
         },
       ],
-      followers: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
-      following: [{ type: Schema.Types.ObjectId, ref: "users" }], // Reference to the user's ObjectId
+      followers: [{ type: Schema.Types.ObjectId, ref: "users", unique: true }], // Reference to the user's ObjectId
+      following: [{ type: Schema.Types.ObjectId, ref: "users", unique: true }], // Reference to the user's ObjectId
       privacy_settings: {
         flag_account_status: { 
             type: String, 
@@ -413,8 +437,8 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
-        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "reposts" }],
-        reacted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
+        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
+        reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
         comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
         media: [{
             media: { type: String },
@@ -450,8 +474,16 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     saved_jobs: [{ type: Schema.Types.ObjectId, ref: "jobs" }],
     sex: { type: String, enum: Object.values(sexEnum)},
     subscription: {
-        subscribed: { type: Boolean },
+        status: { type: String, enum: ['active', 'canceled', 'trialing', 'past_due'], default: 'active' },
+        plan: { type: String, enum: ['free', 'premium'], default: 'free' },
+        subscription_id: { type: String },
+        customer_id: { type: String },
+        current_period_start: { type: Date },
+        current_period_end: { type: Date },
+        canceled_at: { type: Date },
+        cancel_at_period_end: { type: Boolean, default: false },
         subscription_started_at: { type: Date },
+        subscribed: { type: Boolean, default: false },
     },
     is_student: { type: Boolean},
     is_verified: { type: Boolean},
