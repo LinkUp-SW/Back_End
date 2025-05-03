@@ -12,7 +12,7 @@ const isProduction = process.env.NODE_ENV === "production";
 /**
  * Local Email or Phone/Password Login
  */
-const login = asyncHandler(
+const login = asyncHandler(   
   async (
     req: Request,
     res: Response,
@@ -35,7 +35,7 @@ const login = asyncHandler(
       maxAge: 3600000, // 1 hour,
       sameSite: "none",
       secure: true,
-      domain: isProduction? process.env.DOMAIN: undefined,
+      domain: isProduction? process.env.DOMAIN: undefined, 
     });
     res.cookie("linkup_user_id", user.user_id, {
       maxAge: 3600000,
@@ -53,6 +53,7 @@ const login = asyncHandler(
           id: user.user_id,
           email: user.email,
           isVerified: user.is_verified,
+          isAdmin: user.is_admin
         },
       }); // 1 hour expiration
   }

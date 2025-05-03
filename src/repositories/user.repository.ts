@@ -55,8 +55,7 @@ export class UserRepository {
       },
       activity: {
         posts: [],
-        reposted_posts: [],
-        reacted_posts: [],
+        reacts: [],
         comments: [],
         media: [],
       },
@@ -166,7 +165,6 @@ export class UserRepository {
       },
       activity: {
         posts: [],
-        reposted_posts: [],
         reacted_posts: [],
         comments: [],
         media: []
@@ -267,7 +265,6 @@ export class UserRepository {
       },
       activity: {
         posts: [],
-        reposted_posts: [],
         reacted_posts: [],
         comments: [],
         media: []
@@ -332,7 +329,7 @@ export class UserRepository {
     await mongoose.model('comments').deleteMany({ user_id: userId });
     
     // Delete all reactions by this user
-    await mongoose.model('reactions').deleteMany({ user_id: userId });
+    await mongoose.model('reacts').deleteMany({ user_id: userId });
     
     // Remove user reactions from other users' activity
     await User.updateMany(
@@ -349,7 +346,7 @@ export class UserRepository {
     // Delete all comments and reactions on the user's posts
     for (const postId of userPostIds) {
       await mongoose.model('comments').deleteMany({ post_id: postId });
-      await mongoose.model('reactions').deleteMany({ target_id: postId });
+      await mongoose.model('reacts').deleteMany({ target_id: postId });
     }
     
     // Delete all posts by this user
@@ -676,14 +673,6 @@ export const formatConnectionData = async (
 /**
  * Interface for user connection documents
  */
-interface UserConnectionsDocument {
-  _id: mongoose.Types.ObjectId;
-  connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  sent_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  received_connections?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  followers?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-  following?: Array<{ _id: mongoose.Types.ObjectId; date: Date }>;
-}
 
 /**
  * Fetches paginated connections using cursor-based pagination.
@@ -701,7 +690,7 @@ export const getPaginatedConnectionsFollowers = async (
 ): Promise<{ connections: any[]; nextCursor: string | null }> => {
   try {
     // Find the user by ID and retrieve the specified connection type
-    const user = await Users.findById(userId, { [connectionType]: 1 }).lean() ;
+    const user = await Users.findById(userId, { [connectionType]: 1 }).lean();
     if (!user || !user[connectionType]) {
       return { connections: [], nextCursor: null };
     }

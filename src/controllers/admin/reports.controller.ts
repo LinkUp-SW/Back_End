@@ -282,11 +282,19 @@ export const getContentReports = asyncHandler(async (req: Request, res: Response
 
 export const resolveReport = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     try{
-        let userId = await getUserIdFromToken(req,res);
+        let userId = await getUserIdFromToken(req, res);
         if (!userId) return;
-        const user = await findUserByUserId(userId,res);
+        
+        const user = await findUserByUserId(userId, res);
         if (!user) return;
-
+        
+        // Check if user is admin
+        if (!user.is_admin) {
+            return res.status(403).json({ 
+                message: 'Access denied. Admin privileges required',
+                success: false 
+            });
+        }
 
         const { contentRef, contentType } = req.params;
         

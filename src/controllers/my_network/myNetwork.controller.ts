@@ -1,10 +1,19 @@
 import { Request, Response } from "express";
 import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
 
+import { webSocketService } from "../../../index.ts";
+
+import { NotificationType } from "../../models/notifications.model.ts";
+import conversations from "../../models/conversations.model.ts";
+
+
+
 import { getFormattedUserList, formatConnectionData, getPaginatedConnectionsFollowers, handleProfileAccess } from "../../repositories/user.repository.ts";
 
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
+
+
 
 export const followUser = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -348,7 +357,18 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
           await viewerUser.save();
         }
       }
+
+      let msgNotificationData = {
+        senderId: viewerUser.user_id,
+        recipientId: targetUser.user_id,
+        type: NotificationType.CONNECTION_REQUEST,
+        referenceId: targetUser._id,  
+      }
   
+      await webSocketService.sendNotification(
+        msgNotificationData
+      );
+
       res.status(200).json({ message: "Connection request sent successfully." });
     } catch (error) {
       if (error instanceof Error && error.message === 'Invalid or expired token') {
@@ -846,6 +866,23 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
       targetUser.received_connections = targetUser.received_connections.filter(
         (connection: any) => connection._id.toString() !== (viewerUser._id as mongoose.Types.ObjectId).toString()
       );
+
+      const conversationsToUpdate = await conversations.find({
+        $or: [
+          { user1_id: viewerUser.user_id, user2_id: targetUser.user_id },
+          { user1_id: targetUser.user_id, user2_id: viewerUser.user_id }
+        ]
+      });
+  
+      // Update blocking status for each conversation
+      for (const conversation of conversationsToUpdate) {
+        if (conversation.user1_id === viewerUser.user_id) {
+          conversation.is_blocked_by_user1 = true;
+        } else {
+          conversation.is_blocked_by_user2 = true;
+        }
+        await conversation.save();
+      }
   
       // Save the updated documents
       await viewerUser.save();
@@ -914,6 +951,24 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
         _id: targetUser._id,
         date: new Date(),
       });
+
+      // Update conversation blocking status - find all conversations between the users
+    const conversationsToUpdate = await conversations.find({
+      $or: [
+        { user1_id: viewerUser.user_id, user2_id: targetUser.user_id },
+        { user1_id: targetUser.user_id, user2_id: viewerUser.user_id }
+      ]
+    });
+
+    // Remove blocking flag for each conversation
+    for (const conversation of conversationsToUpdate) {
+      if (conversation.user1_id === viewerUser.user_id) {
+        conversation.is_blocked_by_user1 = false;
+      } else {
+        conversation.is_blocked_by_user2 = false;
+      }
+      await conversation.save();
+    }
   
       // Save the updated document
       await viewerUser.save();

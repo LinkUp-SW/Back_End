@@ -87,14 +87,7 @@ const createPost = async (req: Request, res: Response): Promise<Response | void>
         );
         await newPost.save();
         
-        if(!(postType === postTypeEnum.standard) && originalPost){
-            originalPost.reposts = originalPost.reposts || [];
-            originalPost.reposts.push(newPost._id as postsInterface);
-            await originalPost.save();
-            user.activity.reposted_posts.push(newPost);
-        }else{
-            user.activity.posts.push(newPost);
-        }
+        user.activity.posts.push(newPost);
         await user.save();
         return res.status(200).json({message:'Post successfully created', postId:newPost._id,postType })
     } catch (error) {

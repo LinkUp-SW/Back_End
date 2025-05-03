@@ -585,3 +585,47 @@ export const getUserLicense = async (req: Request, res: Response): Promise<void>
   }
 };
 
+
+/**
+ * Checks if the authenticated user is the same as the specified user
+ * Used for quick identity verification in frontend permission handling
+ * 
+ * @route GET /api/v1/users/:userId/is-me
+ * @param req - Express request object
+ * @param res - Express response object
+ */
+export const checkIsMe = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Get the current user's ID from the token
+    const currentUserId = await getUserIdFromToken(req, res);
+    if (!currentUserId) return; // getUserIdFromToken already sends error response
+    
+    // Get the target user's ID from the request parameters
+    const targetUserId = req.params.user_id;
+    if (!targetUserId) {
+      res.status(400).json({ message: "User ID parameter is required" });
+      return;
+    }
+    
+    // Find the target user to validate it exists
+    const targetUser = await findUserByUserId(targetUserId, res);
+    if (!targetUser) return; 
+    
+    const isMe = currentUserId === targetUserId;
+    
+    // Return the result
+    res.status(200).json({ 
+      is_me: isMe,
+      status: isMe ? "self" : "other"
+    });
+    
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
+      console.error("Error checking user identity:", error);
+      res.status(500).json({ message: "Error checking user identity", error });
+    }
+  }
+};
+

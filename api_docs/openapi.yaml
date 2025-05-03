@@ -10,15 +10,11 @@ servers:
     description: Development server
 paths:
   /auth/login:
-  /auth/login:
     post:
       tags:
         - Auth
       summary: Logs in a user (Local)
-      summary: Logs in a user (Local)
       description: >
-        Authenticates a user using email and password. On successful authentication, a JWT token is generated,
-        set as an HTTP-only cookie, and user details are returned.
         Authenticates a user using email and password. On successful authentication, a JWT token is generated,
         set as an HTTP-only cookie, and user details are returned.
       requestBody:
@@ -11889,6 +11885,587 @@ paths:
         '500':
           description: Server error
 
+  /api/v1/user/{user_id}/is-me:
+    get:
+      tags:
+        - User Profile
+      summary: Check if authenticated user matches specified user
+      description: >
+        Determines if the currently authenticated user is the same as the specified user.
+        This is a lightweight endpoint for quick identity verification in frontend permission handling.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to check against the authenticated user
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: JWT Bearer token for authentication
+      responses:
+        '200':
+          description: Successfully checked user identity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Whether the authenticated user is the same as the specified user
+                    example: true
+                  status:
+                    type: string
+                    enum: [self, other]
+                    description: Status indicator of the relationship
+                    example: "self"
+        '400':
+          description: Missing required parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User ID parameter is required"
+        '401':
+          description: Invalid or expired authentication token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error checking user identity"
+                  error:
+                    type: string
+                    example: "Internal server error"
+  /api/v1/admin/analytics:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get platform analytics data
+      description: >
+        Retrieves detailed analytics data for visualizing platform metrics over time.
+        Supports filtering by metric type and time period with different time intervals
+        (daily, weekly, monthly) automatically selected based on the period length.
+        The data returned is structured for direct use with frontend charting libraries.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: periodParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["7days", "30days", "90days", "1year"]
+            default: "30days"
+          description: Time period for data analysis
+          example: "30days"
+        - name: metricParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["all", "users", "content", "engagement", "moderation", "jobs"]
+            default: "all"
+          description: Type of metrics to retrieve
+          example: "all"
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Platform analytics data retrieved successfully"
+                  period:
+                    type: string
+                    example: "30days"
+                  interval:
+                    type: string
+                    enum: ["day", "week", "month"]
+                    example: "day"
+                  data:
+                    type: object
+                    properties:
+                      userGrowth:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                              example: "2025-04-15"
+                            count:
+                              type: integer
+                              example: 42
+                      contentCreation:
+                        type: object
+                        properties:
+                          posts:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 67
+                      engagementMetrics:
+                        type: object
+                        properties:
+                          reactions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                type:
+                                  type: string
+                                  example: "like"
+                                count:
+                                  type: integer
+                                  example: 128
+                          connections:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 35
+                          comments:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 56
+                      moderationMetrics:
+                        type: object
+                        properties:
+                          reportsCreated:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 12
+                          reportsResolved:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 9
+                                avgResolutionHours:
+                                  type: number
+                                  example: 3.5
+                      jobMetrics:
+                        type: object
+                        properties:
+                          jobsPosted:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 15
+                          applicationOutcomes:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                status:
+                                  type: string
+                                  example: "Accepted"
+                                count:
+                                  type: integer
+                                  example: 7
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid metric parameter. Must be one of: all, users, content, engagement, moderation, jobs"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error getting platform analytics data"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
+  /api/v1/admin/users:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get paginated list of users
+      description: >
+        Retrieves a paginated list of all users with basic profile information.
+        Users are sorted by creation date (newest first). This endpoint is restricted
+        to administrators and includes short IDs for reference.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor (number of users to skip)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Number of users to return per page (maximum 50)
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Users retrieved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            user_id:
+                              type: string
+                              example: "john-doe123"
+                            short_id:
+                              type: string
+                              example: "USER0c85"
+                            first_name:
+                              type: string
+                              example: "John"
+                            last_name:
+                              type: string
+                              example: "Doe"
+                            email:
+                              type: string
+                              example: "john.doe@example.com"
+                            profile_picture:
+                              type: string
+                              example: "https://example.com/profile_photos/user123.jpg"
+                            is_admin:
+                              type: boolean
+                              example: false
+                            created_at:
+                              type: string
+                              format: date-time
+                              example: "2023-04-15T09:30:00Z"
+                      total_count:
+                        type: integer
+                        example: 153
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        example: 10
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Limit cannot exceed 50 users per request"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error fetching users"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
+  /api/v1/admin/delete/{userId}:
+    delete:
+      tags:
+        - Admin Dashboard
+      summary: Delete a user
+      description: >
+        Permanently deletes a user and all associated data including posts, comments,
+        reactions, and connections. This action cannot be undone. Only administrators
+        can delete users, and admins cannot delete themselves or other admins.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to delete
+          example: "60d21b4667d0d8992e610c85"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        example: "john-doe123"
+                      email:
+                        type: string
+                        example: "john.doe@example.com"
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User ID is required"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges or attempting to delete an admin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot delete yourself"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error deleting user"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
 components:
   securitySchemes:
     bearerAuth:

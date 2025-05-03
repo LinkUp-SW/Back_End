@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import tokenUtils from "../utils/token.utils.ts";
+import cloudinary from "../../config/cloudinary.ts";
 import { validateUserIdFromRequest, findUserByUserId, checkProfileAccess  } from "../utils/database.helper.ts";
 import Organization, { categoryTypeEnum } from "../models/organizations.model.ts";
 import organizations from "../models/organizations.model.ts";
-import cloudinary from "../../config/cloudinary.ts";
 import { extractPublicId } from "../services/cloudinary.service.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
@@ -72,6 +72,20 @@ export const validateFileUpload = (req: Request, res: Response): string | null =
   return profilePictureUrl;
 };
 
+
+export const uploadMedia = async (file: string, folder = 'messaging_app') => {
+  try {
+    const result = await cloudinary.uploader.upload(file, {
+      folder,
+      resource_type: 'auto'
+    });
+    console.log('Cloudinary upload result:', result);
+    return { url: result.secure_url, type: result.format };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw new Error('Failed to upload media');
+  }
+};
 /**
  * Search for organizations of a specific category type
  * @param query The search query
@@ -223,7 +237,7 @@ export const formatCompanyPosts = (posts: any[], organization: any,viewerId:stri
             username: organization._id,
             profile_picture: organization.logo,
             followers_count: followersCount,
-            isFollowing
+            is_following:isFollowing
         };
         
         return postObj;
@@ -255,7 +269,7 @@ export async function formatCompanyPost(posts: any,viewerId:string){
           username: organization._id,
           profile_picture: organization.logo,
           followers_count: organization.followers ? organization.followers.length : 0,
-          isFollowing
+          is_following:isFollowing
       };
       
 };

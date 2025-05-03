@@ -206,7 +206,7 @@ export const getReactionsForTarget = async (req: Request, res: Response): Promis
         default:
             return res.status(400).json({ error: "Invalid target type" });
     }
-    const result = await getPaginatedReactions(targetId,target_type,cursor,limit,specificReaction)
+    const result = await getPaginatedReactions(targetId,target_type,cursor,limit,user._id as string,specificReaction)
 
     return res.status(200).json({message:'reactions successfully retrieved',reactions:result })
 }catch (error) {
