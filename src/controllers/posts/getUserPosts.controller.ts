@@ -36,7 +36,10 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         const fetchLimit = willNeedFiltering ? limit * 2 : limit; // Fetch more if we'll filter
         
         // Fetch posts with the potentially increased limit
-        const displayedUserPosts = [...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id);
+        const displayedUserPosts = [
+            ...[...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id),
+            ...[...targetUser.activity.reposted_posts || []].reverse().map((repost: postsInterface) => repost._id)
+        ].filter(Boolean);
         const { posts: initialPostsData, next_cursor: initialnext_cursor } = 
             await getPostsFromPostIdsCursorBased(displayedUserPosts as string[], cursor, fetchLimit,viewerUser._id as string);
         
@@ -77,9 +80,11 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
             finalPosts = finalPosts.slice(0, limit);
         }
 
+        const sortedPosts = [...finalPosts].sort((a, b) => b.date - a.date);
+
         // Enhance posts with reactions data before returning
         const enhancedPosts = await enhancePosts(
-            finalPosts,
+            sortedPosts,
             viewerUser._id!.toString(), 
             viewerUser.saved_posts
         );
