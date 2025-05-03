@@ -4,6 +4,7 @@ import asyncHandler from '../../middleware/asyncHandler.ts';
 import { CustomError } from '../../utils/customError.utils.ts';
 import tokenUtils  from '../../utils/token.utils.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
+import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
 
 const userRepository = new UserRepository();
 
@@ -72,11 +73,13 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
   
 
   if (update) {
-    user = await userRepository.findByEmail(email);
+    const userId = await getUserIdFromToken(req, res);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+    user = await userRepository.findByUserId(userId );
     if (!user) {
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
     }
-    const tempEmail = await userRepository.findByTempEmail(user.user_id);
+    const tempEmail = await userRepository.findByTempEmail(email);
     if (!tempEmail) {
       throw new CustomError('Temporary email not found', 404, 'TEMP_EMAIL_NOT_FOUND');
     }
