@@ -168,6 +168,7 @@ export class ReportRepository {
                         content_ref: { $first: "$content_ref" },
                         content_type: { $first: "$content_type" },
                         status: { $first: "$status" },
+                        admin_action:{ $first: "$admin_action" },
                         report_count: { $sum: 1 }
                     }
                 },
@@ -195,7 +196,7 @@ export class ReportRepository {
                     reasons: item.reasons, // Array of all reasons for this content
                     created_at: item.latest_created_at, // Most recent report time
                     status: item.status,
-                    admin_action: 'none', // Default since we're grouping multiple reports
+                    admin_action: item.admin_action,
                     report_count: item.report_count
                 };
             });;
