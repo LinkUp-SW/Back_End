@@ -39,7 +39,7 @@ const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<R
   }
 
   //creating a temp object in the database to store the new email
-  const tempEmail = await userRepository.createTempEmail(decodedToken.userId, email);
+  const tempEmail = await userRepository.createTempEmail(userId, email);
   if (!tempEmail) {
     throw new CustomError('Failed to create temp email', 500, 'TEMP_EMAIL_CREATION_FAILED');
   }
