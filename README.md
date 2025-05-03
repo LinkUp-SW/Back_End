@@ -3,6 +3,48 @@
 ## Overview
 The **Back_End** repository is the backend service for the LinkUp-SW project. It powers core functionalities such as user authentication, real-time messaging, file uploads, and database management. Built with **Node.js** , **Express** and **TypeScript**.
 
+## 🚀 What's New in v2.0 - May 2025
+We're excited to announce a major update to our backend with several new features and improvements:
+
+### Enhanced Privacy & User Control
+- **Comprehensive Privacy Settings**:
+  - Profile visibility controls (public, private, connections-only)
+  - Invitation request preferences
+  - Follow settings and primary action controls
+  - Messaging request filters
+  - Read receipts toggle
+
+### Advanced Networking
+- **Intelligent Connection Features**:
+  - "People You May Know" suggestion algorithm
+  - Smart search suggestions based on work history and connections
+  - First and second-degree connection identification
+
+### Subscription Services
+- **Premium Features**:
+  - Stripe integration for subscription management
+  - Invoice history and payment tracking
+  - Premium content access controls
+
+### Organization Profiles
+- **Company Ecosystem**:
+  - Dedicated company profiles with settings management
+  - Company job postings and applications
+  - Organization-specific content and posts
+
+### Job Platform Enhancements
+- **Advanced Job Features**:
+  - Sophisticated job application system
+  - Job filtering and search capabilities
+  - Saved jobs functionality
+
+### Social Engagement Improvements
+- **Rich Media Support**:
+  - Enhanced post creation with media attachments
+  - Comment threading with reactions
+  - Tagging capabilities in posts and comments
+  - Post visibility controls
+
 ## Features
 - **Authentication**:
   - Secure user authentication using **JWT** and **Google OAuth**.
@@ -19,6 +61,8 @@ The **Back_End** repository is the backend service for the LinkUp-SW project. It
 - **API Documentation**:
   - OpenAPI-compliant documentation with **Swagger UI**.
   - Easy-to-use interface for testing APIs.
+  1. Start the server with `npm run dev`
+  2. Open `http://localhost:3000/api-docs` in your browser
 - **CI/CD**:
   - Automated build and deployment pipelines using **Jenkins**.
   - Notifications for build success or failure.
@@ -45,87 +89,30 @@ src/                     # Main source code
   ├── scripts/           # Utility scripts (e.g., database seeding)
   ├── services/          # Core business logic
   ├── types/             # TypeScript type definitions
-  ├── utils/             # Utility functions
+  ├── utils/             # Utility functions 
 ```
-
-## Installation
-
-### Prerequisites
-- **Node.js** (v16 or higher)
-- **npm** (v8 or higher)
-- **MongoDB** (local or cloud instance)
-- **Cloudinary** account for file uploads
-
-### Steps
-1. Clone the repository:
-   ```bash
+## Installation and Setup
+1. Clone the repository
+  ```bash
    git clone https://github.com/LinkUp-SW/Back_End.git
    cd Back_End
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-   - Create a `.env` file in the root directory.
-
-4. Run the application:
-   ```bash
-   npm start
-   ```
-
-## Scripts
-- **Start the server**:
-  ```bash
-  npm start
   ```
-- **Run in development mode**:
+2. Install dependencies
   ```bash
-  npm run dev
+    npm install
   ```
-- **Run tests**:
+3. Create a .env file
   ```bash
-  npm test
+    cp .env.example .env
   ```
-- **Build the project**:
+4. Start the development server
   ```bash
-  npm run build
+    npm run dev
   ```
 
-## API Documentation
-The API documentation is available via **Swagger UI**. After starting the server, visit:
-```
-http://localhost:<PORT>/api-docs
-```
-
-## Testing
-The project uses **Jest** for unit and integration testing. Test files are located in the `src/__tests__/` directory.
-
-Run tests with:
-```bash
-npm test
-```
-
-## CI/CD Pipeline
-The project uses **Jenkins** for continuous integration and deployment. The pipeline is defined in the `Jenkinsfile` and includes the following stages:
-1. **Checkout**: Pulls the latest code from the repository.
-2. **Install Dependencies**: Installs all required packages.
-3. **Build**: Compiles the TypeScript code.
-4. **Post-Build Notifications**: Sends success or failure notifications to GitHub.
-
-## Contributing
-We welcome contributions to the project! To contribute:
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Commit your changes and submit a pull request.
-
-## License
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
 For questions or support, please contact the LinkUp-SW team:
-- **Email**: linkup.backend.team@gmail.com
-- **GitHub**: [LinkUp-SW](https://github.com/LinkUp-SW)
-```
+- Email: linkup.backend.team@gmail.com
+- GitHub: LinkUp-SW
+

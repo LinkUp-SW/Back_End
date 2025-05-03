@@ -6,6 +6,7 @@ import { generateUniqueId, isEmailTaken } from '../../utils/helperFunctions.util
 import tokenFunctionalities from '../../utils/token.utils.ts';
 import { JWT_CONFIG } from '../../../config/jwt.config.ts';
 
+const isProduction = process.env.NODE_ENV === "production";
 
 const verifyEmail = asyncHandler(
   async (req: Request, res: Response, next: NextFunction): Promise<Response> => {
@@ -89,15 +90,19 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
         userID: updatedUser.user_id,
       });
 
-      // Set cookies and return response
       res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
         httpOnly: JWT_CONFIG.HTTP_ONLY,
-        maxAge: 3600000, // 1 hour
+        maxAge: 3600000, // 1 hour,
+        sameSite: "none",
+        secure: true,
+        domain: isProduction? process.env.DOMAIN: undefined,
       });
-
       res.cookie("linkup_user_id", updatedUser.user_id, {
         maxAge: 3600000,
         httpOnly: false,
+        sameSite: "none",
+        secure: true,
+        domain: isProduction? process.env.DOMAIN: undefined,
       });
       
       return res.status(200).json({ 
@@ -135,17 +140,27 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       userID: newUser.user_id,
     });
 
-    // Set cookies and return response
     res.cookie(JWT_CONFIG.COOKIE_NAME, token, {
       httpOnly: JWT_CONFIG.HTTP_ONLY,
-      maxAge: 3600000, // 1 hour
+      maxAge: 3600000, // 1 hour,
+      sameSite: "none",
+      secure: true,
+      domain: isProduction? process.env.DOMAIN: undefined,
     });
-
     res.cookie("linkup_user_id", newUser.user_id, {
       maxAge: 3600000,
       httpOnly: false,
+      sameSite: "none",
+      secure: true,
+      domain: isProduction? process.env.DOMAIN: undefined,
     });
-    
+
+    res.clearCookie("linkup_user_data", {
+      secure: true,
+      sameSite: "none",
+      domain: isProduction? process.env.DOMAIN: undefined,
+    });
+
     return res.status(200).json({ 
       message: 'Signup successful',
       user: { 
