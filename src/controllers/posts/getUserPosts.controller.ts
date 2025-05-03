@@ -81,7 +81,7 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         const enhancedPosts = await enhancePosts(
             finalPosts,
             viewerUser._id!.toString(), 
-            viewerUser.savedPosts
+            viewerUser.saved_posts
         );
         return res.status(200).json({
             message: 'Posts returned successfully',

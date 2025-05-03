@@ -60,7 +60,7 @@ export const displayReposts = async (req: Request, res: Response): Promise<Respo
             );
             
             // Enhance the fetched posts
-            const enhancedPosts = await enhancePosts(postsData, user._id!.toString(), user.savedPosts);
+            const enhancedPosts = await enhancePosts(postsData, user._id!.toString(), user.saved_posts);
             
             // Apply privacy filtering
             const filteredBatch = enhancedPosts.filter(post => {

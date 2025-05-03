@@ -39,7 +39,7 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
                 message: 'Access denied. This post is only visible to connections.'
             });
         }
-        const enhancedPost = await enhancePost(post, user._id!.toString(),user.savedPosts);
+        const enhancedPost = await enhancePost(post, user._id!.toString(),user.saved_posts);
         let result;
         if(post.post_type !== postTypeEnum.repost_instant){
             result = await getComments(cursor, limit, postId, replyLimit, user._id as string);

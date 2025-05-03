@@ -186,7 +186,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     };
-    savedPosts: postsInterface[];
+    saved_posts: postsInterface[];
     status: statusEnum; 
     blocked: ConnectionRequest[];
     unblocked_users: ConnectionRequest[];
@@ -445,7 +445,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     },
-    savedPosts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
+    saved_posts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [
         {

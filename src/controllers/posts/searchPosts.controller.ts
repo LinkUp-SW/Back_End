@@ -106,7 +106,7 @@ export const searchPosts = async (req: Request, res: Response) => {
     const enhancedPosts = await enhancePosts(
       resultPosts,
       userIdString,
-      user.savedPosts || []
+      user.saved_posts || []
     );
 
     // Final filter to remove:

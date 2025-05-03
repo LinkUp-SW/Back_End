@@ -158,7 +158,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
         education: educationDetails,
         work_experience: experienceDetails,
         resume: targetUser.resume || "",
-        number_of_saved_posts: targetUser.savedPosts.length,
+        number_of_saved_posts: targetUser.saved_posts.length,
         number_of_saved_jobs: targetUser.saved_jobs.length,
       };
 
