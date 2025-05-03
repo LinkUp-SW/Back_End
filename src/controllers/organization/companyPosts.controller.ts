@@ -270,15 +270,9 @@ export const deletePostFromCompany = async (req: Request, res: Response, next: N
 export const getCompanyPosts = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     try {
         const organizationId = req.params.organization_id;
-        const userId = await getUserIdFromToken(req, res);
-        if (!userId) return;
         
-        const user = await findUserByUserId(userId, res);
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
         if (!user) return;
-        // Validate organization ID
-        if (!organizationId) {
-            return res.status(400).json({ message: 'Organization ID is required' });
-        }
         
         // Find the organization and populate its posts
         const organization = await organizations.findById(organizationId)
