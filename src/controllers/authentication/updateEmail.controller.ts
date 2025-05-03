@@ -49,7 +49,7 @@ const  updateEmail = asyncHandler(async (req: Request, res: Response): Promise<R
     throw new CustomError('Failed to create temp email', 500, 'TEMP_EMAIL_CREATION_FAILED');
   }
 
-  return res.status(200)
+  return res.status(200).json({ message: 'Temp email created successfully', tempEmail: tempEmail.temp_email, expiry: tempEmail.temp_email_expiry });
 }); 
 
 

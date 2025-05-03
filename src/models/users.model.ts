@@ -72,6 +72,8 @@ export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
     email: string;
+    temp_email: string;
+    temp_email_expiry: Date;
     password: string;
     phone_number: number;
     country_code: string;
@@ -238,6 +240,18 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             message: (props) => `${props.value} is not a valid email!`,
         },
     },
+    temp_email: {
+        type: String,
+        required: false,
+        unique: true,
+        validate: {
+            validator: function (v: string) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid email!`,
+        },
+    },
+    temp_email_expiry: { type: Date },
     password: { type: String, required: true },
     phone_number: { type: Number },
     country_code: { type: String },

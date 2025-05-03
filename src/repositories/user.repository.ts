@@ -193,16 +193,27 @@ export class UserRepository {
     const expiryTime = new Date();
     expiryTime.setMinutes(expiryTime.getMinutes() + 10);
     
-    return User.findOneAndUpdate(
-      { user_id: userId },
-      { 
-        $set: { 
-          temp_email: email,
-          temp_email_expiry: expiryTime 
-        }
-      },
-      { new: true, upsert: false }
-    );
+    try {
+      const updatedUser = await User.findOneAndUpdate(
+        { user_id: userId },
+        { 
+          $set: { 
+            temp_email: email,
+            temp_email_expiry: expiryTime 
+          }
+        },
+        { new: true, upsert: false }
+      );
+      
+      if (!updatedUser) {
+        return null;
+      }
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('Error saving temporary email:', error);
+      return null;
+    }
   }
 
   async findByTempEmail(email: string) {
