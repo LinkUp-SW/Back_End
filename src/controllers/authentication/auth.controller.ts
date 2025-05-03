@@ -30,7 +30,7 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
     httpOnly: false,
     sameSite: "lax",
     secure: false,
-  });
+  }); 
 
 
   return res.status(200).json({ message: 'Login successful', user: { id: user.user_id, email: user.email, isVerified: user.is_verified , isAdmin: user.is_admin}}); // 1 hour expiration

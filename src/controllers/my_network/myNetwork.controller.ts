@@ -1,10 +1,18 @@
 import { Request, Response } from "express";
 import { validateTokenAndUser, getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
 
+import { webSocketService } from "../../../index.ts";
+
+import { NotificationType } from "../../models/notifications.model.ts";
+
+
+
 import { getFormattedUserList, formatConnectionData, getPaginatedConnectionsFollowers, handleProfileAccess } from "../../repositories/user.repository.ts";
 
 import { findUserByUserId } from "../../utils/database.helper.ts";
 import mongoose from "mongoose";
+
+
 
 export const followUser = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -348,7 +356,18 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
           await viewerUser.save();
         }
       }
+
+      let msgNotificationData = {
+        senderId: viewerUser.user_id,
+        recipientId: targetUser.user_id,
+        type: NotificationType.CONNECTION_REQUEST,
+        referenceId: targetUser._id,  
+      }
   
+      await webSocketService.sendNotification(
+        msgNotificationData
+      );
+
       res.status(200).json({ message: "Connection request sent successfully." });
     } catch (error) {
       if (error instanceof Error && error.message === 'Invalid or expired token') {
