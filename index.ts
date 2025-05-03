@@ -57,7 +57,7 @@ import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.rou
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 import reportRoutes from './src/routes/admin/report.routes.ts'
 import dashboardRoutes from './src/routes/admin/dashboard.routes.ts'
-
+import adminUsersRoutes from './src/routes/admin/users.routes.ts'
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -189,7 +189,8 @@ app.use('/api/v1/search',
 app.use('/api/v1/admin',
    createAdminRoutes,
    reportRoutes,
-   dashboardRoutes
+   dashboardRoutes,
+   adminUsersRoutes
   );
 
 app.get('/', (req: Request, res: Response) => {
