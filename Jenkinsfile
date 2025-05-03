@@ -57,7 +57,7 @@ pipeline {
         stage('Test Image Locally') {
             when {
                 not {
-                    branch 'test-stripe-deployment'
+                    branch 'main'
                 }
             }
            steps {
@@ -82,7 +82,7 @@ pipeline {
 
        stage('Push and Deploy') {
             when {
-                branch 'test-stripe-deployment'
+                branch 'main'
             }
             steps {
                 withCredentials([
@@ -173,6 +173,11 @@ pipeline {
                          credentialsId: 'notify-token',
                          account: 'LinkUp-SW',
                          sha: env.GIT_COMMIT
+                // Trigger E2E test job
+                build job: 'run-e2e-tests', wait: false, parameters: [
+                string(name: 'SOURCE_REPO', value: 'Back_End'),
+                string(name: 'COMMITTER_EMAIL', value: "${env.GIT_COMMITTER_EMAIL ?: 'marwan.emam.20@gmail.com'}")
+            ]
             }
         }
         failure {
