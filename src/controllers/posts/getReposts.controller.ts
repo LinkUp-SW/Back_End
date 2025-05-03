@@ -37,9 +37,63 @@ export const displayReposts = async (req: Request, res: Response): Promise<Respo
         }else if (post.reposts && post.reposts.length > 0){
             repostIds=[...post.reposts].reverse().map((post: postsInterface) => post._id);
         }
-        const { posts: postsData, next_cursor } = await getPostsFromPostIdsCursorBased(repostIds as string[], cursor, limit,user._id as string);
-        const enhancedPosts = await enhancePosts(postsData, user._id!.toString(), user.savedPosts);
-        return res.status(200).json({message:'Posts returned successfully',posts:enhancedPosts,next_cursor:next_cursor })
+        const connections = user.connections.map(conn => 
+            typeof conn === 'object' && conn._id ? conn._id.toString() : conn.toString()
+        );
+
+        // Use a higher fetch limit to account for filtering
+        // Request more posts than needed (2x limit as a starting point)
+        const fetchLimit = limit * 2;
+        
+        let allFilteredPosts: any[] = [];
+        let currentCursor = cursor;
+        let hasMorePosts = true;
+        let nextCursor = null;
+
+        // Keep fetching posts until we have enough or run out
+        while (allFilteredPosts.length < limit && hasMorePosts) {
+            const { posts: postsData, next_cursor } = await getPostsFromPostIdsCursorBased(
+                repostIds as string[], 
+                currentCursor, 
+                fetchLimit,
+                user._id as string
+            );
+            
+            // Enhance the fetched posts
+            const enhancedPosts = await enhancePosts(postsData, user._id!.toString(), user.savedPosts);
+            
+            // Apply privacy filtering
+            const filteredBatch = enhancedPosts.filter(post => {
+                const isPublicPost = post.public_post === true;
+                const isFromConnection = connections.includes(post.user_id.toString());
+                const isOwnPost = post.user_id.toString() === user._id!.toString();
+                
+                return isPublicPost || isFromConnection || isOwnPost;
+            });
+            
+            // Add filtered posts to our collection
+            allFilteredPosts = [...allFilteredPosts, ...filteredBatch];
+            
+            // Update cursor and check if more posts are available
+            if (next_cursor !== null && postsData.length > 0) {
+                currentCursor = next_cursor;
+                nextCursor = next_cursor;
+            } else {
+                hasMorePosts = false;
+            }
+            
+            // Avoid infinite loop if no more posts match criteria
+            if (postsData.length === 0) {
+                hasMorePosts = false;
+            }
+        }
+        
+        // Trim to the requested limit
+        const finalPosts = allFilteredPosts.slice(0, limit);
+        
+        // Only return next_cursor if we have more matching posts
+        const returnNextCursor = hasMorePosts && finalPosts.length === limit ? nextCursor : null;
+        return res.status(200).json({message:'Posts returned successfully',posts:finalPosts,next_cursor:returnNextCursor })
     } catch (error) {
         if (error instanceof Error && error.message === 'Invalid or expired token') {
             return res.status(401).json({ message: error.message,success:false });
