@@ -332,7 +332,7 @@ export class UserRepository {
     await mongoose.model('comments').deleteMany({ user_id: userId });
     
     // Delete all reactions by this user
-    await mongoose.model('reactions').deleteMany({ user_id: userId });
+    await mongoose.model('reacts').deleteMany({ user_id: userId });
     
     // Remove user reactions from other users' activity
     await User.updateMany(
