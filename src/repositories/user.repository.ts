@@ -820,7 +820,9 @@ export async function getFormattedAuthor(userId: string, viewerId: string) {
         "bio.first_name": 1,
         "bio.last_name": 1,
         "bio.headline": 1,
-        profile_photo: 1
+        profile_photo: 1,
+        privacy_settings: 1, 
+        followers: 1
       }
     ).lean();
     
