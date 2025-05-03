@@ -5,6 +5,7 @@ import { PostRepository } from '../../repositories/posts.repository.ts';
 import { deleteAllComments } from '../../repositories/comment.repository.ts';
 import { deleteAllPostReactions, deleteCommentReactions } from '../../repositories/reacts.repository.ts';
 import { postTypeEnum } from '../../models/posts.model.ts';
+import { contentTypeEnum, Report } from '../../models/reports.model.ts';
 
 
 /**
@@ -32,10 +33,19 @@ const deletePost = async (req: Request, res: Response): Promise<Response | void>
         }
         await deleteAllPostReactions(postId);
         await deleteAllComments(postId);
+        await Report.deleteMany({ 
+            content_ref: postId,
+            content_type: contentTypeEnum.Post 
+        });
         if(post.reposts){
             const repostIds = post.reposts.map(repost => repost.toString());
             await postRepository.deleteAllRepostsOfPost(repostIds);
-
+            if (repostIds.length > 0) {
+                await Report.deleteMany({
+                    content_ref: { $in: repostIds },
+                    content_type: contentTypeEnum.Post
+                });
+            }
         }
         // remove post from the user
         if (post.post_type === postTypeEnum.standard){

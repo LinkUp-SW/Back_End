@@ -485,3 +485,22 @@ export const findUserById = async (id: string, res: Response) => {
       return null;
   }
 };
+
+/**
+ * Finds a user by MongoDB _id without sending HTTP responses.
+ * Returns the user document if found; otherwise returns null.
+ */
+export const findUserByIdSilent = async (id: string) => {
+  try {
+    // Validate that the id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    // Query the database using the MongoDB `_id` field
+    const user = await Users.findById(id);
+    return user;  // Returns user or null
+  } catch (error) {
+    console.error("Error finding user by MongoDB ID:", error);
+    return null;
+  }
+};

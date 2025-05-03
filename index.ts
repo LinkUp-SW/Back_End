@@ -55,6 +55,9 @@ import stripeWebhookRoutes from './src/routes/subscription/webhook.routes.ts';
 import subscriptionRoutes from './src/routes/subscription/subscription.routes.ts';
 import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.routes.ts';
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
+import reportRoutes from './src/routes/admin/report.routes.ts'
+import dashboard from './src/routes/admin/dashboard.routes.ts'
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -183,7 +186,11 @@ app.use('/api/v1/search',
   userSearchRoutes,
   searchRoutes );
 
-app.use('/api/v1/admin', createAdminRoutes);
+app.use('/api/v1/admin',
+   createAdminRoutes,
+   reportRoutes,
+   dashboard
+  );
 
 app.get('/', (req: Request, res: Response) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');

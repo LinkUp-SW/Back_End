@@ -61,9 +61,13 @@ export const getSubscriptionStatus = async (req: Request, res: Response, next: N
     
     return res.status(200).json({ subscription });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error in getSubscriptionStatus:', error);
     next(error);
   }
+}
 };
 // Create checkout session for premium subscription
 export const createCheckoutSession = async (req: Request, res: Response, next: NextFunction) => {
@@ -206,9 +210,13 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
   
       res.status(200).json({ url: session.url });
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid or expired token') {
+        res.status(401).json({ message: error.message, success: false });
+      } else {
       console.error('Error creating checkout session:', error);
       next(error);
     }
+  }
   };
   
   // Helper function to update user subscription from Stripe data
@@ -271,9 +279,13 @@ export const cancelSubscription = async (req: Request, res: Response, next: Next
 
     res.status(200).json({ message: 'Subscription will be canceled at the end of the billing period' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error canceling subscription:', error);
     next(error);
   }
+}
 };
 
 // Resume canceled subscription
@@ -298,9 +310,13 @@ export const resumeSubscription = async (req: Request, res: Response, next: Next
 
     res.status(200).json({ message: 'Subscription resumed successfully' });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error resuming subscription:', error);
     next(error);
   }
+}
 };
 
 // Get user's invoice history
@@ -328,7 +344,11 @@ export const getInvoiceHistory = async (req: Request, res: Response, next: NextF
       }))
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Invalid or expired token') {
+      res.status(401).json({ message: error.message, success: false });
+    } else {
     console.error('Error getting invoice history:', error);
     next(error);
   }
+}
 };

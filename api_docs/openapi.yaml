@@ -10160,7 +10160,1004 @@ paths:
                   message:
                     type: string
                     example: "Server error"
+  /api/v1/admin/report:
+    post:
+      tags:
+        - Reports
+      summary: Create a new content report
+      description: >
+        Allows users to report inappropriate content such as posts, comments, or jobs.
+        The system verifies that the content exists before accepting the report and
+        ensures a user cannot report the same content multiple times.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contentRef
+                - contentType
+                - reason
+              properties:
+                contentRef:
+                  type: string
+                  description: ID of the content being reported (post ID, comment ID, or job ID)
+                  example: "6458abc123def456"
+                contentType:
+                  type: string
+                  enum: [Post, Comment, Job]
+                  description: Type of content being reported
+                  example: "Post"
+                reason:
+                  type: string
+                  enum: [spam, harassment, hate_speech, misinformation, scam, inappropriate, other]
+                  description: Reason for reporting the content
+                  example: "inappropriate"
+      responses:
+        '201':
+          description: Report created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "report created successfully"
+                  report:
+                    type: string
+                    example: "6458abc123def466"
+        '400':
+          description: Bad request (e.g., missing fields or user already reported this content)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Content to be reported was not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post does not exist"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
   
+    get:
+      tags:
+        - Reports
+      summary: Get paginated reports (Admin only)
+      description: >
+        Retrieves a paginated list of content reports with filtering options.
+        This endpoint is restricted to administrators and provides statistics
+        on report counts by status alongside the report data.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, resolved]
+          description: Filter reports by status
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Cursor for pagination (starting position)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Maximum number of reports to return per page
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports retrieved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      reports:
+                        type: array
+                        items:
+                          type: object
+                      total_count:
+                        type: integer
+                        example: 24
+                      status_counts:
+                        type: object
+                        properties:
+                          pending:
+                            type: integer
+                            example: 15
+                          resolved:
+                            type: integer
+                            example: 9
+                      next_cursor:
+                        type: integer
+                        example: 10
+        '400':
+          description: Bad request (e.g., limit exceeds maximum allowed value)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Limit cannot exceed 50 reports per request"
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error fetching reports"
+  /api/v1/admin/report/content/{contentType}/{contentRef}:
+    get:
+      tags:
+        - Reports
+      summary: Get reports for specific content
+      description: >
+        Retrieves all reports for a specific content item (post, comment, or job).
+        This endpoint is restricted to administrators and provides detailed information
+        about the content being reported along with a summary of report reasons.
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment, Job]
+          description: Type of content being reported
+          example: "Post"
+        - name: contentRef
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the content being reported
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+      responses:
+        '200':
+          description: Content reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Content reports retrieved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      content:
+                        type: object
+                        description: Details about the reported content
+                      parent_post:
+                        type: object
+                        description: Details about the parent post (for comments)
+                      total_count:
+                        type: integer
+                        example: 5
+                      reasons_summary:
+                        type: object
+                        properties:
+                          inappropriate:
+                            type: integer
+                            example: 3
+                          spam:
+                            type: integer
+                            example: 2
+        '400':
+          description: Bad request (e.g., invalid content type)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Content reference and type are required"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error fetching content reports"
+                  success:
+                    type: boolean
+                    example: false
+  /api/v1/admin/report/resolve/{contentType}/{contentRef}:
+    patch:
+      tags:
+        - Reports
+      summary: Resolve reports by dismissing specific content
+      description: >
+        Resolves all reports for a specific content item, taking action based on admin's decision.
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment, Job]
+          description: Type of content with reports to resolve
+          example: "Post"
+        - name: contentRef
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the content with reports to resolve
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+      responses:
+        '200':
+          description: Reports resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports resolved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      resolved_count:
+                        type: integer
+                        example: 5
+                      admin_action:
+                        type: string
+                        example: "dismissed"
+        '400':
+          description: Bad request (e.g., required fields missing, reports already resolved)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports already resolved"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: No reports found for this content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No reports found for this content"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: string
+                    example: "Error details"
+    delete:
+      tags:
+        - Reports
+      summary: Resolve reports by deleting specific content
+      description: >
+        Resolves all reports for a specific content item, taking action based on admin's decision.
+        Content removal has cascading effects, deleting all associated items like comments, reactions, etc.
+      parameters:
+        - name: contentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [Post, Comment, Job]
+          description: Type of content with reports to resolve
+          example: "Post"
+        - name: contentRef
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the content with reports to resolve
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+      responses:
+        '200':
+          description: Reports resolved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports resolved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      resolved_count:
+                        type: integer
+                        example: 5
+                      admin_action:
+                        type: string
+                        example: "content removed"
+        '400':
+          description: Bad request (e.g., required fields missing, reports already resolved)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reports already resolved"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: No reports found for this content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No reports found for this content"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: string
+                    example: "Error details"
+  /api/v1/admin/dashboard:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get admin dashboard metrics
+      description: >
+        Retrieves comprehensive metrics for the admin dashboard including:
+        - Summary counts (total reports, jobs, users)
+        - Day-over-day delta comparisons
+        - Content moderation metrics with average resolution time
+        - Job management statistics
+        - Platform activity analytics
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Dashboard metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      reported_content:
+                        type: integer
+                        example: 128
+                        description: Total number of content reports in the system
+                      total_jobs:
+                        type: integer
+                        example: 451
+                        description: Total number of jobs posted
+                      total_users:
+                        type: integer
+                        example: 2508
+                        description: Total number of registered users
+                      delta:
+                        type: object
+                        description: Day-over-day changes
+                        properties:
+                          reports:
+                            type: integer
+                            example: 5
+                            description: Change in reports from yesterday to today
+                          jobs:
+                            type: integer
+                            example: 12
+                            description: Change in jobs posted from yesterday to today
+                          users:
+                            type: integer
+                            example: 35
+                            description: Change in user registrations from yesterday to today
+                  content_moderation:
+                    type: object
+                    properties:
+                      pending_reviews:
+                        type: integer
+                        example: 23
+                        description: Number of reports awaiting admin review
+                      resolved_today:
+                        type: integer
+                        example: 45
+                        description: Number of reports resolved today
+                      avg_response_time_hours:
+                        type: number
+                        example: 8.5
+                        description: Average time to resolve reports in hours
+                  job_management:
+                    type: object
+                    properties:
+                      pending_approval:
+                        type: integer
+                        example: 18
+                        description: Number of job applications awaiting approval
+                      approved_today:
+                        type: integer
+                        example: 12
+                        description: Number of job applications approved today
+                      rejected_today:
+                        type: integer
+                        example: 5
+                        description: Number of job applications rejected today
+                  platform_analytics:
+                    type: object
+                    properties:
+                      new_users_today:
+                        type: integer
+                        example: 42
+                        description: Number of new user registrations today
+                      content_posted_today:
+                        type: integer
+                        example: 78
+                        description: Number of new posts created today
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error getting dashboard metrics"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error details"
+  /api/v2/post/search/posts:
+    get:
+      tags:
+        - Posts
+      summary: Search posts by content
+      description: >
+        Searches for posts containing specific text content with cursor-based pagination.
+        Results respect privacy settings - only showing public posts and private posts from connections.
+        The authenticated user's own posts are excluded from search results.
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+            example: "Bearer jwt_token"
+          description: Bearer token for authentication
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          description: Text to search for within post content
+          example: "code"
+        - in: query
+          name: cursor
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Timestamp cursor for pagination (Unix timestamp of oldest post from previous batch)
+          example: 1746106223
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+          description: Maximum number of posts to return per page
+      responses:
+        '200':
+          description: Posts matching search criteria retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts retrieved successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "68153c32acf7b34e5fe67d0d"
+                        user_id:
+                          type: string
+                          example: "6806a1938db9403282340f11"
+                        content:
+                          type: string
+                          example: "Whispers of Code\n\nIn silent rooms where circuits hum,\nA whisper weaves through data's drum..."
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: string
+                              nullable: true
+                              example: null
+                            media_type:
+                              type: string
+                              example: "none"
+                        comments_disabled:
+                          type: string
+                          example: "Anyone"
+                        public_post:
+                          type: boolean
+                          example: true
+                        reacts:
+                          type: array
+                          items:
+                            type: string
+                        tagged_users:
+                          type: array
+                          items:
+                            type: string
+                        comments:
+                          type: array
+                          items:
+                            type: string
+                        is_edited:
+                          type: boolean
+                          example: false
+                        is_company:
+                          type: boolean
+                          example: false
+                        post_type:
+                          type: string
+                          example: "Standard"
+                        reposts:
+                          type: array
+                          items:
+                            type: string
+                          example: ["68153cb1acf7b34e5fe67d1b"]
+                        date:
+                          type: integer
+                          example: 1746222130
+                        author:
+                          type: object
+                          properties:
+                            username:
+                              type: string
+                              example: "Amr-Doma81"
+                            first_name:
+                              type: string
+                              example: "Amr"
+                            last_name:
+                              type: string
+                              example: "Doma"
+                            headline:
+                              type: string
+                              example: "Software Engineer"
+                            profile_picture:
+                              type: string
+                              example: "https://res.cloudinary.com/dmg8tdy5r/image/upload/v1745877547/user_uploads/images/1745877546444-profile.png"
+                            connection_degree:
+                              type: string
+                              example: "1st"
+                        is_saved:
+                          type: boolean
+                          example: false
+                        user_reaction:
+                          type: string
+                          nullable: true
+                          example: null
+                        top_reactions:
+                          type: array
+                          items:
+                            type: string
+                        reactions_count:
+                          type: integer
+                          example: 0
+                        comments_count:
+                          type: integer
+                          example: 0
+                        reposts_count:
+                          type: integer
+                          example: 1
+                  next_cursor:
+                    type: integer
+                    nullable: true
+                    description: Cursor for the next page of results, null if no more results
+                    example: null
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: string
+                    example: "Error processing search query"
+/api/v2/post/posts/reposts/{postId}:
+    get:
+      tags:
+        - Posts
+      summary: Get reposts of a post
+      description: >
+        Retrieves all reposts (both instant reposts and reposts with thoughts) of a specific post.
+        Results are paginated and can be limited. Includes enhanced post data with information
+        about whether the authenticated user has reacted to or saved each repost.
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to get reposts for
+          example: "6458abc123def456"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer jwt_token"
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor (position to start from)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of reposts to return per page
+      responses:
+        '200':
+          description: Reposts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Posts returned successfully"
+                  posts:
+                    type: array
+                    description: Array of reposts with enhanced information
+                  next_cursor:
+                    type: integer
+                    description: Cursor for the next batch of results, null if no more results
+        '400':
+          description: Required fields missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Required fields missing"
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+                  error:
+                    type: object
+                    description: Error details
   /api/v1/company/create-job-from-company/{organization_id}:
     post:
       tags:

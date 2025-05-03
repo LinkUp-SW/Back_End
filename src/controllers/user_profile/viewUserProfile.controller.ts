@@ -6,12 +6,12 @@ import {
   getUserPostsLimited,
   getUserCommentsLimited,
   getUserReactedPostsLimited,
-  findUserById
+  findUserById,
+  findUserByIdSilent
   
 } from "../../utils/database.helper.ts";
-import tokenUtils from "../../utils/token.utils.ts";
 import { findMutualConnections , handleProfileAccess} from "../../repositories/user.repository.ts";
-import { validateTokenAndUser } from "../../utils/helperFunctions.utils.ts";
+import { validateTokenAndUser,getUserIdFromToken } from "../../utils/helperFunctions.utils.ts";
 import Organization from "../../models/organizations.model.ts"; // Import the organization model
 import User from "../../models/users.model.ts"; // Import the user model
 import mongoose from "mongoose"; // Import mongoose
@@ -20,20 +20,10 @@ const DEFAULT_IMAGE_URL = "https://res.cloudinary.com/dyhnxqs6f/image/upload/v17
 export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
   try {
     // Validate token and extract user ID from the token
-    const authHeader = req.headers.authorization || "";
-    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
-    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
-
-    if (!decodedToken || !decodedToken.userId) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    const viewerId = decodedToken.userId;
-
-    // Validate the user_id parameter from the request
-    const userId = await validateUserIdFromRequest(req, res);
+    let userId = await getUserIdFromToken(req, res);
     if (!userId) return;
+
+    let viewerId = userId;
 
     // Retrieve the target user document
     const user = await findUserByUserId(userId, res);
@@ -168,7 +158,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
         education: educationDetails,
         work_experience: experienceDetails,
         resume: targetUser.resume || "",
-        number_of_saved_posts: targetUser.savedPosts.length,
+        number_of_saved_posts: targetUser.saved_posts.length,
         number_of_saved_jobs: targetUser.saved_jobs.length,
       };
 
@@ -184,7 +174,7 @@ export const getUserBio = async (req: Request, res: Response): Promise<void> => 
 
     const nameOfOneMutualConnection = mutualConnections.length > 0
       ? await (async () => {
-          const mutualConnectionUser = await findUserById(mutualConnections[0], res);
+        const mutualConnectionUser = await findUserByIdSilent(mutualConnections[0]);  // Use the silent version
           return mutualConnectionUser
             ? `${mutualConnectionUser.bio.first_name} ${mutualConnectionUser.bio.last_name}`
             : null;
