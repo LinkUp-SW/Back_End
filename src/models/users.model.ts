@@ -2,7 +2,6 @@ import mongoose, { Schema, ObjectId, Types } from "mongoose";
 import validator from "validator";
 import { conversationsInterface } from "./conversations.model.ts";
 import { postsInterface } from "./posts.model.ts";
-import { repostsInterface } from "./reposts.model.ts";
 import { commentsInterface } from "./comments.model.ts";
 import { jobsInterface } from "./jobs.model.ts";
 import { organizationsInterface } from "./organizations.model.ts";
@@ -177,7 +176,6 @@ export interface usersInterface extends mongoose.Document{
     };
     activity: {
         posts: postsInterface[];
-        reposted_posts: postsInterface[];
         reacts:reactsInterface[];
         comments: commentsInterface[];
         media: {
@@ -438,7 +436,6 @@ const usersSchema = new mongoose.Schema<usersInterface>({
     },
     activity: {
         posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
-        reposted_posts: [{ type: Schema.Types.ObjectId, ref: "posts" }],
         reacts: [{ type: Schema.Types.ObjectId, ref: "reacts" }],
         comments: [{ type: Schema.Types.ObjectId, ref: "comments" }],
         media: [{

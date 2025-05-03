@@ -5,13 +5,13 @@ import { UserRepository } from '../../repositories/user.repository.ts';
 import { generateUniqueId } from '../../utils/helperFunctions.utils.ts';
 import tokenUtils from '../../utils/token.utils.ts';
 import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
+import { findUserByUserId } from '../../utils/database.helper.ts';
 
 const userRepo = new UserRepository();
 
 export const createAdmin = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     let userId = await getUserIdFromToken(req, res);
     if (!userId) return;
-
     // Check if the user is an admin
     const currentUser = await userRepo.findByUserId(userId);   
     if (!currentUser || currentUser.is_admin !== true) {

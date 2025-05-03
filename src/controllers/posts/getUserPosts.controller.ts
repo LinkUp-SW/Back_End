@@ -34,12 +34,8 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         
         // If filtering will be needed, increase the fetch limit to compensate
         const fetchLimit = willNeedFiltering ? limit * 2 : limit; // Fetch more if we'll filter
-        
         // Fetch posts with the potentially increased limit
-        const displayedUserPosts = [
-            ...[...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id),
-            ...[...targetUser.activity.reposted_posts || []].reverse().map((repost: postsInterface) => repost._id)
-        ].filter(Boolean);
+        const displayedUserPosts = [...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id);
         const { posts: initialPostsData, next_cursor: initialnext_cursor } = 
             await getPostsFromPostIdsCursorBased(displayedUserPosts as string[], cursor, fetchLimit,viewerUser._id as string);
         
