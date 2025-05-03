@@ -238,20 +238,20 @@ export const enhancePosts = async (
 
 /**
  * Fetches paginated posts for a user using cursor-based pagination
- * @param savedPosts - Array of post IDs to fetch
+ * @param postIds - Array of post IDs to fetch
  * @param cursor - The position to start fetching from (null for beginning)
  * @param limit - Maximum number of posts to fetch
  * @param viewerId - user Id of the viewer 
  * @returns Promise containing the posts, count, and pagination info
  */
-export const getSavedPostsCursorBased = async (
-  savedPosts: string[],
+export const getPostsFromPostIdsCursorBased = async (
+  postIds: string[],
   cursor: number | null, 
   limit: number,
   viewerId:string
 ): Promise<{ posts: any[]; next_cursor: number | null }> => {
   try {
-    if (!savedPosts || savedPosts.length === 0) {
+    if (!postIds || postIds.length === 0) {
       return { posts: [], next_cursor: null };
     }
     
@@ -259,11 +259,11 @@ export const getSavedPostsCursorBased = async (
     const startIndex = cursor === null ? 0 : cursor;
     
     // Get total count of saved posts
-    const totalCount = savedPosts.length;
+    const totalCount = postIds.length;
     
     // Calculate the range of posts to fetch
     const endIndex = Math.min(startIndex + limit, totalCount);
-    const postsToFetch = savedPosts.slice(startIndex, endIndex);
+    const postsToFetch = postIds.slice(startIndex, endIndex);
     
     // Fetch all the posts in a single query
     const postsData = await posts.find({ 
