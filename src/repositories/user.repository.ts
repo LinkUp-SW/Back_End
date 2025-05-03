@@ -55,8 +55,7 @@ export class UserRepository {
       },
       activity: {
         posts: [],
-        reposted_posts: [],
-        reacted_posts: [],
+        reacts: [],
         comments: [],
         media: [],
       },
@@ -166,7 +165,6 @@ export class UserRepository {
       },
       activity: {
         posts: [],
-        reposted_posts: [],
         reacted_posts: [],
         comments: [],
         media: []
@@ -267,7 +265,6 @@ export class UserRepository {
       },
       activity: {
         posts: [],
-        reposted_posts: [],
         reacted_posts: [],
         comments: [],
         media: []
@@ -349,7 +346,7 @@ export class UserRepository {
     // Delete all comments and reactions on the user's posts
     for (const postId of userPostIds) {
       await mongoose.model('comments').deleteMany({ post_id: postId });
-      await mongoose.model('reactions').deleteMany({ target_id: postId });
+      await mongoose.model('reacts').deleteMany({ target_id: postId });
     }
     
     // Delete all posts by this user

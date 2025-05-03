@@ -359,32 +359,26 @@ async resolveContentReports(
                         if (post.user_id) {
                             const user = await users.findById(post.user_id);
                             if (user) {
+                              user.activity.posts = user.activity.posts.filter(
+                                  userPost => userPost.toString() !== contentRef.toString()
+                              );
                                 if (post.post_type === postTypeEnum.standard) {
-                                    user.activity.posts = user.activity.posts.filter(
-                                        userPost => userPost.toString() !== contentRef.toString()
-                                    );
-                                } else {
-                                    user.activity.reposted_posts = user.activity.reposted_posts.filter(
-                                        userPost => userPost.toString() !== contentRef.toString()
-                                    );
-                                    
-                                    // Handle original post reference
-                                    if (post.media?.link && post.media.link.length > 0) {
-                                        const originalPost = await postRepository.findByPostId(post.media.link[0]);
-                                        if (originalPost && originalPost.reposts) {
-                                            originalPost.reposts = originalPost.reposts.filter(
-                                                repost => repost.toString() !== contentRef.toString()
-                                            );
-                                            await originalPost.save();
-                                        }
-                                    }
+                                  // Handle original post reference
+                                  if (post.media?.link && post.media.link.length > 0) {
+                                      const originalPost = await postRepository.findByPostId(post.media.link[0]);
+                                      if (originalPost && originalPost.reposts) {
+                                          originalPost.reposts = originalPost.reposts.filter(
+                                              repost => repost.toString() !== contentRef.toString()
+                                          );
+                                          await originalPost.save();
+                                      }
+                                  }
                                 }
                                 await user.save();
+                              }
                             }
-                        }
-                        
-                        // Finally delete the post
-                        await postRepository.deletepost(contentRef.toString());
+                            // Finally delete the post
+                            await postRepository.deletepost(contentRef.toString());
                     }
                     actionTaken = adminActionEnum.content_removed;
                     break;

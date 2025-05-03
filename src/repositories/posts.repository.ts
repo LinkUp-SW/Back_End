@@ -90,8 +90,8 @@ export class PostRepository {
       
       // Remove repost references from user activity
       await users.updateMany(
-        { 'activity.reposted_posts': repost._id },
-        { $pull: { 'activity.reposted_posts': repost._id } }
+        { 'activity.posts': repost._id },
+        { $pull: { 'activity.posts': repost._id } }
       );
     }
     
