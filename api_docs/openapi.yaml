@@ -7609,7 +7609,7 @@ paths:
                     type: string
                     example: "Error searching jobs"
   
-    /api/v1/search/company/{query}:
+  /api/v1/search/company/{query}:
     get:
       tags:
         - Search
@@ -7798,82 +7798,6 @@ paths:
                   message:
                     type: string
                     example: "Server error"
-
-  /api/v1/search/users/{name}:
-    get:
-      tags:
-        - Search
-      summary: Search for users by name
-      description: >
-        Searches for users whose first or last name matches the provided query.
-        Handles single and multiple word queries with different matching strategies.
-        If authenticated, excludes blocked users and users who have blocked the viewer.
-      parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name to search for (can be first name, last name, or full name)
-          example: "John Smith"
-        - name: Authorization
-          in: header
-          required: false
-          schema:
-            type: string
-          description: Optional bearer token for authenticated searches
-          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-      responses:
-        '200':
-          description: Users retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        _id:
-                          type: string
-                          example: "60d21b4667d0d8992e610c85"
-                        first_name:
-                          type: string
-                          example: "John"
-                        last_name:
-                          type: string
-                          example: "Smith"
-                        headline:
-                          type: string
-                          example: "Software Engineer at Tech Company"
-                        profile_photo:
-                          type: string
-                          example: "https://example.com/profile.jpg"
-        '400':
-          description: Invalid request - Missing name parameter
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Name parameter is required"
-        '500':
-          description: Server error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Error searching users by name"
 
   /api/v1/search/is-follower/{organization_id}:
     get:
