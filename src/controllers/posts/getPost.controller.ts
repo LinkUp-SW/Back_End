@@ -24,6 +24,21 @@ const getPost = async (req: Request, res: Response): Promise<Response | void> =>
         if (!post){
             return res.status(404).json({message:'Post not found' });
         }
+        const isPublicPost = post.public_post === true;
+        const isOwnPost = post.user_id.toString() === user._id!.toString();
+        
+        // Get connections as string array for comparison
+        const connections = user.connections.map(conn => 
+            typeof conn === 'object' && conn._id ? conn._id.toString() : conn.toString()
+        );
+        const isFromConnection = connections.includes(post.user_id.toString());
+        
+        // If not public and not own post and not from connection, deny access
+        if (!isPublicPost && !isOwnPost && !isFromConnection) {
+            return res.status(403).json({ 
+                message: 'Access denied. This post is only visible to connections.'
+            });
+        }
         const enhancedPost = await enhancePost(post, user._id!.toString(),user.savedPosts);
         let result;
         if(post.post_type !== postTypeEnum.repost_instant){
