@@ -12205,6 +12205,271 @@ paths:
                   error:
                     type: string
                     example: "Error message details"
+  /api/v1/admin/users:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get paginated list of users
+      description: >
+        Retrieves a paginated list of all users with basic profile information.
+        Users are sorted by creation date (newest first). This endpoint is restricted
+        to administrators and includes short IDs for reference.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Pagination cursor (number of users to skip)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+          description: Number of users to return per page (maximum 50)
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Users retrieved successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            user_id:
+                              type: string
+                              example: "john-doe123"
+                            short_id:
+                              type: string
+                              example: "USER0c85"
+                            first_name:
+                              type: string
+                              example: "John"
+                            last_name:
+                              type: string
+                              example: "Doe"
+                            email:
+                              type: string
+                              example: "john.doe@example.com"
+                            profile_picture:
+                              type: string
+                              example: "https://example.com/profile_photos/user123.jpg"
+                            is_admin:
+                              type: boolean
+                              example: false
+                            created_at:
+                              type: string
+                              format: date-time
+                              example: "2023-04-15T09:30:00Z"
+                      total_count:
+                        type: integer
+                        example: 153
+                      next_cursor:
+                        type: integer
+                        nullable: true
+                        example: 10
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Limit cannot exceed 50 users per request"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error fetching users"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
+  /api/v1/admin/users/{userId}:
+    delete:
+      tags:
+        - Admin Dashboard
+      summary: Delete a user
+      description: >
+        Permanently deletes a user and all associated data including posts, comments,
+        reactions, and connections. This action cannot be undone. Only administrators
+        can delete users, and admins cannot delete themselves or other admins.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to delete
+          example: "60d21b4667d0d8992e610c85"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        example: "john-doe123"
+                      email:
+                        type: string
+                        example: "john.doe@example.com"
+                      first_name:
+                        type: string
+                        example: "John"
+                      last_name:
+                        type: string
+                        example: "Doe"
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User ID is required"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges or attempting to delete an admin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Cannot delete yourself"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error deleting user"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
 components:
   securitySchemes:
     bearerAuth:
