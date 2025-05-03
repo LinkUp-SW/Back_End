@@ -110,7 +110,7 @@ const checkConversationExists = asyncHandler(async (req: Request, res: Response,
   // Check if user2 exists
   const user2 = await userRepo.findByUserId(user2ID);
   if (!user2) {
-    throw new CustomError('User not found', 404);
+    throw new CustomError('User2 not found', 404);
   }
   
   // Check if the sender is blocked by the receiver
@@ -157,7 +157,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
     const isUser1 = conversation.user1_id.toString() === userId.toString();
     const user2 = isUser1 ? conversation.user2_id : conversation.user1_id; 
     
-    // console.log('user2:', user2);
+    console.log('user2:', user2);
 
     const otherUser = await userRepo.findByUserId(user2);
 
@@ -198,7 +198,7 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
     
     const lastMessage = allMessages.length > 0 ? allMessages[0] : '';
 
-    console.log('Recieved:', receivedMessages);
+    // console.log('Recieved:', receivedMessages);
     
     const unreadCount: number = receivedMessages.filter((msg) => !msg.is_seen).length;
     console.log('unreadCount:', unreadCount);
