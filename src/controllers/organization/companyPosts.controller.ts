@@ -1,19 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
-import { getUserIdFromToken } from '../../utils/helperFunctions.utils.ts';
-import { findUserByUserId } from '../../utils/database.helper.ts';
 import { PostRepository } from '../../repositories/posts.repository.ts';
 import { processPostMediaArray } from '../../services/cloudinary.service.ts';
 import { mediaTypeEnum, postTypeEnum, commentsEnum } from '../../models/posts.model.ts';
 import { convertUser_idInto_id } from '../../repositories/user.repository.ts';
 import organizations from '../../models/organizations.model.ts';
-import { getCompanyProfileById, validateUserIsCompanyAdmin } from '../../utils/helper.ts';
+import { 
+    getCompanyProfileById, 
+    validateUserIsCompanyAdmin, 
+    validateTokenAndGetUser,
+    formatCompanyPosts 
+} from '../../utils/helper.ts';
 
 /**
  * Create a new post for a company
 **/
 export const createPostFromCompany = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     try {
-        const organizationId = req.params.organization_id;
+        const { organization_id } = req.params;
+
         const {
             content,
             mediaType,
@@ -23,27 +27,20 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
             taggedUsers
         } = req.body;
         
-        // Get user ID from token and verify user exists
-        const userId = await getUserIdFromToken(req, res);
-        if (!userId) return;
-        
-        const user = await findUserByUserId(userId, res);
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
         if (!user) return;
+
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
         
-        // Check if user is an admin of the organization
-        const companyProfile = await getCompanyProfileById(organizationId, res);
-        if (!companyProfile) return;
-        
-        const isAdmin = validateUserIsCompanyAdmin(companyProfile, userId, res);
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
         if (!isAdmin) return;
         
         // Validate required fields
         if (!content && !media) {
             return res.status(400).json({ message: 'Content or media is required' });
-        }
-        
-        if (commentsDisabled === undefined || publicPost === undefined) {
-            return res.status(400).json({ message: 'Comments settings and post visibility are required' });
         }
         
         // Process media based on type
@@ -72,7 +69,7 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
         // Create the post using organization ID as the user_id
         const postRepository = new PostRepository();
         const newPost = await postRepository.create(
-            organizationId, 
+            organization_id, 
             content,
             processedMedia,
             mediaType,
@@ -84,12 +81,12 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
         
         // Mark as company post
         newPost.is_company = true;
-        newPost.company = companyProfile;
+        newPost.company = organization;
         await newPost.save();
         
         // Add the post to the organization's posts array
-        companyProfile.posts.push(newPost);
-        await companyProfile.save();
+        organization.posts.push(newPost);
+        await organization.save();
         
         return res.status(201).json({ 
             message: 'Company post successfully created', 
@@ -120,18 +117,15 @@ export const editPostFromCompany = async (req: Request, res: Response, next: Nex
             taggedUsers
         } = req.body;
         
-        // Get user ID from token and verify user exists
-        const userId = await getUserIdFromToken(req, res);
-        if (!userId) return;
-        
-        const user = await findUserByUserId(userId, res);
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
         if (!user) return;
+
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organizationId, res);
+        if (!organization) return;
         
-        // Check if user is an admin of the organization
-        const companyProfile = await getCompanyProfileById(organizationId, res);
-        if (!companyProfile) return;
-        
-        const isAdmin = validateUserIsCompanyAdmin(companyProfile, userId, res);
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
         if (!isAdmin) return;
         
         // Validate post ID
@@ -209,18 +203,15 @@ export const deletePostFromCompany = async (req: Request, res: Response, next: N
         const organizationId = req.params.organization_id;
         const postId = req.params.post_id;
         
-        // Get user ID from token and verify user exists
-        const userId = await getUserIdFromToken(req, res);
-        if (!userId) return;
-        
-        const user = await findUserByUserId(userId, res);
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
         if (!user) return;
+
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organizationId, res);
+        if (!organization) return;
         
-        // Check if user is an admin of the organization
-        const companyProfile = await getCompanyProfileById(organizationId, res);
-        if (!companyProfile) return;
-        
-        const isAdmin = validateUserIsCompanyAdmin(companyProfile, userId, res);
+        // Validate user is an admin
+        const isAdmin = validateUserIsCompanyAdmin(organization, user._id, res);
         if (!isAdmin) return;
         
         // Validate post ID
@@ -255,10 +246,10 @@ export const deletePostFromCompany = async (req: Request, res: Response, next: N
         }
         
         // Remove post from organization's posts array
-        companyProfile.posts = companyProfile.posts.filter(
+        organization.posts = organization.posts.filter(
             (orgPost) => orgPost.toString() !== postId
         );
-        await companyProfile.save();
+        await organization.save();
         
         // Delete the post
         await postRepository.deletepost(postId);
@@ -280,10 +271,8 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
     try {
         const organizationId = req.params.organization_id;
         
-        // Validate organization ID
-        if (!organizationId) {
-            return res.status(400).json({ message: 'Organization ID is required' });
-        }
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
         
         // Find the organization and populate its posts
         const organization = await organizations.findById(organizationId)
@@ -312,9 +301,12 @@ export const getCompanyPosts = async (req: Request, res: Response, next: NextFun
             return res.status(404).json({ message: 'Organization not found' });
         }
         
+        // Use the helper function to format posts
+        const formattedPosts = formatCompanyPosts(organization.posts, organization, user._id as string);
+        
         return res.status(200).json({
             message: 'Company posts retrieved successfully',
-            posts: organization.posts
+            posts: formattedPosts,
         });
     } catch (error) {
         return res.status(500).json({ message: 'Server error', error });

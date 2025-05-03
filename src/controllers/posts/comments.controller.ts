@@ -10,6 +10,7 @@ import users from '../../models/users.model.ts';
 import { CommentRepository, getAllCommentChildrenIds, getComments, getReplies } from '../../repositories/comment.repository.ts';
 import { convert_idIntoUser_id, convertUser_idInto_id } from '../../repositories/user.repository.ts';
 import { deleteCommentReactions } from '../../repositories/reacts.repository.ts';
+import { contentTypeEnum, Report } from '../../models/reports.model.ts';
 
 /**
  * Create new comment under a post
@@ -240,7 +241,7 @@ const getCommentsController = async (req: Request, res: Response) => {
                 return res.status(404).json({ message: "Post does not exist" });
             }
             // Call the getComments function
-            const result = await getReplies(comment_id, cursor, replyLimit);
+            const result = await getReplies(comment_id, cursor,user._id as string, replyLimit);
         
             // Return the result as a JSON response
             res.status(200).json(result);
@@ -301,6 +302,10 @@ const deleteComment = async (req: Request, res: Response) => {
             );
         }
         await user.updateOne({ $pull: { 'activity.comments': comment_id } });
+        await Report.deleteMany({ 
+            content_ref: comment_id,
+            content_type: contentTypeEnum.Comment 
+        });
         if (replyIds.length > 0) {
             const childComments = await comments.find({ _id: { $in: replyIds } });
             
@@ -320,6 +325,10 @@ const deleteComment = async (req: Request, res: Response) => {
                     { $pull: { 'activity.comments': { $in: userReplyIds }  } }
                 );
             }
+            await Report.deleteMany({
+                content_ref: { $in: replyIds },
+                content_type: contentTypeEnum.Comment
+            });
         }
 
         await comments.deleteOne({ _id: comment_id });

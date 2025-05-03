@@ -19,5 +19,6 @@ router.get('/profile/skills/:user_id', profile.getUserSkills);
 // Route to get user licenses
 router.get('/profile/licenses/:user_id', profile.getUserLicense);
 
-
+// In your user routes file
+router.get('/:user_id/is-me', profile.checkIsMe);
 export default router;

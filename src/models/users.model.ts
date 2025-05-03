@@ -72,6 +72,8 @@ export interface usersInterface extends mongoose.Document{
     user_id: string;
     name: string;
     email: string;
+    temp_email: string;
+    temp_email_expiry: Date;
     password: string;
     phone_number: number;
     country_code: string;
@@ -184,7 +186,7 @@ export interface usersInterface extends mongoose.Document{
             description: string
         }[];
     };
-    savedPosts: postsInterface[];
+    saved_posts: postsInterface[];
     status: statusEnum; 
     blocked: ConnectionRequest[];
     unblocked_users: ConnectionRequest[];
@@ -218,6 +220,7 @@ export interface usersInterface extends mongoose.Document{
     is_verified: boolean;
     is_16_or_above: boolean;
     is_admin: boolean;
+    created_at: number;
     about?: aboutInterface;
 }
 
@@ -238,6 +241,18 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             message: (props) => `${props.value} is not a valid email!`,
         },
     },
+    temp_email: {
+        type: String,
+        required: false,
+        unique: true,
+        validate: {
+            validator: function (v: string) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid email!`,
+        },
+    },
+    temp_email_expiry: { type: Date },
     password: { type: String, required: true },
     phone_number: { type: Number },
     country_code: { type: String },
@@ -431,7 +446,7 @@ const usersSchema = new mongoose.Schema<usersInterface>({
             description: { type: String },
         }]
     },
-    savedPosts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
+    saved_posts:[{ type: Schema.Types.ObjectId, ref: "posts" }],
     status: { type: String, enum: Object.values(statusEnum)},
     blocked: [
         {
@@ -477,6 +492,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         about: { type: String },
         skills: [{ type: String }],
     },
+    created_at:{ 
+        type: Number, 
+        default: () => Math.floor(Date.now() / 1000)
+    },    
     is_admin: { type: Boolean, default: false },
 });
 

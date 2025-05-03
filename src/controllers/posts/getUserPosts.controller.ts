@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { findUserByUserId} from '../../utils/database.helper.ts';
-import { enhancePosts, getSavedPostsCursorBased} from '../../repositories/posts.repository.ts';
+import { enhancePosts, getPostsFromPostIdsCursorBased} from '../../repositories/posts.repository.ts';
 import { postsInterface } from '../../models/posts.model.ts';
 import { validateTokenAndUser } from '../../utils/helperFunctions.utils.ts';
 import { handleProfileAccess } from '../../repositories/user.repository.ts';
@@ -36,9 +36,12 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
         const fetchLimit = willNeedFiltering ? limit * 2 : limit; // Fetch more if we'll filter
         
         // Fetch posts with the potentially increased limit
-        const displayedUserPosts = [...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id);
+        const displayedUserPosts = [
+            ...[...targetUser.activity.posts].reverse().map((post: postsInterface) => post._id),
+            ...[...targetUser.activity.reposted_posts || []].reverse().map((repost: postsInterface) => repost._id)
+        ].filter(Boolean);
         const { posts: initialPostsData, next_cursor: initialnext_cursor } = 
-            await getSavedPostsCursorBased(displayedUserPosts as string[], cursor, fetchLimit);
+            await getPostsFromPostIdsCursorBased(displayedUserPosts as string[], cursor, fetchLimit,viewerUser._id as string);
         
         // Apply filtering if needed
         let filteredPosts = initialPostsData;
@@ -56,7 +59,7 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
             let currentCursor: number | null = initialnext_cursor;
             while (finalPosts.length < limit && currentCursor) {
                 const { posts: additionalPosts, next_cursor: newCursor } = 
-                    await getSavedPostsCursorBased(displayedUserPosts as string[], currentCursor, limit);
+                    await getPostsFromPostIdsCursorBased(displayedUserPosts as string[], currentCursor, limit,viewerUser._id as string);
                 
                 // Filter the additional posts
                 const filteredAdditionalPosts = !isFromConnection && !is_me ? 
@@ -77,11 +80,13 @@ const displayUserPosts = async (req: Request, res: Response): Promise<Response |
             finalPosts = finalPosts.slice(0, limit);
         }
 
+        const sortedPosts = [...finalPosts].sort((a, b) => b.date - a.date);
+
         // Enhance posts with reactions data before returning
         const enhancedPosts = await enhancePosts(
-            finalPosts,
+            sortedPosts,
             viewerUser._id!.toString(), 
-            viewerUser.savedPosts
+            viewerUser.saved_posts
         );
         return res.status(200).json({
             message: 'Posts returned successfully',

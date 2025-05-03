@@ -5,6 +5,9 @@ import { deletePost } from '../../controllers/posts/deletePosts.controller.ts';
 import { getPost } from '../../controllers/posts/getPost.controller.ts';
 import { displayUserPosts } from '../../controllers/posts/getUserPosts.controller.ts';
 import { displayPosts } from '../../controllers/posts/displayPosts.Controller.ts';
+import { searchPosts } from '../../controllers/posts/searchPosts.controller.ts';
+import { displayReposts } from '../../controllers/posts/getReposts.controller.ts';
+
 const router = express.Router();
 
 
@@ -31,6 +34,14 @@ router.get('/posts/:postId', (req,res) =>{
 
 router.get('/posts/user/:user_id', (req,res) =>{
     displayUserPosts(req,res);
+});
+router.get('/posts/reposts/:postId', (req,res) =>{
+    displayReposts(req,res);
+});
+
+// To match the pattern used by other routes:
+router.get('/search/posts', (req, res) => {
+    searchPosts(req, res);
 });
 
 

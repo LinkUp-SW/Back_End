@@ -19,6 +19,7 @@ export interface jobApplicationsInterface extends mongoose.Document{
     country_code: string;
     resume: string;
     application_status: applicationStatusEnum;
+    resolved_at?: number;
 }
 
 const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
@@ -39,6 +40,7 @@ const jobApplicationsSchema = new Schema<jobApplicationsInterface>({
     country_code: { type: String },
     resume: { type: String },
     application_status: { type: String, enum: Object.values(applicationStatusEnum), default: applicationStatusEnum.pending },
+    resolved_at:{ type: Number }
 });
 
 const jobApplications = mongoose.model<jobApplicationsInterface>('jobApplications', jobApplicationsSchema);

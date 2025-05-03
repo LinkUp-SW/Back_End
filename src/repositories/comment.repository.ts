@@ -31,7 +31,7 @@ export class CommentRepository {
       media: media || null,
       tagged_users:taggedUsers
     });
-    const authorInfo = await getFormattedAuthor(user._id);
+    const authorInfo = await getFormattedAuthor(user._id,user._id);
     return {comment:comment,author:authorInfo}
   }
 
@@ -178,8 +178,8 @@ export const getComments = async (
       
       // Create user info map for quick lookups
       const userInfoMap = new Map();
-      for (const userId of userIdsToFetch) {
-        userInfoMap.set(userId,await getFormattedAuthor(userId));
+      for (const authorId of userIdsToFetch) {
+        userInfoMap.set(authorId,await getFormattedAuthor(authorId,userId as string));
       }
       
       // Organize replies by parent comment ID
@@ -344,6 +344,7 @@ export const getComments = async (
 export const getReplies = async (
     commentId: string,
     cursor: number,
+    viewerId: string,
     limit: number
   ): Promise<{ count: number; replies: Record<string, any>; next_cursor: number | null }> => {
     try {
@@ -374,7 +375,7 @@ export const getReplies = async (
       // Create user info map for quick lookups
       const userInfoMap = new Map();
       for (const userId of userIdsToFetch) {
-        userInfoMap.set(userId,await getFormattedAuthor(userId));
+        userInfoMap.set(userId,await getFormattedAuthor(userId,viewerId));
       }
       
       // Build the result object
