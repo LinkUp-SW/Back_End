@@ -10,6 +10,7 @@ import users from '../../models/users.model.ts';
 import { CommentRepository, getAllCommentChildrenIds, getComments, getReplies } from '../../repositories/comment.repository.ts';
 import { convert_idIntoUser_id, convertUser_idInto_id } from '../../repositories/user.repository.ts';
 import { deleteCommentReactions } from '../../repositories/reacts.repository.ts';
+import { contentTypeEnum, Report } from '../../models/reports.model.ts';
 
 /**
  * Create new comment under a post
@@ -301,6 +302,10 @@ const deleteComment = async (req: Request, res: Response) => {
             );
         }
         await user.updateOne({ $pull: { 'activity.comments': comment_id } });
+        await Report.deleteMany({ 
+            content_ref: comment_id,
+            content_type: contentTypeEnum.Comment 
+        });
         if (replyIds.length > 0) {
             const childComments = await comments.find({ _id: { $in: replyIds } });
             
@@ -320,6 +325,10 @@ const deleteComment = async (req: Request, res: Response) => {
                     { $pull: { 'activity.comments': { $in: userReplyIds }  } }
                 );
             }
+            await Report.deleteMany({
+                content_ref: { $in: replyIds },
+                content_type: contentTypeEnum.Comment
+            });
         }
 
         await comments.deleteOne({ _id: comment_id });
