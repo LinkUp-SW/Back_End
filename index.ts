@@ -60,7 +60,6 @@ import peopleYouMayKnowRoutes from './src/routes/my_network/peopleYouMayKnow.rou
 import userSearchRoutes from './src/routes/my_network/userSearch.routes.ts';
 import reportRoutes from './src/routes/admin/report.routes.ts'
 import dashboard from './src/routes/admin/dashboard.routes.ts'
-
 import notificationRoutes from './src/routes/notification/notification.routes.ts';
 
 dotenv.config();
@@ -83,7 +82,7 @@ const generateStartupToken = () => {
 };
 
 
-connectToTestDatabase()
+connectToDatabase()
   .then(() => {
     server.listen(PORT, () => {
       console.log('Server is running on port:', PORT);
