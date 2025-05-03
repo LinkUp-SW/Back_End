@@ -11973,7 +11973,238 @@ paths:
                   error:
                     type: string
                     example: "Internal server error"
-
+  /api/v1/admin/analytics:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get platform analytics data
+      description: >
+        Retrieves detailed analytics data for visualizing platform metrics over time.
+        Supports filtering by metric type and time period with different time intervals
+        (daily, weekly, monthly) automatically selected based on the period length.
+        The data returned is structured for direct use with frontend charting libraries.
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication (admin access required)
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        - name: periodParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["7days", "30days", "90days", "1year"]
+            default: "30days"
+          description: Time period for data analysis
+          example: "30days"
+        - name: metricParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["all", "users", "content", "engagement", "moderation", "jobs"]
+            default: "all"
+          description: Type of metrics to retrieve
+          example: "all"
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Platform analytics data retrieved successfully"
+                  period:
+                    type: string
+                    example: "30days"
+                  interval:
+                    type: string
+                    enum: ["day", "week", "month"]
+                    example: "day"
+                  data:
+                    type: object
+                    properties:
+                      userGrowth:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            date:
+                              type: string
+                              example: "2025-04-15"
+                            count:
+                              type: integer
+                              example: 42
+                      contentCreation:
+                        type: object
+                        properties:
+                          posts:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 67
+                      engagementMetrics:
+                        type: object
+                        properties:
+                          reactions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                type:
+                                  type: string
+                                  example: "like"
+                                count:
+                                  type: integer
+                                  example: 128
+                          connections:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 35
+                          comments:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 56
+                      moderationMetrics:
+                        type: object
+                        properties:
+                          reportsCreated:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 12
+                          reportsResolved:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 9
+                                avgResolutionHours:
+                                  type: number
+                                  example: 3.5
+                      jobMetrics:
+                        type: object
+                        properties:
+                          jobsPosted:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                count:
+                                  type: integer
+                                  example: 15
+                          applicationOutcomes:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                date:
+                                  type: string
+                                  example: "2025-04-15"
+                                status:
+                                  type: string
+                                  example: "Accepted"
+                                count:
+                                  type: integer
+                                  example: 7
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid metric parameter. Must be one of: all, users, content, engagement, moderation, jobs"
+                  success:
+                    type: boolean
+                    example: false
+        '401':
+          description: Unauthorized - invalid or expired token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '403':
+          description: Forbidden - user does not have admin privileges
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Access denied. Admin privileges required"
+                  success:
+                    type: boolean
+                    example: false
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error getting platform analytics data"
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error message details"
 components:
   securitySchemes:
     bearerAuth:
