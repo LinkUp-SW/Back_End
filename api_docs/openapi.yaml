@@ -6777,8 +6777,6 @@ paths:
                   message:
                     type: string
                     example: "Error retrieving subscription status"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/checkout:
     post:
@@ -6867,8 +6865,6 @@ paths:
                   message:
                     type: string
                     example: "Error creating checkout session"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/cancel:
     post:
@@ -6928,8 +6924,6 @@ paths:
                   message:
                     type: string
                     example: "Error canceling subscription"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/resume:
     post:
@@ -6989,8 +6983,6 @@ paths:
                   message:
                     type: string
                     example: "Error resuming subscription"
-      security:
-        - bearerAuth: []
 
   /api/v1/user/subscription/invoices:
     get:
@@ -7070,8 +7062,7 @@ paths:
                   message:
                     type: string
                     example: "Error getting invoice history"
-      security:
-        - bearerAuth: []     
+ 
   /api/v1/user/people-you-may-know:
     get:
       tags:
@@ -7618,6 +7609,331 @@ paths:
                     type: string
                     example: "Error searching jobs"
   
+    /api/v1/search/company/{query}:
+    get:
+      tags:
+        - Search
+      summary: Search for companies
+      description: >
+        Searches for organizations with category_type "company" that match the provided query.
+        Returns basic company information including ID, name, and logo.
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Search term to match against company names
+          example: "tech"
+      responses:
+        '200':
+          description: Companies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Companies retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "Tech Solutions Inc"
+                        logo:
+                          type: string
+                          example: "https://example.com/logo.png"
+        '400':
+          description: Invalid request - Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/search/education/{query}:
+    get:
+      tags:
+        - Search
+      summary: Search for educational institutions
+      description: >
+        Searches for organizations with category_type "education" that match the provided query.
+        Returns basic institution information including ID, name, and logo.
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Search term to match against educational institution names
+          example: "university"
+      responses:
+        '200':
+          description: Educational institutions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Educational institutions retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "State University"
+                        logo:
+                          type: string
+                          example: "https://example.com/university-logo.png"
+        '400':
+          description: Invalid request - Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/search/{query}:
+    get:
+      tags:
+        - Search
+      summary: Search for all organizations
+      description: >
+        Searches for all organizations regardless of category_type that match the provided query.
+        Returns basic organization information including ID, name, logo, and category type.
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Search term to match against organization names
+          example: "global"
+      responses:
+        '200':
+          description: Organizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organizations retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        name:
+                          type: string
+                          example: "Global Enterprises"
+                        logo:
+                          type: string
+                          example: "https://example.com/logo.png"
+                        category_type:
+                          type: string
+                          example: "company"
+                          enum: ["company", "education"]
+        '400':
+          description: Invalid request - Missing query parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Search query is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Server error"
+
+  /api/v1/search/users/{name}:
+    get:
+      tags:
+        - Search
+      summary: Search for users by name
+      description: >
+        Searches for users whose first or last name matches the provided query.
+        Handles single and multiple word queries with different matching strategies.
+        If authenticated, excludes blocked users and users who have blocked the viewer.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name to search for (can be first name, last name, or full name)
+          example: "John Smith"
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional bearer token for authenticated searches
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        first_name:
+                          type: string
+                          example: "John"
+                        last_name:
+                          type: string
+                          example: "Smith"
+                        headline:
+                          type: string
+                          example: "Software Engineer at Tech Company"
+                        profile_photo:
+                          type: string
+                          example: "https://example.com/profile.jpg"
+        '400':
+          description: Invalid request - Missing name parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Name parameter is required"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error searching users by name"
+
+  /api/v1/search/is-follower/{organization_id}:
+    get:
+      tags:
+        - Search
+      summary: Check if user follows an organization
+      description: >
+        Checks if the authenticated user is a follower of the specified organization.
+        Requires authentication via bearer token.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to check follower status for
+          example: "60d21b4667d0d8992e610c85"
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Follower status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isFollower:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid request - Invalid organization ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Valid organization ID is required"
+        '401':
+          description: Unauthorized - Invalid or missing token
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization not found"
+        '500':
+          description: Server error
+
   /api/v1/jobs/get-top-jobs:
     get:
       tags:
@@ -7724,8 +8040,7 @@ paths:
                   message:
                     type: string
                     example: "Failed to retrieve job recommendations"
-      security:
-        - bearerAuth: []
+
 
   /api/v1/jobs/get-jobs:
     get:
@@ -9921,9 +10236,736 @@ paths:
                   message:
                     type: string
                     example: "Server error"
+  
+  /api/v1/company/create-job-from-company/{organization_id}:
+    post:
+      tags:
+        - Company Jobs
+      summary: Create a new job posting
+      description: >
+        Creates a new job posting for a specific organization.
+        Only users who are admins of the organization can create job postings.
+        The job will be associated with the specified organization.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to create a job for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_title:
+                  type: string
+                  example: "Senior Software Engineer"
+                location:
+                  type: string
+                  example: "New York, NY"
+                job_type:
+                  type: string
+                  enum: ["Full-time", "Part-time", "Contract", "Temporary", "Other", "Volunteer", "Internship"]
+                  example: "Full-time"
+                workplace_type:
+                  type: string
+                  enum: ["On-site", "Hybrid", "Remote"]
+                  example: "Hybrid"
+                experience_level:
+                  type: string
+                  enum: ["Internship", "Entry Level", "Associate", "Mid-Senior", "Director", "Executive"]
+                  example: "Mid-Senior"
+                description:
+                  type: string
+                  example: "We are looking for a skilled software engineer to join our team..."
+                qualifications:
+                  type: array
+                  items:
+                    type: string
+                  example: ["5+ years experience in software development", "Bachelor's degree in Computer Science"]
+                responsibilities:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Design and implement new features", "Collaborate with cross-functional teams"]
+                benefits:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Health insurance", "Flexible working hours", "Remote work options"]
+                targetted_skills:
+                  type: array
+                  items:
+                    type: string
+                  example: ["JavaScript", "React", "Node.js"]
+                receive_applicants_by:
+                  type: string
+                  enum: ["Email", "At an external website"]
+                  example: "Email"
+                receiving_method:
+                  type: string
+                  example: "jobs@company.com"
+                salary:
+                  type: number
+                  example: 120000
+                job_status:
+                  type: string
+                  enum: ["Open", "Closed"]
+                  example: "Open"
+              required:
+                - job_title
+                - location
+                - job_type
+                - workplace_type
+                - experience_level
+                - description
+                - receive_applicants_by
+                - receiving_method
+      responses:
+        '201':
+          description: Job posted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job posted successfully"
+                  job:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      job_title:
+                        type: string
+                        example: "Senior Software Engineer"
+        '401':
+          description: Unauthorized - invalid or expired token
+        '403':
+          description: Forbidden - user is not an admin of the organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
 
-security:
-  - bearerAuth: []
+  /api/v1/company/get-jobs-from-company/{organization_id}:
+    get:
+      tags:
+        - Company Jobs
+      summary: Get all jobs for an organization
+      description: >
+        Retrieves all jobs posted by a specific organization.
+        Jobs are returned sorted by the most recent first.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to get jobs for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Successfully retrieved company jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        job_title:
+                          type: string
+                          example: "Senior Software Engineer"
+                        location:
+                          type: string
+                          example: "New York, NY"
+                        job_type:
+                          type: string
+                          example: "Full-time"
+                        posted_time:
+                          type: string
+                          format: date-time
+                          example: "2023-04-15T10:30:00Z"
+                        job_status:
+                          type: string
+                          example: "Open"
+                  count:
+                    type: integer
+                    example: 5
+        '401':
+          description: Unauthorized - invalid or expired token
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/change-job-status/{job_id}/{organization_id}:
+    put:
+      tags:
+        - Company Jobs
+      summary: Update job status
+      description: >
+        Updates the status of a specific job (open or closed).
+        Only admins of the organization can change job status.
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the job to update
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization that owns the job
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                job_status:
+                  type: string
+                  enum: ["Open", "Closed"]
+                  example: "Closed"
+              required:
+                - job_status
+      responses:
+        '200':
+          description: Job status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Job status updated successfully"
+                  job:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "60d21b4667d0d8992e610c85"
+                      job_title:
+                        type: string
+                        example: "Senior Software Engineer"
+                      job_status:
+                        type: string
+                        example: "Closed"
+        '401':
+          description: Unauthorized - invalid or expired token
+        '403':
+          description: Forbidden - user is not an admin of the organization
+        '404':
+          description: Job or organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/get-company-jobs-analytics/{organization_id}:
+    get:
+      tags:
+        - Company Jobs
+      summary: Get job analytics for an organization
+      description: >
+        Retrieves analytics data for all jobs posted by a specific organization.
+        Includes statistics on total jobs, open vs. closed jobs, application counts,
+        and distribution of applications by status. Only admins of the organization 
+        can access this data.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to get job analytics for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+          example: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: Successfully retrieved job analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company jobs analytics retrieved successfully"
+                  analytics:
+                    type: object
+                    properties:
+                      totalJobs:
+                        type: integer
+                        example: 10
+                      openJobs:
+                        type: integer
+                        example: 7
+                      closedJobs:
+                        type: integer
+                        example: 3
+                      totalApplications:
+                        type: integer
+                        example: 45
+                      applicationStatusDistribution:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          Pending: 20
+                          Viewed: 15
+                          Accepted: 5
+                          Rejected: 5
+                      jobStatusDistribution:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                        example:
+                          Open: 7
+                          Closed: 3
+                      topJobs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            job_id:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            job_title:
+                              type: string
+                              example: "Senior Software Engineer"
+                            applications_count:
+                              type: integer
+                              example: 12
+        '401':
+          description: Unauthorized - invalid or expired token
+        '403':
+          description: Forbidden - user is not an admin of the organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+    /api/v1/company/create-post-from-company/{organization_id}:
+    post:
+      tags:
+        - Company Posts
+      summary: Create a new post for an organization
+      description: >
+        Creates a new post associated with an organization.
+        Only users who are admins of the organization can create posts.
+        The post will be marked with is_company=true and associated with the organization.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to create a post for
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: The text content of the post
+                  example: "We're excited to announce our new product launch!"
+                mediaType:
+                  type: string
+                  enum: [image, images, video, pdf, post, link, none]
+                  description: The type of media attached to the post
+                  example: "image"
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs or base64 encoded media
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                commentsDisabled:
+                  type: string
+                  enum: [Anyone, Connections only, No one]
+                  description: Who can comment on the post
+                  example: "Anyone"
+                publicPost:
+                  type: boolean
+                  description: Whether the post is public or private
+                  example: true
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs to tag in the post
+                  example: ["user123", "user456"]
+              required:
+                - content
+      responses:
+        '201':
+          description: Post created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company post successfully created"
+                  postId:
+                    type: string
+                    example: "60d21b4667d0d8992e610c85"
+        '400':
+          description: Invalid request - Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Content or media is required"
+        '401':
+          description: Unauthorized - Invalid or expired token
+        '403':
+          description: Forbidden - User is not an admin of the organization
+        '404':
+          description: Organization not found
+        '500':
+          description: Server error
+
+  /api/v1/company/update-post-from-company/{organization_id}/{post_id}:
+    put:
+      tags:
+        - Company Posts
+      summary: Update an organization post
+      description: >
+        Updates an existing post associated with an organization.
+        Only organization admins can update posts.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization that owns the post
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to update
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: The text content of the post
+                  example: "Updated announcement about our new product launch!"
+                mediaType:
+                  type: string
+                  enum: [image, images, video, pdf, post, link, none]
+                  description: The type of media attached to the post
+                  example: "image"
+                media:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of media URLs or base64 encoded media
+                  example: ["data:image/jpeg;base64,/9j/4AAQSkZJRg..."]
+                commentsDisabled:
+                  type: string
+                  enum: [Anyone, Connections only, No one]
+                  description: Who can comment on the post
+                  example: "Anyone"
+                publicPost:
+                  type: boolean
+                  description: Whether the post is public or private
+                  example: true
+                taggedUsers:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of user IDs to tag in the post
+                  example: ["user123", "user456"]
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company post successfully updated"
+        '400':
+          description: Invalid request - Missing post ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post ID is required"
+        '401':
+          description: Unauthorized - Invalid or expired token
+        '403':
+          description: Forbidden - User is not an admin or post doesn't belong to the organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This post does not belong to the specified organization"
+        '404':
+          description: Post or organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+
+  /api/v1/company/delete-post-from-company/{organization_id}/{post_id}:
+    delete:
+      tags:
+        - Company Posts
+      summary: Delete an organization post
+      description: >
+        Deletes a post associated with an organization.
+        Only organization admins can delete posts.
+        Also removes related comments, reactions, and reposts.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization that owns the post
+        - name: post_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the post to delete
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Bearer token for authentication
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company post successfully deleted"
+        '400':
+          description: Invalid request - Missing post ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post ID is required"
+        '401':
+          description: Unauthorized - Invalid or expired token
+        '403':
+          description: Forbidden - User is not an admin or post doesn't belong to the organization
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "This post does not belong to the specified organization"
+        '404':
+          description: Post or organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Post not found"
+        '500':
+          description: Server error
+
+  /api/v1/company/get-posts-from-company/{organization_id}:
+    get:
+      tags:
+        - Company Posts
+      summary: Get all posts from an organization
+      description: >
+        Retrieves all posts associated with an organization.
+        Posts are sorted by creation date (newest first).
+        Includes comment and reaction details for each post.
+      parameters:
+        - name: organization_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the organization to get posts from
+      responses:
+        '200':
+          description: Successfully retrieved company posts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Company posts retrieved successfully"
+                  posts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          example: "60d21b4667d0d8992e610c85"
+                        content:
+                          type: string
+                          example: "We're excited to announce our new product launch!"
+                        date:
+                          type: number
+                          example: 1624312166
+                        media:
+                          type: object
+                          properties:
+                            link:
+                              type: array
+                              items:
+                                type: string
+                            media_type:
+                              type: string
+                        comments_disabled:
+                          type: string
+                          example: "Anyone"
+                        public_post:
+                          type: boolean
+                          example: true
+                        is_edited:
+                          type: boolean
+                          example: false
+                        is_company:
+                          type: boolean
+                          example: true
+                        author:
+                          type: object
+                          properties:
+                            first_name:
+                              type: string
+                              example: "Acme Corporation"
+                            last_name:
+                              type: string
+                              example: " "
+                            headline:
+                              type: string
+                              example: " "
+                            username:
+                              type: string
+                              example: "60d21b4667d0d8992e610c85"
+                            profile_picture:
+                              type: string
+                              example: "https://example.com/logos/acme.jpg"
+        '400':
+          description: Invalid request - Missing organization ID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization ID is required"
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Organization not found"
+        '500':
+          description: Server error
 
 components:
   securitySchemes:
