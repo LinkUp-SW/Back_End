@@ -39,12 +39,8 @@ export const createPostFromCompany = async (req: Request, res: Response, next: N
         if (!isAdmin) return;
         
         // Validate required fields
-        if (!content && !media) {
+        if (!content || !media) {
             return res.status(400).json({ message: 'Content or media is required' });
-        }
-        
-        if (commentsDisabled === undefined || publicPost === undefined) {
-            return res.status(400).json({ message: 'Comments settings and post visibility are required' });
         }
         
         // Process media based on type
