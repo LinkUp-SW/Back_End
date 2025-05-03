@@ -7,15 +7,16 @@ import organizations from "../models/organizations.model.ts";
 import { extractPublicId } from "../services/cloudinary.service.ts";
 
 export const validateTokenAndGetUser = async (req: Request, res: Response) => {
-  let userId = await getUserIdFromToken(req, res);
-  if (!userId) return;
+    const authHeader = req.headers.authorization || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+    const decodedToken = tokenUtils.validateToken(token) as { userId: string };
 
-    if (userId) {
+    if (!decodedToken || !decodedToken.userId) {
         res.status(401).json({ message: "Unauthorized" });
         return null;
     }
-
-    const user = await findUserByUserId(userId, res);
+    
+    const user = await findUserByUserId(decodedToken.userId, res);
     return user;
 };
 
@@ -236,7 +237,7 @@ export const formatCompanyPosts = (posts: any[], organization: any,viewerId:stri
             username: organization._id,
             profile_picture: organization.logo,
             followers_count: followersCount,
-            isFollowing
+            is_following:isFollowing
         };
         
         return postObj;
@@ -268,7 +269,7 @@ export async function formatCompanyPost(posts: any,viewerId:string){
           username: organization._id,
           profile_picture: organization.logo,
           followers_count: organization.followers ? organization.followers.length : 0,
-          isFollowing
+          is_following:isFollowing
       };
       
 };

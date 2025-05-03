@@ -141,7 +141,9 @@ export const getCompany = async (req: Request, res: Response, next: NextFunction
         const companyProfile = await getCompanyProfileById(companyId, res);
         if (!companyProfile) return;
 
-        res.status(200).json({ message: "Company profile retrieved successfully", companyProfile });
+        const followerCount = companyProfile.followers ? companyProfile.followers.length : 0;
+
+        res.status(200).json({ message: "Company profile retrieved successfully", companyProfile, followerCount });
     } catch (error) {
         next(error);
     }

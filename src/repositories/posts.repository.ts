@@ -348,7 +348,7 @@ export const getPostsCursorBased = async (
       // start with direct posts
       { 
         $match: { 
-          user_id: { $in: userObjectIds }, 
+          user_id: { $in: userIdsToFetch }, 
           ...(cursor ? { date: { $lt: cursor } } : {}) 
         } 
       },
@@ -449,8 +449,8 @@ export const getPostsCursorBased = async (
     // Get user's saved posts for the enhancePosts function
     let userSavedPosts;
     if (userId) {
-      const userData = await users.findById(userId, { savedPosts: 1 });
-      userSavedPosts = userData?.savedPosts || [];
+      const userData = await users.findById(userId, { saved_posts: 1 });
+      userSavedPosts = userData?.saved_posts || [];
     }
     
     // Use the enhancePosts function to add all necessary metadata

@@ -332,7 +332,7 @@ export class UserRepository {
     await mongoose.model('comments').deleteMany({ user_id: userId });
     
     // Delete all reactions by this user
-    await mongoose.model('reactions').deleteMany({ user_id: userId });
+    await mongoose.model('reacts').deleteMany({ user_id: userId });
     
     // Remove user reactions from other users' activity
     await User.updateMany(
@@ -812,7 +812,9 @@ export async function getFormattedAuthor(userId: string, viewerId: string) {
         "bio.first_name": 1,
         "bio.last_name": 1,
         "bio.headline": 1,
-        profile_photo: 1
+        profile_photo: 1,
+        privacy_settings: 1, 
+        followers: 1
       }
     ).lean();
     
