@@ -267,7 +267,9 @@ export const changeJobApplicationStatus = async (req: Request, res: Response, ne
             res.status(404).json({ message: "Job not found" });
             return;
         }
-
+        if (status == "Accepted" || status == "Rejected") {
+            jobApplication.resolved_at = Math.floor(Date.now() / 1000);
+        }
         // Update the application status
         jobApplication.application_status = status;
         await jobApplication.save();
