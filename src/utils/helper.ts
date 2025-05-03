@@ -223,7 +223,7 @@ export const formatCompanyPosts = (posts: any[], organization: any,viewerId:stri
             username: organization._id,
             profile_picture: organization.logo,
             followers_count: followersCount,
-            isFollowing
+            is_following:isFollowing
         };
         
         return postObj;
@@ -255,7 +255,7 @@ export async function formatCompanyPost(posts: any,viewerId:string){
           username: organization._id,
           profile_picture: organization.logo,
           followers_count: organization.followers ? organization.followers.length : 0,
-          isFollowing
+          is_following:isFollowing
       };
       
 };
