@@ -11889,6 +11889,91 @@ paths:
         '500':
           description: Server error
 
+  /api/v1/user/{user_id}/is-me:
+    get:
+      tags:
+        - User Profile
+      summary: Check if authenticated user matches specified user
+      description: >
+        Determines if the currently authenticated user is the same as the specified user.
+        This is a lightweight endpoint for quick identity verification in frontend permission handling.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the user to check against the authenticated user
+        - name: Authorization
+          in: header
+          required: true
+          schema:
+            type: string
+          description: JWT Bearer token for authentication
+      responses:
+        '200':
+          description: Successfully checked user identity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_me:
+                    type: boolean
+                    description: Whether the authenticated user is the same as the specified user
+                    example: true
+                  status:
+                    type: string
+                    enum: [self, other]
+                    description: Status indicator of the relationship
+                    example: "self"
+        '400':
+          description: Missing required parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User ID parameter is required"
+        '401':
+          description: Invalid or expired authentication token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid or expired token"
+                  success:
+                    type: boolean
+                    example: false
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error checking user identity"
+                  error:
+                    type: string
+                    example: "Internal server error"
+
 components:
   securitySchemes:
     bearerAuth:
