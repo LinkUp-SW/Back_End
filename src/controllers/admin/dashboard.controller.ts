@@ -65,7 +65,6 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
 
   
       // Platform analytics
-      const newUsersToday = await users.countDocuments({ created_at: { $gte: todayUnix } });
       const contentPostedToday = await posts.countDocuments({ date: { $gte: todayUnix } });
   
       res.json({
@@ -90,7 +89,7 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
           rejected_today: rejectedJobsToday,
         },
         platform_analytics: {
-          new_users_today: newUsersToday,
+          new_users_today: usersToday,
           content_posted_today: contentPostedToday
         }
       });
