@@ -12,16 +12,6 @@ const userRepo = new UserRepository();
 export const createAdmin = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     let userId = await getUserIdFromToken(req, res);
     if (!userId) return;
-    const user = await findUserByUserId(userId, res);
-      if (!user) return;
-      
-      // Check if user is admin
-      if (!user.is_admin) {
-          return res.status(403).json({ 
-              message: 'Access denied. Admin privileges required',
-              success: false 
-          });
-      }
     // Check if the user is an admin
     const currentUser = await userRepo.findByUserId(userId);   
     if (!currentUser || currentUser.is_admin !== true) {
