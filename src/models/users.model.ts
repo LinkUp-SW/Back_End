@@ -220,6 +220,7 @@ export interface usersInterface extends mongoose.Document{
     is_verified: boolean;
     is_16_or_above: boolean;
     is_admin: boolean;
+    created_at: number;
     about?: aboutInterface;
 }
 
@@ -491,6 +492,10 @@ const usersSchema = new mongoose.Schema<usersInterface>({
         about: { type: String },
         skills: [{ type: String }],
     },
+    created_at:{ 
+        type: Number, 
+        default: () => Math.floor(Date.now() / 1000)
+    },    
     is_admin: { type: Boolean, default: false },
 });
 
