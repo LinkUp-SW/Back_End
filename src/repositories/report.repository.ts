@@ -4,9 +4,10 @@ import { PostRepository } from './posts.repository.ts';
 import { deleteAllPostReactions, deleteCommentReactions } from './reacts.repository.ts';
 import { CommentRepository, deleteAllComments, getAllCommentChildrenIds } from './comment.repository.ts';
 import users from '../models/users.model.ts';
-import { postTypeEnum } from '../models/posts.model.ts';
+import posts, { postTypeEnum } from '../models/posts.model.ts';
 import comments from '../models/comments.model.ts';
 import jobApplications from '../models/job_applications.model.ts';
+import jobs from '../models/jobs.model.ts';
 
 export class ReportRepository {
     
@@ -563,6 +564,844 @@ async averageResolutionTime(): Promise<number> {
     ]);
     if (!result.length) return 0;
     return result[0].avgMillis/ 60 / 60; // ms → hours
+}
+
+async getUserGrowthData(startDate: Date, endDate: Date, interval: string) {
+    const startUnix = Math.floor(startDate.getTime() / 1000);
+    const endUnix = Math.floor(endDate.getTime() / 1000);
+    
+    // For daily intervals
+    if (interval === 'day') {
+      return await users.aggregate([
+        { 
+          $match: { 
+            created_at: { $gte: startUnix, $lte: endUnix } 
+          } 
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: { $toDate: { $multiply: ['$created_at', 1000] } } },
+              month: { $month: { $toDate: { $multiply: ['$created_at', 1000] } } },
+              day: { $dayOfMonth: { $toDate: { $multiply: ['$created_at', 1000] } } }
+            },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+        {
+          $project: {
+            date: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: {
+                  $dateFromParts: {
+                    year: '$_id.year',
+                    month: '$_id.month',
+                    day: '$_id.day'
+                  }
+                }
+              }
+            },
+            count: 1,
+            _id: 0
+          }
+        }
+      ]);
+    }else if (interval === 'week') {
+        return await users.aggregate([
+          { 
+            $match: { 
+              created_at: { $gte: startUnix, $lte: endUnix } 
+            } 
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: { $toDate: { $multiply: ['$created_at', 1000] } } },
+                week: { $week: { $toDate: { $multiply: ['$created_at', 1000] } } }
+              },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { '_id.year': 1, '_id.week': 1 } },
+          {
+            $project: {
+              date: {
+                $concat: [
+                  { $toString: "$_id.year" }, 
+                  "-W", 
+                  { $toString: "$_id.week" }
+                ]
+              },
+              count: 1,
+              _id: 0
+            }
+          }
+        ]);
+        
+      } else if (interval === 'month') {
+        return await users.aggregate([
+          { 
+            $match: { 
+              created_at: { $gte: startUnix, $lte: endUnix } 
+            } 
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: { $toDate: { $multiply: ['$created_at', 1000] } } },
+                month: { $month: { $toDate: { $multiply: ['$created_at', 1000] } } }
+              },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { '_id.year': 1, '_id.month': 1 } },
+          {
+            $project: {
+              date: {
+                $dateToString: {
+                  format: '%Y-%m',
+                  date: {
+                    $dateFromParts: {
+                      year: '$_id.year',
+                      month: '$_id.month',
+                      day: 1
+                    }
+                  }
+                }
+              },
+              count: 1,
+              _id: 0
+            }
+          }
+        ]);
+        
+      }
+    return [];
+  }
+  
+  /**
+   * Get content creation metrics over time (posts, comments)
+   */
+  async getContentCreationData(startDate: Date, endDate: Date, interval: string) {
+    const startUnix = Math.floor(startDate.getTime() / 1000);
+    const endUnix = Math.floor(endDate.getTime() / 1000);
+    
+    if (interval === 'day') {
+      // Get post creation data
+      const postsData = await posts.aggregate([
+        { 
+          $match: { 
+            date: { $gte: startUnix, $lte: endUnix } 
+          } 
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+              month: { $month: { $toDate: { $multiply: ['$date', 1000] } } },
+              day: { $dayOfMonth: { $toDate: { $multiply: ['$date', 1000] } } }
+            },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+        {
+          $project: {
+            date: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: {
+                  $dateFromParts: {
+                    year: '$_id.year',
+                    month: '$_id.month',
+                    day: '$_id.day'
+                  }
+                }
+              }
+            },
+            count: 1,
+            _id: 0
+          }
+        }
+      ]);
+            
+      return {posts: postsData,};
+    } else if (interval === 'week') {
+        const postsData = await posts.aggregate([
+          { 
+            $match: { 
+              date: { $gte: startUnix, $lte: endUnix } 
+            } 
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+                week: { $week: { $toDate: { $multiply: ['$date', 1000] } } }
+              },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { '_id.year': 1, '_id.week': 1 } },
+          {
+            $project: {
+              date: {
+                $concat: [
+                  { $toString: "$_id.year" }, 
+                  "-W", 
+                  { $toString: "$_id.week" }
+                ]
+              },
+              count: 1,
+              _id: 0
+            }
+          }
+        ]);
+        
+        return { posts: postsData };
+      } else if (interval === 'month') {
+        const postsData = await posts.aggregate([
+          { 
+            $match: { 
+              date: { $gte: startUnix, $lte: endUnix } 
+            } 
+          },
+          {
+            $group: {
+              _id: {
+                year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+                month: { $month: { $toDate: { $multiply: ['$date', 1000] } } }
+              },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { '_id.year': 1, '_id.month': 1 } },
+          {
+            $project: {
+              date: {
+                $dateToString: {
+                  format: '%Y-%m',
+                  date: {
+                    $dateFromParts: {
+                      year: '$_id.year',
+                      month: '$_id.month',
+                      day: 1
+                    }
+                  }
+                }
+              },
+              count: 1,
+              _id: 0
+            }
+          }
+        ]);
+        
+        return { posts: postsData };
+      }
+    
+    return { posts: [] };
+  } 
+  
+  /**
+   * Get user engagement metrics (reactions, follows, connections)
+   */
+async getEngagementData(startDate: Date, endDate: Date, interval: string) {
+  const startUnix = Math.floor(startDate.getTime() / 1000);
+  const endUnix = Math.floor(endDate.getTime() / 1000);
+  
+  // For daily intervals
+  if (interval === 'day') {
+    // Get reactions data over time
+    const reactions = await mongoose.model('reacts').aggregate([
+      { 
+        $match: { 
+          date: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$date', 1000] } } },
+            day: { $dayOfMonth: { $toDate: { $multiply: ['$date', 1000] } } },
+            type: '$reaction_type'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          type: '$_id.type',
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // User-to-user connections data (friend/follow requests)
+    const connections = await users.aggregate([
+      { 
+        $match: { 
+          'received_connections.date': { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      { $unwind: '$received_connections' },
+      { 
+        $match: { 
+          'received_connections.date': { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$received_connections.date' },
+            month: { $month: '$received_connections.date' },
+            day: { $dayOfMonth: '$received_connections.date' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Comments data - tracking conversation engagement
+    const comments = await mongoose.model('comments').aggregate([
+      { 
+        $match: { 
+          date: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$date', 1000] } } },
+            day: { $dayOfMonth: { $toDate: { $multiply: ['$date', 1000] } } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+    // Private messages tracking (if applicable)
+
+    
+    return {
+      reactions,
+      connections,
+      comments,
+    };
+  }
+  
+  // For weekly intervals
+  else if (interval === 'week') {
+    // Get reactions data over time
+    const reactions = await mongoose.model('reacts').aggregate([
+      { 
+        $match: { 
+          date: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+            week: { $week: { $toDate: { $multiply: ['$date', 1000] } } },
+            type: '$reaction_type'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.week': 1 } },
+      {
+        $project: {
+          date: {
+            $concat: [
+              { $toString: "$_id.year" }, 
+              "-W", 
+              { $toString: "$_id.week" }
+            ]
+          },
+          type: '$_id.type',
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // User-to-user connections data (friend/follow requests)
+    const connections = await users.aggregate([
+      { 
+        $match: { 
+          'received_connections.date': { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      { $unwind: '$received_connections' },
+      { 
+        $match: { 
+          'received_connections.date': { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$received_connections.date'},
+            week: { $week: '$received_connections.date'}
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.week': 1 } },
+      {
+        $project: {
+          date: {
+            $concat: [
+              { $toString: "$_id.year" }, 
+              "-W", 
+              { $toString: "$_id.week" }
+            ]
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Comments data - tracking conversation engagement
+    const comments = await mongoose.model('comments').aggregate([
+      { 
+        $match: { 
+          date: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+            week: { $week: { $toDate: { $multiply: ['$date', 1000] } } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.week': 1 } },
+      {
+        $project: {
+          date: {
+            $concat: [
+              { $toString: "$_id.year" }, 
+              "-W", 
+              { $toString: "$_id.week" }
+            ]
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+  
+    return {
+      reactions,
+      connections,
+      comments,
+
+    };
+  }
+  
+  // For monthly intervals
+  else if (interval === 'month') {
+    // Get reactions data over time
+    const reactions = await mongoose.model('reacts').aggregate([
+      { 
+        $match: { 
+          date: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$date', 1000] } } },
+            type: '$reaction_type'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: 1
+                }
+              }
+            }
+          },
+          type: '$_id.type',
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // User-to-user connections data (friend/follow requests)
+    const connections = await users.aggregate([
+      { 
+        $match: { 
+          'received_connections.date': { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      { $unwind: '$received_connections' },
+      { 
+        $match: { 
+          'received_connections.date': { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$received_connections.date' },
+            month: { $month: '$received_connections.date' },
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: 1
+                }
+              }
+            }
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Comments data - tracking conversation engagement
+    const comments = await mongoose.model('comments').aggregate([
+      { 
+        $match: { 
+          date: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$date', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$date', 1000] } } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: 1
+                }
+              }
+            }
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+  
+    return {
+      reactions,
+      connections,
+      comments,
+
+    };
+  }
+  
+  return {
+    reactions: [],
+    connections: [],
+    comments: [],
+
+  };
+}
+  
+  /**
+   * Get content moderation metrics
+   */
+async getModerationData(startDate: Date, endDate: Date, interval: string) {
+  const startUnix = Math.floor(startDate.getTime() / 1000);
+  const endUnix = Math.floor(endDate.getTime() / 1000);
+  
+  if (interval === 'day') {
+    // Reports created over time
+    const reportsCreated = await Report.aggregate([
+      { 
+        $match: { 
+          created_at: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$created_at', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$created_at', 1000] } } },
+            day: { $dayOfMonth: { $toDate: { $multiply: ['$created_at', 1000] } } }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+    
+    // Reports resolved over time (using resolved_at field)
+    const reportsResolved = await Report.aggregate([
+      { 
+        $match: { 
+          status: reportStatusEnum.resolved,
+          resolved_at: { $gte: startUnix, $lte: endUnix } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$resolved_at', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$resolved_at', 1000] } } },
+            day: { $dayOfMonth: { $toDate: { $multiply: ['$resolved_at', 1000] } } }
+          },
+          count: { $sum: 1 },
+          avgResolution: { $avg: { $subtract: ['$resolved_at', '$created_at'] } }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          count: 1,
+          // Convert to hours
+          avgResolutionHours: { $divide: ['$avgResolution', 3600] },
+          _id: 0
+        }
+      }
+    ]);
+    
+    return {
+      reportsCreated,
+      reportsResolved
+    };
+  }
+  
+  // Add similar implementations for weekly and monthly intervals
+  
+  return {
+    reportsCreated: [],
+    reportsResolved: []
+  };
+}
+  
+  /**
+   * Get job posting and application metrics
+   */
+async getJobsData(startDate: Date, endDate: Date, interval: string) {
+  // For daily intervals
+  if (interval === 'day') {
+    const jobsPosted = await jobs.aggregate([
+      { 
+        $match: { 
+          // Using JavaScript Date comparison directly
+          posted_time: { $gte: startDate, $lte: endDate } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$posted_time' },
+            month: { $month: '$posted_time' },
+            day: { $dayOfMonth: '$posted_time' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+    
+    
+    // Application outcomes by status
+    const applicationOutcomes = await jobApplications.aggregate([
+      { 
+        $match: { 
+          created_at: { 
+            $gte: Math.floor(startDate.getTime() / 1000), 
+            $lte: Math.floor(endDate.getTime() / 1000) 
+          } 
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: { $toDate: { $multiply: ['$created_at', 1000] } } },
+            month: { $month: { $toDate: { $multiply: ['$created_at', 1000] } } },
+            day: { $dayOfMonth: { $toDate: { $multiply: ['$created_at', 1000] } } },
+            status: '$application_status'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+      {
+        $project: {
+          date: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: {
+                $dateFromParts: {
+                  year: '$_id.year',
+                  month: '$_id.month',
+                  day: '$_id.day'
+                }
+              }
+            }
+          },
+          status: '$_id.status',
+          count: 1,
+          _id: 0
+        }
+      }
+    ]);
+    
+    return {
+      jobsPosted,
+      applicationOutcomes
+    };
+  }
+  
+  // Add similar implementations for weekly and monthly intervals
+  // Weekly and monthly implementations would follow the same pattern
+  // but with different $group and date formatting
+  
+  return {
+    jobsPosted: [],
+    applications: [],
+    applicationOutcomes: []
+  };
 }
 
 }
