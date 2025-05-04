@@ -99,8 +99,9 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
       maxAge: 3600000,
       httpOnly: false,
     });
-
-  return res.status(200).json({ message: 'OTP verified successfully' });
+  user.is_verified = true;
+  await user.save();
+  return res.status(200).json({ message: 'OTP verified successfully', isVerified: true });
 });
 
 
