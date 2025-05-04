@@ -38,7 +38,7 @@ const generateOTP = asyncHandler(async (req: Request, res: Response, next: NextF
       throw new CustomError('Session not found', 500, 'SESSION_ERROR');
   }
 
-  return res.status(200).json({ message: 'OTP has been sent to your email' });
+  return res.status(200).json({ message: 'OTP has been sent to your email' , otp: otpCode });
 });
 
 const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
@@ -95,13 +95,13 @@ const verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFun
       throw new CustomError('User not found', 404, 'USER_NOT_FOUND');
   }
 
-
   res.cookie("linkup_user_id", user.user_id, {
       maxAge: 3600000,
       httpOnly: false,
     });
-
-  return res.status(200).json({ message: 'OTP verified successfully' });
+  user.is_verified = true;
+  await user.save();
+  return res.status(200).json({ message: 'OTP verified successfully', isVerified: true });
 });
 
 
