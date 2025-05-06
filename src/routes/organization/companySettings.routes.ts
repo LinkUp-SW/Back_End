@@ -18,6 +18,11 @@ router.get('/get-admins/:organization_id', (req, res, next) => {
     companySettingsControllers.getAdmins(req, res, next);
 });
 
+// Get all Admins of an organization for users
+router.get('/get-admins-for-users/:organization_id', (req, res, next) => {
+    companySettingsControllers.getAdminsForUsers(req, res, next);
+});
+
 // Block a follower of an organization
 router.post('/block-follower/:organization_id/:follower_id', (req, res, next) => {
     companySettingsControllers.blockFollower(req, res, next);
