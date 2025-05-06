@@ -46,9 +46,9 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
             else return res.status(404).json({ message: 'Original post does not exist' });
         }
         if (post.comments_disabled == commentsEnum.connections_only){
-            if (!Array.isArray(user.connections) || 
+            if ((!Array.isArray(user.connections) || 
                 !user.connections.some(connection => 
-                    connection._id && new mongoose.Types.ObjectId(connection._id.toString()).equals(post.user_id))|| post.user_id !==user._id) {
+                    connection._id && new mongoose.Types.ObjectId(connection._id.toString()).equals(post.user_id)))&& post.user_id !==user._id) {
                 return res.status(403).json({ message: 'You are not allowed to comment on this post' });
             }
         }

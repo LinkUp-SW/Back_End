@@ -117,107 +117,115 @@ export const enhancePost = async (
   userId: string,
   userSavedPosts?: postsInterface[]
 ) => {
-  // Convert to plain object if needed
-  const plainPost = post.toObject ? post.toObject() : post;
-  
-  // Handle tagged users
-  if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
-    const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
-    if (userIds) {
-      plainPost.tagged_users = userIds;
+  try {
+    // Convert to plain object if needed
+    const plainPost = post.toObject ? post.toObject() : post;
+    
+    // Handle tagged users
+    if (plainPost.tagged_users && plainPost.tagged_users.length > 0) {
+      const userIds = await convert_idIntoUser_id(plainPost.tagged_users);
+      if (userIds) {
+        plainPost.tagged_users = userIds;
+      }
     }
-  }
-  
-  // Get author information
-  let authorInfo;
-  if(post.is_company){
-    authorInfo=await formatCompanyPost(post,userId);
-  }else authorInfo = await getFormattedAuthor(post.user_id,userId);
-  
-  // Check if post is saved by user
-  const isSaved = userSavedPosts ? 
-      userSavedPosts.some(savedPostId => savedPostId.toString() === post._id.toString()) 
-      : false;
+    
+    // Get author information
+    let authorInfo;
+    if(post.is_company){
+      authorInfo=await formatCompanyPost(post,userId);
+    }else authorInfo = await getFormattedAuthor(post.user_id,userId);
+    if(authorInfo=== null){
+      return null;
+    }
+    // Check if post is saved by user
+    const isSaved = userSavedPosts ? 
+        userSavedPosts.some(savedPostId => savedPostId.toString() === post._id.toString()) 
+        : false;
 
-  // Initialize reaction variables
-  const reactionRepository = new ReactionRepository();
-  let reactions;
-  let userReaction;
-  let originalPost;
-  let originalAuthorInfo;
-  let commentsCount;
-  const isRepost = plainPost.media?.media_type === mediaTypeEnum.post && 
-                     plainPost.media?.link?.length > 0;
-  // Handle reposts
-  if (isRepost) {
-      const postsRepository = new PostRepository();
-      const originalPostId = plainPost.media.link[0];
-      originalPost = await postsRepository.findByPostId(originalPostId) as postsInterface;
-      if (originalPost.tagged_users && originalPost.tagged_users.length > 0) {
-        const userIds = await convert_idIntoUser_id(originalPost.tagged_users);
-        if (userIds) {
-            originalPost.tagged_users = userIds;
+    // Initialize reaction variables
+    const reactionRepository = new ReactionRepository();
+    let reactions;
+    let userReaction;
+    let originalPost;
+    let originalAuthorInfo;
+    let commentsCount;
+    const isRepost = plainPost.media?.media_type === mediaTypeEnum.post && 
+                       plainPost.media?.link?.length > 0;
+    // Handle reposts
+    if (isRepost) {
+      console.log(plainPost)
+        const postsRepository = new PostRepository();
+        const originalPostId = plainPost.media.link[0];
+        originalPost = await postsRepository.findByPostId(originalPostId) as postsInterface;
+        if (originalPost) {
+        if (originalPost.tagged_users && originalPost.tagged_users.length > 0) {
+          const userIds = await convert_idIntoUser_id(originalPost.tagged_users);
+          if (userIds) {
+              originalPost.tagged_users = userIds;
+          }
+      }
+            originalAuthorInfo = await getFormattedAuthor(originalPost.user_id,userId);
+            
+            // For instant reposts, get reactions and user reaction from the original post
+            if (post.post_type === postTypeEnum.repost_instant) {
+                reactions = await getTopReactions(originalPostId, targetTypeEnum.post);
+                userReaction = await reactionRepository.getUserReaction(
+                    userId,
+                    originalPostId.toString()
+                  );
+                commentsCount=originalPost.comments?.length || 0;
+            } else {
+                // For thought reposts, get reactions from the repost itself
+                reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
+                userReaction = await reactionRepository.getUserReaction(
+                    userId,
+                    post._id.toString()
+                  );
+                commentsCount=plainPost.comments?.length || 0;
+            }
+            originalPost = originalPost.toObject ? originalPost.toObject() : originalPost;
+            originalPost={
+              ...originalPost,
+              author:originalAuthorInfo
+            }
+            
+            // Return enhanced repost
+            return {
+                ...plainPost,
+                author: authorInfo,
+                original_post:originalPost,
+                is_saved:isSaved,
+                user_reaction: userReaction?.reaction ?? null,
+                top_reactions: reactions?.finalArray || [],
+                reactions_count: reactions?.totalCount || 0,
+                comments_count: commentsCount,
+                reposts_count: originalPost.reposts?.length || 0
+            };
         }
     }
-      if (originalPost) {
-          originalAuthorInfo = await getFormattedAuthor(originalPost.user_id,userId);
-          
-          // For instant reposts, get reactions and user reaction from the original post
-          if (post.post_type === postTypeEnum.repost_instant) {
-              reactions = await getTopReactions(originalPostId, targetTypeEnum.post);
-              userReaction = await reactionRepository.getUserReaction(
-                  userId,
-                  originalPostId.toString()
-                );
-              commentsCount=originalPost.comments?.length || 0;
-          } else {
-              // For thought reposts, get reactions from the repost itself
-              reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
-              userReaction = await reactionRepository.getUserReaction(
-                  userId,
-                  post._id.toString()
-                );
-              commentsCount=plainPost.comments?.length || 0;
-          }
-          originalPost = originalPost.toObject ? originalPost.toObject() : originalPost;
-          originalPost={
-            ...originalPost,
-            author:originalAuthorInfo
-          }
-          
-          // Return enhanced repost
-          return {
-              ...plainPost,
-              author: authorInfo,
-              original_post:originalPost,
-              is_saved:isSaved,
-              user_reaction: userReaction?.reaction ?? null,
-              top_reactions: reactions?.finalArray || [],
-              reactions_count: reactions?.totalCount || 0,
-              comments_count: commentsCount,
-              reposts_count: originalPost.reposts?.length || 0
-          };
-      }
+    // Standard post handling
+    reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
+    userReaction = await reactionRepository.getUserReaction(
+        userId,
+        post._id.toString()
+    );
+    // Return enhanced standard post
+    return {
+        ...plainPost,
+        author: authorInfo,
+        is_saved:isSaved,
+        user_reaction: userReaction?.reaction ?? null,
+        top_reactions: reactions?.finalArray || [],
+        reactions_count: reactions?.totalCount || 0,
+        comments_count: plainPost.comments?.length || 0,
+        reposts_count: plainPost.reposts?.length || 0
+    };
+  } catch (error) {
+    console.log("Error enhancing post:", error);
+    // Return a basic version of the post to avoid breaking the application
+    return post.toObject ? post.toObject() : post;
   }
-  // Standard post handling
-  reactions = await getTopReactions(post._id.toString(), targetTypeEnum.post);
-  userReaction = await reactionRepository.getUserReaction(
-      userId,
-      post._id.toString()
-  );
-  // Return enhanced standard post
-  return {
-      ...plainPost,
-      author: authorInfo,
-      is_saved:isSaved,
-      user_reaction: userReaction?.reaction ?? null,
-      top_reactions: reactions?.finalArray || [],
-      reactions_count: reactions?.totalCount || 0,
-      comments_count: plainPost.comments?.length || 0,
-      reposts_count: plainPost.reposts?.length || 0
-  };
 };
-
 /**
  * Enhances multiple posts with additional metadata in a batch
  * @param posts Array of posts to enhance
@@ -424,7 +432,6 @@ export const getPostsCursorBased = async (
       _id: { $in: postIds },
       ...(userId ? { user_id: { $ne: userId } } : {})
     }).lean();
-    
     // Map post data by ID for quick lookup
     const postsMap = new Map();
     postsData.forEach(post => {
