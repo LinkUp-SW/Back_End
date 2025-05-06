@@ -110,7 +110,8 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
         user: { 
           id: updatedUser.user_id, 
           email: updatedUser.email, 
-          isVerified: updatedUser.is_verified }});
+          isVerified: updatedUser.is_verified,
+          isAdmin: updatedUser.is_admin }});
     }
 
     // Create a new user
@@ -166,7 +167,8 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       user: { 
         id: newUser.user_id, 
         email: newUser.email, 
-        isVerified: newUser.is_verified }});
+        isVerified: newUser.is_verified,
+        isAdmin: newUser.is_admin }});
 });
 
 export { verifyEmail, addUserStarterInfo };
