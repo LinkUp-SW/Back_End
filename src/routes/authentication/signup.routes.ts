@@ -1,5 +1,5 @@
 import express from 'express';
-import * as signupFunctionality from '../../controllers/authentication/signup.controllers.ts';
+import * as signupFunctionality from '../../controllers/authentication/signup.controller.ts';
 import { generateHashedPassword } from '../../utils/helperFunctions.utils.ts';
 
 const router = express.Router();
