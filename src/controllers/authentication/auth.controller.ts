@@ -128,6 +128,13 @@ const googleCallback = asyncHandler(
         secure: true,
         domain: isProduction? process.env.DOMAIN: undefined,
       });
+      res.cookie("linkup_user_type", userCheck.is_admin?  "admin": "user", {
+        maxAge: 3600000,
+        httpOnly: false,
+        sameSite: "none",
+        secure: true,
+        domain: isProduction? process.env.DOMAIN: undefined,
+      }); 
       return res
         .status(200)
         .redirect(`${process.env.FRONTEND_REDIRECT_URL}/feed`);
