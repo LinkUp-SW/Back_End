@@ -4,7 +4,6 @@ import { CustomError } from '../../utils/customError.utils.ts';
 import { conversationRepository } from '../../repositories/conversation.repository.ts';
 import { UserRepository } from '../../repositories/user.repository.ts';
 import mongoose from 'mongoose';
-import { exists } from 'fs';
 
 const conversationRepo = new conversationRepository();
 const userRepo = new UserRepository();

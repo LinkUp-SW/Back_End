@@ -104,14 +104,21 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
         secure: true,
         domain: isProduction? process.env.DOMAIN: undefined,
       });
-      
+      res.cookie("linkup_user_type", updatedUser.is_admin?  "admin": "user", {
+        maxAge: 3600000,
+        httpOnly: false,
+        sameSite: "none",
+        secure: true,
+        domain: isProduction? process.env.DOMAIN: undefined,
+      });  
+
       return res.status(200).json({ 
         message: 'Login successful',
         user: { 
           id: updatedUser.user_id, 
           email: updatedUser.email, 
           isVerified: updatedUser.is_verified }});
-    }
+  }
 
     // Create a new user
     const userId = await generateUniqueId(firstName, lastName);
@@ -155,6 +162,14 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       domain: isProduction? process.env.DOMAIN: undefined,
     });
 
+    res.cookie("linkup_user_type" , "user"), {
+      maxAge: 3600000,
+      httpOnly: false,
+      sameSite: "none",
+      secure: true,
+      domain: isProduction? process.env.DOMAIN: undefined,
+    };
+
     res.clearCookie("linkup_user_data", {
       secure: true,
       sameSite: "none",
@@ -166,7 +181,8 @@ const addUserStarterInfo = asyncHandler(async(req: Request, res: Response, next:
       user: { 
         id: newUser.user_id, 
         email: newUser.email, 
-        isVerified: newUser.is_verified }});
+        isVerified: newUser.is_verified,
+        isAdimn: newUser.is_admin }});
 });
 
 export { verifyEmail, addUserStarterInfo };
