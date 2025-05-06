@@ -50,9 +50,14 @@ const startConversation = asyncHandler(async (req: Request, res: Response, next:
   }
 
   // Check if the sender is blocked by the receiver
-  if (user2.blocked && user2.blocked.includes(user1.id)) {
+  if (user2.blocked && user2.blocked.some(blockedUser => blockedUser._id.toString() === user1.id)) {
     throw new CustomError('You cannot send messages to this user', 403);
   } // Check if the receiver is blocked by the sender
+
+
+  if (user1.blocked && user1.blocked.some(blockedUser => blockedUser._id.toString() === user2.id)) {
+    throw new CustomError('You cannot send messages to this user', 403);
+  }
 
   const conversation = await conversationRepo.findConversationByUsers(user1Id as string, user2ID);
   if (conversation) {
@@ -113,9 +118,9 @@ const checkConversationExists = asyncHandler(async (req: Request, res: Response,
   }
   
   // Check if the sender is blocked by the receiver
-  if (user2.blocked && user2.blocked.includes(user1.id)) {
+  if (user2.blocked && user2.blocked.some(blockedUser => blockedUser._id.toString() === user1.id)) {
     throw new CustomError('You cannot send messages to this user', 403);
-  } // Check if the receiver is blocked by the sender
+  } 
 
   // Check if conversation exists
   const conversation = await conversationRepo.findConversationByUsers(user1Id as string, user2ID);
@@ -128,7 +133,7 @@ const checkConversationExists = asyncHandler(async (req: Request, res: Response,
 /**
  * Get all conversations for the logged-in user
  * 
- * @route GET /api/v1/messages/conversations
+ * @route GET /api/v1/conversations
  * @access Private - Requires authentication
  * @param {Request} req - Express request object
  * @param {Response} res - Express response object
@@ -165,26 +170,24 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
       throw new CustomError('User not found', 404); 
     }
 
-    if (isUser1) {
-      // Check if the user is blocked by user2
-      if (conversation.is_blocked_by_user2) {
-        throw new CustomError('You cannot send messages to this user', 403);
-      }
-
-      if (conversation.user1_conversation_type.includes('Unread')) {
-        totalConversationUnreadCount += 1
-      }
-
-    } else {
-      // Check if the user is blocked by user1
-      if (conversation.is_blocked_by_user1) {
-        throw new CustomError('You cannot send messages to this user', 403);
-      }
-
-      if (conversation.user2_conversation_type.includes('Unread')) {
-        totalConversationUnreadCount += 1
-      }
+      // Check if the user is blocked by the other user
+    if (isUser1 && conversation.is_blocked_by_user2) {
+      console.log("This conversation is blocked by the other user");
+      return null; // Skip this conversation
+    } else if (!isUser1 && conversation.is_blocked_by_user1) {
+      console.log("This conversation is blocked by the other user");
+      return null; // Skip this conversation
     }
+
+    // Check if the user is blocking the other user
+    if (isUser1 && conversation.is_blocked_by_user1) {
+      console.log("This conversation is blocked by you");
+      return null; // Skip this conversation
+    } else if (!isUser1 && conversation.is_blocked_by_user2) {
+      console.log("This conversation is blocked by you");
+      return null; // Skip this conversation
+    }
+
 
     // Get last message and unread count
     const sentMessages = isUser1 ? conversation.user1_sent_messages : conversation.user2_sent_messages;
@@ -224,10 +227,8 @@ const getConversations = asyncHandler(async (req: Request, res: Response, next: 
 
   
 
-  const formattedConversations = await Promise.all(formattedConversationsPromises);
-  
-  // Calculate total unread count by summing up unreadCount from all conversations
-  
+  const formattedConversations = (await Promise.all(formattedConversationsPromises)).filter(Boolean);
+
   
   return res.status(200).json({ 
     conversations: formattedConversations,
@@ -759,8 +760,6 @@ export {
   startConversation,
   getConversations,
   getConversation,
-  // blockUser,
-  // unblockUser,
   markConversationAsUnread,
   getUnseenMessagesCount,
   markMessagesInConversationAsRead,

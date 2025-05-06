@@ -43,7 +43,7 @@ export class conversationRepository {
       throw new CustomError('User not found', 404);
     }
 
-    if (user1.blocked.includes(user2.id) || user2.blocked.includes(user1.id)) {
+    if (user1.blocked.some(blockedUser => blockedUser._id.toString() === user2.id) || user2.blocked.some(blockedUser => blockedUser._id.toString() === user1.id)) {
       throw new CustomError('Conversation is blocked', 403);
     }
 
@@ -395,71 +395,4 @@ export class conversationRepository {
     await conversation.save();
     return conversation;
   }
-
-
-  // async blockUser(userId: string, blockedUserId: string) {
-  //   const conversation = await this.findConversationByUsers(userId, blockedUserId);
-  //   const blockedUser = await userRepo.findByUserId(blockedUserId);
-  //   const user = await userRepo.findByUserId(userId);
-    
-  //   if (!conversation) {
-  //     throw new CustomError('Conversation not found', 404);
-  //   }
-
-  //   if (!blockedUser) {
-  //     throw new CustomError('User to block not found', 404);
-  //   }
-    
-  //   if (!user) {
-  //     throw new CustomError('User not found', 404);
-  //   }
-
-  //   if (!user.blocked) {
-  //     user.blocked = [];
-  //   }
-
-  //   if (user.blocked.includes(blockedUserId)) {
-  //     throw new CustomError('User already blocked', 400);
-  //   }
-
-  //   if (user.blocked.length >= 100) {
-  //     throw new CustomError('User block limit reached', 400);
-  //   }
-  //   // Add to blocked list
-  //   user.blockUser(blockedUserId);
-  //   await user.save();
-
-  //   // Determine if blocker is user1 or user2
-  //   const isUser1 = conversation.user1_id.toString() === userId;
-    
-  //   if (isUser1) {
-  //     conversation.is_blocked_by_user1 = true;
-  //   } else {
-  //     conversation.is_blocked_by_user2 = true;
-  //   }
-
-  //   await conversation.save();
-  //   return conversation;
-  // }
-
-  // async unblockUser(userId: string, blockedUserId: string) {
-  //   const conversation = await this.findConversationByUsers(userId, blockedUserId);
-    
-  //   if (!conversation) {
-  //     throw new CustomError('Conversation not found', 404);
-  //   }
-
-  //   // Determine if unblocker is user1 or user2
-  //   const isUser1 = conversation.user1_id.toString() === userId;
-    
-  //   if (isUser1) {
-  //     conversation.is_blocked_by_user1 = false;
-  //   } else {
-  //     conversation.is_blocked_by_user2 = false;
-  //   }
-
-  //   await conversation.save();
-  //   return conversation;
-  // }
-
 }
