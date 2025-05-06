@@ -201,7 +201,7 @@ export const createCheckoutSession = async (req: Request, res: Response, next: N
           }
         ],
         mode: 'subscription',
-        success_url: `${successUrl}?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: cancelUrl,
         metadata: {
           userId: user.user_id

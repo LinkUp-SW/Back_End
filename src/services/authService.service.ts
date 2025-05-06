@@ -123,6 +123,12 @@ export class AuthService {
       domain: isProduction ? process.env.DOMAIN : undefined,
     });
 
+    res.clearCookie("linkup_user_type", {
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      domain: isProduction ? process.env.DOMAIN : undefined,
+    });
+
     // Clear user ID cookie
     res.clearCookie("linkup_user_id", {
       secure: isProduction,
