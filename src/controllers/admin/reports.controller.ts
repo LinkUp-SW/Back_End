@@ -19,14 +19,14 @@ export const createReport = asyncHandler(async (req: Request, res: Response, nex
     if (!userId) return;
     const user = await findUserByUserId(userId,res);
     if (!user) return;
-
+    
     const{
         contentRef,
         contentType,
         reason
-
+        
     }=req.body;
-
+    
     if(!contentRef ||!contentType ||!reason ){
         return res.status(400).json({ message: 'Required fields missing' });
     }
@@ -37,24 +37,28 @@ export const createReport = asyncHandler(async (req: Request, res: Response, nex
                 return res.status(404).json({message:'Post does not exist ' })
             }
             break;
-        case contentTypeEnum.Comment:
-            const comment = await commentRepository.findById(contentRef);
-            if(!comment){
-                return res.status(404).json({ message: 'Comment does not exist' });
-            }
-            break;
-        case contentTypeEnum.Job:
-            const job = await jobs.findById(contentRef);
-            if(!job){
-                return res.status(404).json({ message: 'job does not exist' });
-            }
-            break;
-        default:
-            return res.status(400).json({ message: 'Wrong type entered, choose from the following: Post,Comment,Job' });
+            case contentTypeEnum.Comment:
+                const comment = await commentRepository.findById(contentRef);
+                if(!comment){
+                    return res.status(404).json({ message: 'Comment does not exist' });
+                }
+                break;
+                case contentTypeEnum.Job:
+                    const job = await jobs.findById(contentRef);
+                    if(!job){
+                        return res.status(404).json({ message: 'job does not exist' });
+                    }
+                    break;
+                    default:
+                        return res.status(400).json({ message: 'Wrong type entered, choose from the following: Post,Comment,Job' });
     }
     const userReported = await reportRepository.findExistingReport(user._id as string,contentRef,contentType);
     if (userReported){
         return res.status(400).json({ message: 'User already reported this' });
+    }
+    const contentReported = await reportRepository.findReportsForContent(contentRef,contentType);
+    if (contentReported && contentReported.length > 0 && contentReported[0].status === reportStatusEnum.resolved){
+        return res.status(400).json({ message: 'Content has already been dealt with' });
     }
     const report = await reportRepository.createReport(
         user._id as string,
@@ -62,7 +66,6 @@ export const createReport = asyncHandler(async (req: Request, res: Response, nex
         contentType,
         reason
     )    
-    
     return res.status(201).json({ message: 'report created successfully',report:report._id});
 }catch (error) {
     if (error instanceof Error && error.message === 'Invalid or expired token') {
