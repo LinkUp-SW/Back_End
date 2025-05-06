@@ -222,4 +222,9 @@ app.get('/', (req: Request, res: Response) => {
 // Error Handler Middleware should be the last middleware added
 app.use(errorHandler);
 
+//health check to check that it is successfully running
+app.get('/health/code', (req, res) => {
+    res.status(200).send('OK');
+});
+
 export default app;

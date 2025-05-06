@@ -318,11 +318,12 @@ export class UserRepository {
 
   // private async cleanupUserConversations(userId: mongoose.Types.ObjectId) {
 
+
   
   // Helper methods to organize the cleanup process
   private async cleanupUserPosts(userId: mongoose.Types.ObjectId) {
     // Get post IDs created by this user
-    const userPosts = await mongoose.model('posts').find({ user_id: userId });
+    const userPosts = await mongoose.model('posts').find({ user_id: userId.toString() });
     const userPostIds = userPosts.map(post => post._id);
     
     // Delete all comments by this user
@@ -340,7 +341,8 @@ export class UserRepository {
     // Delete reposts by this user
     await mongoose.model('posts').deleteMany({ 
       user_id: userId,
-      post_type: 'repost' 
+       // Assuming these are the types for reposts
+      post_type: { $in: ['Repost thought', 'Repost instant'] } 
     });
     
     // Delete all comments and reactions on the user's posts
@@ -350,7 +352,7 @@ export class UserRepository {
     }
     
     // Delete all posts by this user
-    await mongoose.model('posts').deleteMany({ user_id: userId });
+    await mongoose.model('posts').deleteMany({ user_id: userId.toString() });
   }
   
   private async cleanupUserNetwork(userId: mongoose.Types.ObjectId) {

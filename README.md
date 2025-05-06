@@ -1,4 +1,4 @@
-# Back_End
+# BackEnd
 
 ## Overview
 The **Back_End** repository is the backend service for the LinkUp-SW project. It powers core functionalities such as user authentication, real-time messaging, file uploads, and database management. Built with **Node.js** , **Express** and **TypeScript**.
