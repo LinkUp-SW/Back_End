@@ -48,7 +48,7 @@ const createComment = async (req: Request, res: Response): Promise<Response | vo
         if (post.comments_disabled == commentsEnum.connections_only){
             if ((!Array.isArray(user.connections) || 
                 !user.connections.some(connection => 
-                    connection._id && new mongoose.Types.ObjectId(connection._id.toString()).equals(post.user_id)))&& post.user_id !==user._id) {
+                    connection._id && new mongoose.Types.ObjectId(connection._id.toString()).equals(post.user_id)))&& post.user_id !==user._id!.toString()) {
                 return res.status(403).json({ message: 'You are not allowed to comment on this post' });
             }
         }

@@ -153,7 +153,6 @@ export const enhancePost = async (
                        plainPost.media?.link?.length > 0;
     // Handle reposts
     if (isRepost) {
-      console.log(plainPost)
         const postsRepository = new PostRepository();
         const originalPostId = plainPost.media.link[0];
         originalPost = await postsRepository.findByPostId(originalPostId) as postsInterface;
