@@ -35,53 +35,68 @@ export class NotificationRepository {
 
       return notification;
     } catch (error) {
+      if (error instanceof CustomError) {
+        console.error('CustomError:', error.message, error.statusCode);
+        return null;
+      }
       throw error;
     }
   }
 
   async getUserNotifications(userId: string, limit: number, page: number) {
-    const skip = (page - 1) * limit;
-    
-    // Run two queries in parallel for better performance
-    const [userNotifications, total] = await Promise.all([
-      notifications.find({ recipient_id: userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      notifications.countDocuments({ recipient_id: userId })
-    ]);
-    
-    return { notifications: userNotifications, total };
+    try {
+      const skip = (page - 1) * limit;
+      const [userNotifications, total] = await Promise.all([
+        notifications.find({ recipient_id: userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+        notifications.countDocuments({ recipient_id: userId }),
+      ]);
+      return { notifications: userNotifications, total };
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw new CustomError('Failed to fetch notifications', 500);
+    }
   }
 
   async getUnreadNotificationsCount(userId: string): Promise<number> {
-    return notifications.countDocuments({ recipient_id: userId, is_read: false });
+    try {
+      const count = await notifications.countDocuments({ recipient_id: userId, is_read: false });
+      return count;
+    } catch (error) {
+      console.error('Error fetching unread notifications count:', error);
+      throw new CustomError('Failed to fetch unread notifications count', 500);
+    }
   }
 
   async markAsRead(notificationId: string, userId: string) {
-    const notification = await notifications.findById(notificationId);
-    
-    if (!notification) {
-      throw new CustomError('Notification not found', 404);
+    try {
+      const notification = await notifications.findOneAndUpdate(
+        { _id: notificationId, recipient_id: userId, is_read: false },
+        { $set: { is_read: true } },
+        { new: true } // Return the updated notification
+      );
+      if (!notification) {
+        throw new CustomError('Notification not found or already read', 404);
+      }
+      return notification;
+    } catch (error) {
+      if (error instanceof CustomError) {
+        console.error('CustomError:', error.message, error.statusCode);
+        return null;
+      }
+      throw error;
     }
-    
-    if (notification.recipient_id !== userId) {
-      throw new CustomError('Unauthorized access to notification', 403);
-    }
-    
-    notification.is_read = true;
-    await notification.save();
-    
-    return notification;
   }
 
   async markAllAsRead(userId: string) {
-    const result = await notifications.updateMany(
-      { recipient_id: userId, is_read: false },
-      { $set: { is_read: true } }
-    );
-    
-    return { modifiedCount: result.modifiedCount };
+    try {
+      const result = await notifications.updateMany(
+        { recipient_id: userId, is_read: false },
+        { $set: { is_read: true } }
+      );
+      return result.modifiedCount;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw new CustomError('Failed to mark notifications as read', 500);
+    }
   }
 }

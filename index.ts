@@ -74,12 +74,12 @@ const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET!;
 // IMPORTANT: Add webhook route BEFORE express.json() middleware
 app.use('/webhook/stripe', stripeWebhookRoutes);
-app.use(express.json({limit:"50mb"}));
+app.use(express.json({limit:"10mb"}));
 
 
 // Generate a token with a 1-hour expiration and user_id "TiTo-aggin93"
 const generateStartupToken = () => {
-  const token = tokenUtils.createToken({ time: '1000h', userID: 'Amr-Doma81' });
+  const token = tokenUtils.createToken({ time: '1000h', userID: 'Amr-Doma6' });
   console.log('Generated Token:', token);
 };
 

@@ -233,7 +233,7 @@ export class WebSocketService {
           });
         } else {
           // Re-throw other database errors
-          throw error;
+          console.error("Database error:", dbError);
         }
       }
     } catch (error) {
@@ -669,6 +669,11 @@ export class WebSocketService {
   
       // Get sender information
       const sender = await this.userRepo.findByUserId(data.senderId);
+
+      if (!sender) {
+        console.error("Sender not found:", data.senderId);
+        return;
+      }
   
       // Prepare notification object for socket
       const notificationObj = {
@@ -700,7 +705,6 @@ export class WebSocketService {
       return notification;
     } catch (error) {
       console.error("[ERROR] Send notification error:", error);
-      throw error;
     }
   }
 

@@ -79,7 +79,13 @@ export const uploadMedia = async (file: string, folder = 'messaging_app') => {
       folder,
       resource_type: 'auto'
     });
-    console.log('Cloudinary upload result:', result);
+    const allowedExtensions = ['jpg', 'jpeg', 'pdf', 'png', 'gif', 'mp4'];
+    const fileExtension = file.split(':').pop()?.toLowerCase(); // 
+
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      throw new Error(`Invalid file type. Allowed types are: ${allowedExtensions.join(', ')}`);
+    }
+    console.log('Cloudinary upload result:', result); 
     return { url: result.secure_url, type: result.format };
   } catch (error) {
     console.error('Cloudinary upload error:', error);

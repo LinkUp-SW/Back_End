@@ -42,16 +42,6 @@ router.patch('/messages/:conversationId/:messageId/edit',authorizeMessaging,mess
 
 // React to a message
 router.post('/messages/:messageId/react',authorizeMessaging,messageController.reactToMessage);
-// // Block a user from messaging
-// router.post('/block',authorizeMessaging,messageController.blockUser);
-
-// // Unblock a user
-// router.post('/unblock',authorizeMessaging,messageController.unblockUser);
-
-
-
-
-
 
 
 export default router;

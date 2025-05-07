@@ -362,7 +362,7 @@ async resolveContentReports(
                               user.activity.posts = user.activity.posts.filter(
                                   userPost => userPost.toString() !== contentRef.toString()
                               );
-                                if (post.post_type === postTypeEnum.standard) {
+                                if (post.post_type !== postTypeEnum.standard) {
                                   // Handle original post reference
                                   if (post.media?.link && post.media.link.length > 0) {
                                       const originalPost = await postRepository.findByPostId(post.media.link[0]);
