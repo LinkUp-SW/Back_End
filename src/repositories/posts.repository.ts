@@ -237,9 +237,12 @@ export const enhancePosts = async (
   userId: string,
   userSavedPosts?: postsInterface[]
 ) => {
-  return Promise.all(posts.map(post => 
-      enhancePost(post, userId, userSavedPosts)
+  const enhancedPosts = await Promise.all(posts.map(post => 
+    enhancePost(post, userId, userSavedPosts)
   ));
+  
+  // Filter out null posts (where author was null)
+  return enhancedPosts.filter(post => post !== null);
 };
 
 
@@ -248,14 +251,12 @@ export const enhancePosts = async (
  * @param postIds - Array of post IDs to fetch
  * @param cursor - The position to start fetching from (null for beginning)
  * @param limit - Maximum number of posts to fetch
- * @param viewerId - user Id of the viewer 
  * @returns Promise containing the posts, count, and pagination info
  */
 export const getPostsFromPostIdsCursorBased = async (
   postIds: string[],
   cursor: number | null, 
   limit: number,
-  viewerId:string
 ): Promise<{ posts: any[]; next_cursor: number | null }> => {
   try {
     if (!postIds || postIds.length === 0) {
@@ -277,38 +278,12 @@ export const getPostsFromPostIdsCursorBased = async (
       _id: { $in: postsToFetch } 
     }).lean();
     
-    // Extract all unique user IDs
-    const userIds = new Set<string>();
-    postsData.forEach(post => userIds.add(post.user_id.toString()));
-    
-    // Create author info map for quick lookups
-    const authorMap = new Map();
-    for (const userId of userIds) {
-      const authorInfo = await getFormattedAuthor(userId,viewerId);
-      if (authorInfo) {
-        authorMap.set(userId, authorInfo);
-      }
-    }
-    
-    // Enrich posts with author information
-    const enrichedPosts = [];
-    for (const postId of postsToFetch) {
-      const post = postsData.find(p => p._id.toString() === postId.toString());
-      if (post) {
-        const authorInfo = authorMap.get(post.user_id.toString());
-        enrichedPosts.push({
-          ...post,
-          author: authorInfo || null
-        });
-      }
-    }
-    
     // Determine pagination info
     const hasNextPage = endIndex < totalCount;
     const nextCursor = hasNextPage ? endIndex : null;
     
     return { 
-      posts: enrichedPosts, 
+      posts: postsData, 
       next_cursor:nextCursor 
     };
   } catch (err) {
