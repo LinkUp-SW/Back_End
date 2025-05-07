@@ -315,23 +315,22 @@ export class WebSocketService {
       const receiverSocketId = this.userSockets.get(receiverId);
       if (receiverSocketId) {
         this.io.to(receiverSocketId).emit("new_message", messageObj);
-
-        let msgNotificationData = {
-          recipientId: receiverId,
-          senderId: senderId,
-          type: NotificationType.MESSAGE,
-          referenceId: conversation.id,
-          content: message.length > 30 ? `${message.substring(0, 30)}...` : message
-        }
-        
-        // Send message notification if user is online but in different conversation
-        await this.sendNotification(msgNotificationData);
-        
-        //Mark the conversation as unread for the recipient
-        this.markConversationOfNewMessageUnread(socket, {
-          conversationId: conversation._id.toString()
-        });
       }
+
+      //Mark the conversation as unread for the recipient
+      this.markConversationOfNewMessageUnread(socket, {
+        conversationId: conversation.id
+      });
+
+      let msgNotificationData = {
+        recipientId: receiverId,
+        senderId: senderId,
+        type: NotificationType.MESSAGE,
+        referenceId: conversation.id,
+        content: message.length > 30 ? `${message.substring(0, 30)}...` : message
+      }
+      
+      await this.sendNotification(msgNotificationData);
   
       // Confirm to sender
       socket.emit("message_sent", {
