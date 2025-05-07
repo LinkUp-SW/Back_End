@@ -56,7 +56,6 @@ export const displayReposts = async (req: Request, res: Response): Promise<Respo
                 repostIds as string[], 
                 currentCursor, 
                 fetchLimit,
-                user._id as string
             );
             
             // Enhance the fetched posts

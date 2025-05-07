@@ -124,7 +124,7 @@ const markAllNotificationsAsRead = asyncHandler(async (req: Request, res: Respon
   
   const result = await notificationRepo.markAllAsRead(userId as string);
   
-  return res.status(200).json({ message: 'All notifications marked as read', modifiedCount: result.modifiedCount });
+  return res.status(200).json({ message: 'All notifications marked as read', modifiedCount: result });
 });
 
 export {
