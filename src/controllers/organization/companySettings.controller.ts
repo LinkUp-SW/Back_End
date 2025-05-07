@@ -183,6 +183,47 @@ export const getAdmins = async (req: Request, res: Response, next: NextFunction)
     }
 }
 
+export const getAdminsForUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const user = await validateTokenAndGetUser(req, res) as { _id: string };
+        if (!user) return;
+
+        const { organization_id } = req.params;
+        
+        // Get organization profile and validate it exists
+        const organization = await getCompanyProfileById(organization_id, res);
+        if (!organization) return;
+        
+        // Get the organization with populated admins, selecting only specific fields
+        const organizationWithAdmins = await organizations.findById(organization_id)
+            .populate({
+                path: "admins",
+                select: "user_id bio.first_name bio.last_name bio.headline profile_photo"
+            });
+            
+        if (!organizationWithAdmins) {
+            res.status(404).json({ message: "Organization not found" });
+            return;
+        }
+        
+        // Format the response to match the requested field names
+        const formattedAdmins = organizationWithAdmins.admins.map((admin: any) => ({
+            _id: admin._id,
+            user_id: admin.user_id,
+            first_name: admin.bio?.first_name || "",
+            last_name: admin.bio?.last_name || "",
+            headline: admin.bio?.headline || "",
+            profile_picture: admin.profile_photo || ""
+        }));
+    
+        res.status(200).json({ 
+            admins: formattedAdmins
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 export const blockFollower = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const user = await validateTokenAndGetUser(req, res) as { _id: string };

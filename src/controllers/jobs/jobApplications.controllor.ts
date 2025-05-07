@@ -13,16 +13,33 @@ export const ApplyForJob = async (req: Request, res: Response, next: NextFunctio
 
         // Get user data with selected fields only
         const userData = await users.findById(user._id)
-            .select('_id bio.first_name bio.last_name bio.headline email bio.contact_info.phone_number bio.contact_info.country_code profile_photo location resume');
+            .select('_id bio.first_name bio.last_name bio.headline email bio.contact_info.phone_number bio.contact_info.country_code profile_photo resume');
         
         if (!userData) {
             res.status(404).json({ message: "User not found" });
             return;
         }
+        
+        // Create a normalized version of user data with empty strings for missing fields
+        const normalizedUserData = {
+            _id: userData._id || "",
+            bio: {
+                first_name: userData.bio?.first_name || "",
+                last_name: userData.bio?.last_name || "",
+                headline: userData.bio?.headline || "",
+                contact_info: {
+                    phone_number: userData.bio?.contact_info?.phone_number || "",
+                    country_code: userData.bio?.contact_info?.country_code || ""
+                }
+            },
+            email: userData.email || "",
+            profile_photo: userData.profile_photo || "",
+            resume: userData.resume || ""
+        };
     
-        // Return the user data that would be needed for a job application
+        // Return the normalized user data
         res.status(200).json({ 
-            data: userData,
+            data: normalizedUserData,
             message: "User data retrieved successfully for job application"
         });
     } catch (error) {

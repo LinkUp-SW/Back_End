@@ -128,7 +128,7 @@ const googleCallback = asyncHandler(
         secure: true,
         domain: isProduction? process.env.DOMAIN: undefined,
       });
-      res.cookie("linkup_user_type", user.is_admin?  "admin": "user", {
+      res.cookie("linkup_user_type", userCheck.is_admin?  "admin": "user", {
         maxAge: 3600000,
         httpOnly: false,
         sameSite: "none",
