@@ -12466,6 +12466,398 @@ paths:
                   error:
                     type: string
                     example: "Error message details"
+  /api/v1/notifications/get-notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get all notifications
+      description: Retrieves all notifications for the logged-in user with pagination.
+      parameters:
+        - in: query
+          name: page
+          description: Page number for pagination (default is 1).
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: limit
+          description: Number of notifications per page (default is 20).
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Notifications retrieved successfully.
+        '401':
+          description: User not authenticated.
+        '500':
+          description: Server error.
+
+  /api/v1/notifications/unread-count:
+    get:
+      tags:
+        - Notifications
+      summary: Get unread notifications count
+      description: Retrieves the count of unread notifications for the logged-in user.
+      responses:
+        '200':
+          description: Unread notifications count retrieved successfully.
+        '401':
+          description: User not authenticated.
+        '500':
+          description: Server error.
+
+  /api/v1/notifications/{notificationId}/read:
+    put:
+      tags:
+        - Notifications
+      summary: Mark a notification as read
+      description: Marks a specific notification as read for the logged-in user.
+      parameters:
+        - in: path
+          name: notificationId
+          description: ID of the notification to mark as read.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notification marked as read successfully.
+        '401':
+          description: User not authenticated.
+        '404':
+          description: Notification not found.
+        '500':
+          description: Server error.
+
+  /api/v1/notifications/read-all:
+    put:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      description: Marks all notifications as read for the logged-in user.
+      responses:
+        '200':
+          description: All notifications marked as read successfully.
+        '401':
+          description: User not authenticated.
+        '500':
+          description: Server error.
+  /api/v1/messages/conversations/start-conversation/{user2ID}:
+    post:
+      tags:
+        - Messaging
+      summary: Start a new conversation
+      description: Starts a new conversation between the logged-in user and another user.
+      parameters:
+        - in: path
+          name: user2ID
+          description: ID of the second user to start a conversation with.
+          required: true
+          schema:
+            type: string
+        - in: body
+          name: body
+          description: Initial message and optional media.
+          required: false
+          schema:
+            type: object
+            properties:
+              firstMessage:
+                type: string
+              media:
+                type: array
+                items:
+                  type: string
+              mediaTypes:
+                type: array
+                items:
+                  type: string
+      responses:
+        '201':
+          description: Conversation started successfully.
+        '400':
+          description: Missing or invalid parameters.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: User is blocked.
+        '404':
+          description: User not found.
+        '500':
+          description: Server error.
+
+  /api/v1/messages/conversations/check-conversation/{user2ID}:
+    get:
+      tags:
+        - Messaging
+      summary: Check if a conversation exists
+      description: Checks if a conversation exists between the logged-in user and another user.
+      parameters:
+        - in: path
+          name: user2ID
+          description: ID of the second user.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation existence status.
+        '400':
+          description: Missing or invalid parameters.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: User is blocked.
+        '404':
+          description: User not found.
+
+  /api/v1/messages/conversations:
+    get:
+      tags:
+        - Messaging
+      summary: Get all conversations
+      description: Retrieves all conversations for the logged-in user.
+      responses:
+        '200':
+          description: List of conversations retrieved successfully.
+        '401':
+          description: User not authenticated.
+        '500':
+          description: Server error.
+
+  /api/v1/messages/conversations/{conversationId}:
+    get:
+      tags:
+        - Messaging
+      summary: Get a specific conversation
+      description: Retrieves a specific conversation by ID, including its message history.
+      parameters:
+        - in: path
+          name: conversationId
+          description: ID of the conversation to retrieve.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation retrieved successfully.
+        '400':
+          description: Invalid conversation ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Conversation not found.
+
+  /api/v1/messages/conversation/unread-conversations:
+    get:
+      tags:
+        - Messaging
+      summary: Get unread conversations
+      description: Retrieves the count of unread conversations for the logged-in user.
+      responses:
+        '200':
+          description: Unread conversations count retrieved successfully.
+        '401':
+          description: User not authenticated.
+        '500':
+          description: Server error.
+
+  /api/v1/messages/conversation/unread-messages-count:
+    get:
+      tags:
+        - Messaging
+      summary: Get unread messages count by conversation
+      description: Retrieves the count of unread messages for each conversation of the logged-in user.
+      responses:
+        '200':
+          description: Unread messages count retrieved successfully.
+        '401':
+          description: User not authenticated.
+        '500':
+          description: Server error.
+
+  /api/v1/messages/conversations/{conversationId}/read:
+    put:
+      tags:
+        - Messaging
+      summary: Mark messages in a conversation as read
+      description: Marks all messages in a specific conversation as read.
+      parameters:
+        - in: path
+          name: conversationId
+          description: ID of the conversation to mark as read.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Messages marked as read successfully.
+        '400':
+          description: Invalid conversation ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Conversation not found.
+
+  /api/v1/messages/conversations/{conversationId}/unread:
+    put:
+      tags:
+        - Messaging
+      summary: Mark a conversation as unread
+      description: Marks a specific conversation as unread.
+      parameters:
+        - in: path
+          name: conversationId
+          description: ID of the conversation to mark as unread.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation marked as unread successfully.
+        '400':
+          description: Invalid conversation ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Conversation not found.
+
+  /api/v1/messages/{conversationId}/{messageId}/delete:
+    delete:
+      tags:
+        - Messaging
+      summary: Delete a message
+      description: Deletes a specific message in a conversation.
+      parameters:
+        - in: path
+          name: conversationId
+          description: ID of the conversation containing the message.
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: messageId
+          description: ID of the message to delete.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Message deleted successfully.
+        '400':
+          description: Invalid conversation or message ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Message not found.
+
+  /api/v1/messages/conversations/{conversationId}/delete:
+    delete:
+      tags:
+        - Messaging
+      summary: Delete a conversation
+      description: Deletes a specific conversation for the logged-in user.
+      parameters:
+        - in: path
+          name: conversationId
+          description: ID of the conversation to delete.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation deleted successfully.
+        '400':
+          description: Invalid conversation ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Conversation not found.
+
+  /api/v1/messages/{conversationId}/{messageId}/edit:
+    patch:
+      tags:
+        - Messaging
+      summary: Edit a message
+      description: Edits a specific message in a conversation.
+      parameters:
+        - in: path
+          name: conversationId
+          description: ID of the conversation containing the message.
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: messageId
+          description: ID of the message to edit.
+          required: true
+          schema:
+            type: string
+        - in: body
+          name: body
+          description: New message content.
+          required: true
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+      responses:
+        '200':
+          description: Message edited successfully.
+        '400':
+          description: Invalid conversation or message ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Message not found.
+
+  /api/v1/messages/{messageId}/react:
+    post:
+      tags:
+        - Messaging
+      summary: React to a message
+      description: Adds a reaction to a specific message in a conversation.
+      parameters:
+        - in: path
+          name: messageId
+          description: ID of the message to react to.
+          required: true
+          schema:
+            type: string
+        - in: body
+          name: body
+          description: Reaction type.
+          required: true
+          schema:
+            type: object
+            properties:
+              reaction:
+                type: string
+      responses:
+        '200':
+          description: Reaction added successfully.
+        '400':
+          description: Invalid message ID.
+        '401':
+          description: User not authenticated.
+        '403':
+          description: Access denied.
+        '404':
+          description: Message not found.
 components:
   securitySchemes:
     bearerAuth:
