@@ -1,15 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import { paginatedJobQuery, getTimeAgoStage } from "../../utils/database.helper.ts";
 import { validateTokenAndGetUser } from "../../utils/helper.ts";
+import organizations from "../../models/organizations.model.ts";
 
 /**
  * Search for jobs using a single query term
  * Searches across job title, description, skills, responsibilities, qualifications, and industry
+ * Excludes jobs from companies that have blocked the user
  */
 export const searchJobs = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const user = await validateTokenAndGetUser(req, res);
-        if (!user) return
+        if (!user) return;
         
         // Get query parameters
         const query = req.query.query as string;
@@ -20,19 +22,37 @@ export const searchJobs = async (req: Request, res: Response, next: NextFunction
         if (!query) {
             return res.status(400).json({ message: "Please provide a search query" });
         }
+
+        // Find companies that have blocked this user
+        const blockingOrganizations = await organizations.find({
+            blocked: user._id
+        }).select('_id');
+        
+        const blockingOrgIds = blockingOrganizations.map(org => org._id?.toString());
         
         // Build search query - search across all relevant fields
         const searchQuery: any = {
-            $or: [
-                { job_title: { $regex: query, $options: 'i' } },
-                { description: { $regex: query, $options: 'i' } },
-                { targetted_skills: { $regex: query, $options: 'i' } },
-                { responsibilities: { $regex: query, $options: 'i' } },
-                { qualifications: { $regex: query, $options: 'i' } },
-                { organization_industry: { $regex: query, $options: 'i' } },
-                { location: { $regex: query, $options: 'i' } },
+            $and: [
+                {
+                    $or: [
+                        { job_title: { $regex: query, $options: 'i' } },
+                        { description: { $regex: query, $options: 'i' } },
+                        { targetted_skills: { $regex: query, $options: 'i' } },
+                        { responsibilities: { $regex: query, $options: 'i' } },
+                        { qualifications: { $regex: query, $options: 'i' } },
+                        { organization_industry: { $regex: query, $options: 'i' } },
+                        { location: { $regex: query, $options: 'i' } },
+                    ]
+                }
             ]
         };
+        
+        // Only add the organization filter if there are blocking organizations
+        if (blockingOrgIds.length > 0) {
+            searchQuery.$and.push({
+                organization_id: { $nin: blockingOrgIds }
+            });
+        }
         
         // Use the helper function with enhanced projection for jobs
         const extraStages = [
