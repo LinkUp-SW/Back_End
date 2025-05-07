@@ -35,11 +35,7 @@ export class NotificationRepository {
 
       return notification;
     } catch (error) {
-      if (error instanceof CustomError) {
-        console.error('CustomError:', error.message, error.statusCode);
-        return null;
-      }
-      throw error;
+      console.error('Error creating notification:', error);
     }
   }
 
@@ -79,11 +75,7 @@ export class NotificationRepository {
       }
       return notification;
     } catch (error) {
-      if (error instanceof CustomError) {
-        console.error('CustomError:', error.message, error.statusCode);
-        return null;
-      }
-      throw error;
+      console.error('Error marking notification as read:', error);
     }
   }
 
@@ -96,7 +88,6 @@ export class NotificationRepository {
       return result.modifiedCount;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
-      throw new CustomError('Failed to mark notifications as read', 500);
     }
   }
 }
